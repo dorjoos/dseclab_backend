@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/ecommerce/components/invoice-template.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/counter/counter-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/print.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/tooltip-init.js')}}"></script>
+
+{% endblock %} 

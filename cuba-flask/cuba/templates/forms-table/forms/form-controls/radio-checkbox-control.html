@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'forms-table/forms/form-controls/components/radio-checkbox-control.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+<script src="{{ url_for('static', filename =  'assets/js/height-equal.js')}}"></script>        
+{% endblock %}

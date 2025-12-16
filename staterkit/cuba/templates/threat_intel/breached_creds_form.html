@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5>{% if breached_cred %}Edit{% else %}Add{% endif %} Breached Credential</h5>
+          <div class="card-header-right">
+            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-secondary btn-sm">
+              <i data-feather="arrow-left"></i> Back
+            </a>
+            <i class="icofont icofont-maximize full-card"></i>
+            <i class="icofont icofont-minus minimize-card"></i>
+            <i class="icofont icofont-refresh reload-card"></i>
+            <i class="icofont icofont-error close-card"></i>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{% if breached_cred %}{{ url_for('threat_intel.breached_creds_edit', id=breached_cred.id) }}{% else %}{{ url_for('threat_intel.breached_creds_add') }}{% endif %}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="company_name">Company Name <span class="text-danger">*</span></label>
+                  <input class="form-control" id="company_name" name="company_name" type="text" 
+                         value="{{ breached_cred.company_name if breached_cred else '' }}" required />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="company_type">Company Type <span class="text-danger">*</span></label>
+                  <select class="form-control" id="company_type" name="company_type" required>
+                    <option value="">Select Type</option>
+                    <option value="bank" {% if breached_cred and breached_cred.company_type == 'bank' %}selected{% endif %}>Bank</option>
+                    <option value="operator" {% if breached_cred and breached_cred.company_type == 'operator' %}selected{% endif %}>Telecommunications Operator</option>
+                    <option value="government" {% if breached_cred and breached_cred.company_type == 'government' %}selected{% endif %}>Government</option>
+                    <option value="other" {% if breached_cred and breached_cred.company_type == 'other' %}selected{% endif %}>Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-12">
+                <div class="mb-3">
+                  <label class="form-label" for="email">Leaked Account (Email) <span class="text-danger">*</span></label>
+                  <input class="form-control" id="email" name="email" type="email" 
+                         value="{{ breached_cred.email if breached_cred else '' }}" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="password_hash">Password</label>
+                  <input class="form-control" id="password_hash" name="password_hash" type="text" 
+                         value="{{ breached_cred.password_hash if breached_cred else '' }}" 
+                         placeholder="Enter password (will be stored as plain text)" />
+                  <small class="form-text text-muted">Password will be masked in the view but stored as plain text.</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="source">Source</label>
+                  <input class="form-control" id="source" name="source" type="text" 
+                         value="{{ breached_cred.source if breached_cred else '' }}" 
+                         placeholder="Where the breach was discovered" />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="breach_date">Breach Date</label>
+                  <input class="form-control" id="breach_date" name="breach_date" type="date" 
+                         value="{{ breached_cred.breach_date.strftime('%Y-%m-%d') if breached_cred and breached_cred.breach_date else '' }}" />
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="discovered_date">Discovered Date</label>
+                  <input class="form-control" id="discovered_date" name="discovered_date" type="date" 
+                         value="{{ breached_cred.discovered_date.strftime('%Y-%m-%d') if breached_cred and breached_cred.discovered_date else '' }}" />
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="type">Type <span class="text-danger">*</span></label>
+                  <select class="form-control" id="type" name="type" required>
+                    <option value="combolist" {% if breached_cred and breached_cred.type == 'combolist' %}selected{% elif not breached_cred %}selected{% endif %}>Combolist</option>
+                    <option value="stealer" {% if breached_cred and breached_cred.type == 'stealer' %}selected{% endif %}>Stealer</option>
+                    <option value="malware" {% if breached_cred and breached_cred.type == 'malware' %}selected{% endif %}>Malware</option>
+                    <option value="pastebin" {% if breached_cred and breached_cred.type == 'pastebin' %}selected{% endif %}>Pastebin</option>
+                    <option value="breach" {% if breached_cred and breached_cred.type == 'breach' %}selected{% endif %}>Breach</option>
+                    <option value="phishing" {% if breached_cred and breached_cred.type == 'phishing' %}selected{% endif %}>Phishing</option>
+                    <option value="darkweb" {% if breached_cred and breached_cred.type == 'darkweb' %}selected{% endif %}>Darkweb</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="leak_category">Leak Category <span class="text-danger">*</span></label>
+                  <select class="form-control" id="leak_category" name="leak_category" required>
+                    <option value="consumer" {% if breached_cred and breached_cred.leak_category == 'consumer' %}selected{% elif not breached_cred %}selected{% endif %}>Consumer</option>
+                    <option value="corporate" {% if breached_cred and breached_cred.leak_category == 'corporate' %}selected{% endif %}>Corporate</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="ip_address">IP Address</label>
+                  <input class="form-control" id="ip_address" name="ip_address" type="text" 
+                         value="{{ breached_cred.ip_address if breached_cred and breached_cred.ip_address else '' }}" 
+                         placeholder="e.g., 192.168.1.1" />
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="device_info">Device Info</label>
+                  <input class="form-control" id="device_info" name="device_info" type="text" 
+                         value="{{ breached_cred.device_info if breached_cred and breached_cred.device_info else '' }}" 
+                         placeholder="Device identifier" />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="status">Status</label>
+                  <select class="form-control" id="status" name="status">
+                    <option value="active" {% if breached_cred and breached_cred.status == 'active' %}selected{% elif not breached_cred %}selected{% endif %}>Active</option>
+                    <option value="new" {% if breached_cred and breached_cred.status == 'new' %}selected{% endif %}>New</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-12">
+                <div class="mb-3">
+                  <label class="form-label" for="description">Description / Notes</label>
+                  <textarea class="form-control" id="description" name="description" rows="4">{{ breached_cred.description if breached_cred else '' }}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button class="btn btn-primary btn-sm" type="submit">{% if breached_cred %}Update{% else %}Add{% endif %} Breached Credential</button>
+              <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-secondary btn-sm">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

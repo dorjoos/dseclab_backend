@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/prism.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/ui-kits/components/alert.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/prism/prism.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/clipboard/clipboard.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/custom-card/custom-card.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/height-equal.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/alert.js')}}"></script>
+
+{% endblock %}

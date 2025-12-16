@@ -1,0 +1,78 @@
+<!-- Page Sidebar Start-->
+<div class="sidebar-wrapper" data-sidebar-layout="stroke-svg">
+  <div>
+    <div class="logo-wrapper"><a href="/index"><img class="img-fluid for-light" src="{{ url_for('static', filename= 'assets/images/logo/logo.png')}}" alt=""><img class="img-fluid for-dark" src="{{ url_for('static', filename= 'assets/images/logo/logo_dark.png')}}" alt=""></a>
+      <div class="back-btn"></div>
+      <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
+    </div>
+    <div class="logo-icon-wrapper"><a href="/index"><img class="img-fluid" src="{{ url_for('static', filename= 'assets/images/logo/logo-icon.png')}}" alt=""></a></div>
+    <nav class="sidebar-main">
+      <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
+      <div id="sidebar-menu">
+        <ul class="sidebar-links" id="simple-bar">
+          <li class="back-btn">
+            <div class="mobile-back text-end"><span>Back</span><i class="fa-solid fa-angle-right ps-2" aria-hidden="true"></i></div>
+          </li>
+          <li class="pin-title sidebar-main-title">
+            <div> 
+              <h6>Pinned</h6>
+            </div>
+          </li>
+          <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i><a class="sidebar-link sidebar-title" href="{{ url_for('main.indexPage') }}">
+              <svg class="stroke-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#stroke-home"></use>
+              </svg>
+              <svg class="fill-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#fill-home"></use>
+              </svg><span>Dashboard</span></a></li>
+          <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i><a class="sidebar-link sidebar-title" href="#">
+              <svg class="stroke-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#stroke-starter-kit"></use>
+              </svg>
+              <svg class="fill-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#fill-starter-kit"></use>
+              </svg><span>Threat Intelligence</span></a>
+            <ul class="sidebar-submenu">
+              <li><a class="submenu-title" href="#">Threat Feeds<span class="sub-arrow"><i class="fa fa-chevron-right"></i></span></a>
+                <ul class="sidebar-submenu submenu-content">
+                  <li><a href="{{ url_for('main.indexPage') }}">IOC Management</a></li>
+                  <li><a href="{{ url_for('main.indexPage') }}">Threat Actors</a></li>
+                </ul>
+              </li>
+              <li>     <a class="submenu-title" href="#">Analysis<span class="sub-arrow"><i class="fa fa-chevron-right"></i></span></a>
+                <ul class="sidebar-submenu submenu-content">
+                  <li><a href="{{ url_for('threat_intel.analysis') }}">Threat Analysis</a></li>
+                  <li><a href="{{ url_for('threat_intel.reports') }}">Threat Reports</a></li>
+                </ul>
+              </li>
+              <li><a href="{{ url_for('threat_intel.breached_creds_list') }}"><span>Breached Credentials</span></a></li>
+            </ul>
+          </li>
+          {% if current_user.is_authenticated and (current_user.role == 'admin' or current_user.isAdmin) %}
+          <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i><a class="sidebar-link sidebar-title" href="#">
+              <svg class="stroke-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#stroke-form"></use>
+              </svg>
+              <svg class="fill-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#fill-form"></use>
+              </svg><span>Administration</span></a>
+            <ul class="sidebar-submenu">
+              <li><a href="{{ url_for('admin.user_management') }}"><span>User Management</span></a></li>
+              <li><a href="{{ url_for('admin.company_management') }}"><span>Company Management</span></a></li>
+            </ul>
+          </li>
+          {% endif %}
+          <li class="sidebar-list"><i class="fa-solid fa-thumbtack"></i><a class="sidebar-link sidebar-title" href="{{ url_for('auth.profile') }}">
+              <svg class="stroke-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#stroke-form"></use>
+              </svg>
+              <svg class="fill-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#fill-form"></use>
+              </svg><span>User Profile</span></a></li>
+        </ul>
+      </div>
+      <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
+    </nav>
+  </div>
+</div>
+<!-- Page Sidebar Ends-->

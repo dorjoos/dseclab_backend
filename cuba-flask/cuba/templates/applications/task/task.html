@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/date-picker.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/select/bootstrap-select.min.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/task/components/task.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/datepicker/date-picker/datepicker.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datepicker/date-picker/datepicker.en.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datepicker/date-picker/datepicker.custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/form-validation-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/print.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select/bootstrap-select.min.js')}}"></script>
+
+{% endblock %}

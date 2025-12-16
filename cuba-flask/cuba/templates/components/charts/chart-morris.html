@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/charts/components/chart-morris.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/chart/morris-chart/raphael.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/morris-chart/morris.js')}}"> </script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/morris-chart/prettify.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/morris-chart/morris-script.js')}}"></script>
+
+{% endblock %}

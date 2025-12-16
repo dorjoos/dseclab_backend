@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/owlcarousel.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/ecommerce/products/components/product-details.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/touchspin_2/custom_touchspin.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/owlcarousel/owl.carousel.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/ecommerce.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/form-validation-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/custom_zoom_magnifier.js')}}"></script>
+
+{% endblock %} 

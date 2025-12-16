@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/charts/components/chart-flot.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/excanvas.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/jquery.flot.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/jquery.flot.time.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/jquery.flot.categories.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/jquery.flot.stack.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/jquery.flot.pie.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/jquery.flot.symbol.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/flot-chart/flot-script.js')}}"></script>
+
+{% endblock %}

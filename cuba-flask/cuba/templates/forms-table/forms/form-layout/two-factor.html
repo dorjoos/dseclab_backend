@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'forms-table/forms/form-layout/components/two-factor.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/form-wizard/verification.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/tooltip-init.js')}}"></script>
+
+{% endblock %}

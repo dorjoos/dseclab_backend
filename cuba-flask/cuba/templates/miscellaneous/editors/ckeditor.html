@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'miscellaneous/editors/components/ckeditor.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/editor/ckeditor/ckeditor.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ckeditor/adapters/jquery.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ckeditor/styles.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ckeditor/ckeditor.custom.js')}}"></script>
+
+{% endblock %}

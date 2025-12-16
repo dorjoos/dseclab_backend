@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/quill.snow.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/jquery.dataTables.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/select.bootstrap5.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/sweetalert2.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/ecommerce/seller/components/seller-details.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/chart/apex-chart/apex-chart.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/apex-chart/stock-prices.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/counter/counter-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/jquery.dataTables.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/dataTables.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/dataTables.select.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/select.bootstrap5.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/datatable.custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/sweet-alert/sweetalert.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/trash_popup.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editors/quill.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/tooltip-init.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/seller_detail.js')}}"></script>
+
+{% endblock %} 

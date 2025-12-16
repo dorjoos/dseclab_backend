@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'miscellaneous/editors/components/ace-code-editor.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/ace.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/ace-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/mode-css.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/mode-html.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/mode-javascript.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/mode-php.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/theme-monokai.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/worker-css.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/worker-html.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/worker-javascript.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editor/ace-editor/worker-php.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/tooltip-init.js')}}"></script>
+
+{% endblock %}

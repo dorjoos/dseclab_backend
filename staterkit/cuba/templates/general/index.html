@@ -1,0 +1,552 @@
+{% extends 'base.html' %}
+
+{% block css %}
+<style>
+  /* Use Cuba Template CSS Classes */
+  /* Chart container styling from template - already defined in template CSS */
+  .chart-container {
+    position: relative;
+    height: 300px;
+    padding: 1rem;
+  }
+  
+  /* Section spacing for dashboard */
+  .section-spacing {
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Compare order card icon styling - from template */
+  .compare-icon.shadow-primary {
+    box-shadow: 0 4px 12px rgba(115, 102, 255, 0.2);
+  }
+  
+  /* Compare icon feather icon styling */
+  .compare-icon i[data-feather] {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+  }
+  
+  /* Ensure compare-icon supports feather icons */
+  .compare-icon {
+    i[data-feather] {
+      width: 20px;
+      height: 20px;
+    }
+  }
+  
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+  
+  .empty-state i {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid dashboard-container">
+  <!-- Statistics Cards Row - Using compare-order structure -->
+  <div class="row g-4 section-spacing">
+    <div class="col-md-3 col-sm-6">
+      <div class="card compare-order">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <div class="compare-icon shadow-primary">
+              <i data-feather="database"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <span class="f-w-500 c-o-light">Total Leaks</span>
+          <h4 class="mb-2"><span class="counter">{{ total_leaks|int|format_number }}</span></h4>
+          <div role="progressbar" class="progress">
+            <div class="bg-primary progress-bar" style="width: {% if total_leaks > 0 %}{{ ((total_leaks / (total_leaks + 1000)) * 100)|round(1) }}{% else %}0{% endif %}%;"></div>
+          </div>
+          <span class="user-growth f-12 f-w-500">
+            <i data-feather="{% if total_change >= 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 12px; height: 12px;" class="{% if total_change >= 0 %}txt-success{% else %}txt-danger{% endif %}"></i>
+            <span class="{% if total_change >= 0 %}txt-success{% else %}txt-danger{% endif %}">
+              {% if total_change >= 0 %}+{% endif %}{{ total_change }}
+            </span>
+          </span>
+          <span class="user-text">last month</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+      <div class="card compare-order">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <div class="compare-icon shadow-primary" style="background-color: rgba(13, 202, 240, 0.1);">
+              <i data-feather="users" style="color: #0dcaf0;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <span class="f-w-500 c-o-light">Consumer Leaks</span>
+          <h4 class="mb-2"><span class="counter">{{ consumer_leaks|int|format_number }}</span></h4>
+          <div role="progressbar" class="progress">
+            <div class="bg-primary progress-bar" style="width: {% if total_leaks > 0 %}{{ ((consumer_leaks / total_leaks) * 100)|round(1) }}{% else %}0{% endif %}%; background-color: #0dcaf0 !important;"></div>
+          </div>
+          <span class="user-growth f-12 f-w-500">
+            <i data-feather="{% if consumer_change >= 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 12px; height: 12px;" class="{% if consumer_change >= 0 %}txt-success{% else %}txt-danger{% endif %}"></i>
+            <span class="{% if consumer_change >= 0 %}txt-success{% else %}txt-danger{% endif %}">
+              {% if consumer_change >= 0 %}+{% endif %}{{ consumer_change }}
+            </span>
+          </span>
+          <span class="user-text">last month</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+      <div class="card compare-order">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <div class="compare-icon shadow-primary" style="background-color: rgba(255, 193, 7, 0.1);">
+              <i data-feather="briefcase" style="color: #ffc107;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <span class="f-w-500 c-o-light">Corporate Leaks</span>
+          <h4 class="mb-2"><span class="counter">{{ corporate_leaks|int|format_number }}</span></h4>
+          <div role="progressbar" class="progress">
+            <div class="bg-primary progress-bar" style="width: {% if total_leaks > 0 %}{{ ((corporate_leaks / total_leaks) * 100)|round(1) }}{% else %}0{% endif %}%; background-color: #ffc107 !important;"></div>
+          </div>
+          <span class="user-growth f-12 f-w-500">
+            {% if corporate_change == 0 %}
+              <i data-feather="minus" style="width: 12px; height: 12px;" class="txt-muted"></i>
+              <span class="txt-muted">0</span>
+            {% else %}
+              <i data-feather="{% if corporate_change > 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 12px; height: 12px;" class="{% if corporate_change > 0 %}txt-success{% else %}txt-danger{% endif %}"></i>
+              <span class="{% if corporate_change > 0 %}txt-success{% else %}txt-danger{% endif %}">
+                {% if corporate_change > 0 %}+{% endif %}{{ corporate_change }}
+              </span>
+            {% endif %}
+          </span>
+          <span class="user-text">last month</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-3 col-sm-6">
+      <div class="card compare-order">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <div class="compare-icon shadow-primary" style="background-color: rgba(220, 53, 69, 0.1);">
+              <i data-feather="alert-triangle" style="color: #dc3545;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <span class="f-w-500 c-o-light">Infected IPs</span>
+          <h4 class="mb-2"><span class="counter">{{ infected_ips_count|int|format_number }}</span></h4>
+          <div role="progressbar" class="progress">
+            <div class="bg-primary progress-bar" style="width: {% if infected_ips_count > 0 %}50{% else %}0{% endif %}%; background-color: #dc3545 !important;"></div>
+          </div>
+          <span class="user-growth f-12 f-w-500">
+            <i data-feather="minus" style="width: 12px; height: 12px;" class="txt-muted"></i>
+            <span class="txt-muted">No change</span>
+          </span>
+          <span class="user-text">last month</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Charts Row - Using Cuba Template card and chart-container classes -->
+  <div class="row g-4 section-spacing">
+    <div class="col-xl-8">
+      <div class="card">
+        <div class="card-header">
+          <h5>
+            <i data-feather="trending-up"></i>
+            Leak Detection Trends (Last 30 Days)
+          </h5>
+        </div>
+        <div class="card-body">
+          <div id="leakTrendsChart" class="apexcharts-inner apexcharts-graphical"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-4">
+      <div class="card">
+        <div class="card-header">
+          <h5>
+            <i data-feather="pie-chart"></i>
+            Category Distribution
+          </h5>
+        </div>
+        <div class="card-body">
+          <div id="categoryChart" class="apexcharts-inner apexcharts-graphical"></div>
+        </div>
+      </div>
+    </div>
+        </div>
+  
+  <!-- Additional Stats and Charts -->
+  <div class="row g-4 section-spacing">
+    <div class="col-md-4 col-sm-6">
+      <div class="card compare-order">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <div class="compare-icon shadow-primary" style="background-color: rgba(108, 117, 125, 0.1);">
+              <i data-feather="monitor" style="color: #6c757d;"></i>
+            </div>
+          </div>
+        </div>
+        <div class="card-body pt-0">
+          <span class="f-w-500 c-o-light">Affected Computers</span>
+          <h4 class="mb-2"><span class="counter">{{ affected_computers_count|int|format_number }}</span></h4>
+          <div role="progressbar" class="progress">
+            <div class="bg-primary progress-bar" style="width: {% if affected_computers_count > 0 %}40{% else %}0{% endif %}%; background-color: #6c757d !important;"></div>
+          </div>
+          <span class="user-growth f-12 f-w-500">
+            <i data-feather="minus" style="width: 12px; height: 12px;" class="txt-muted"></i>
+            <span class="txt-muted">No change</span>
+          </span>
+          <span class="user-text">last month</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-xl-9">
+      <div class="card">
+        <div class="card-header">
+          <h5>
+            <i data-feather="bar-chart-2"></i>
+            Leak Distribution by Type
+          </h5>
+        </div>
+        <div class="card-body">
+          <div id="typeChart" class="apexcharts-inner apexcharts-graphical"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Latest Events - Using Cuba Template card classes -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center w-100">
+            <h5 class="mb-0">
+              <i data-feather="shield" style="width: 20px; height: 20px; margin-right: 8px;"></i>
+              Latest Security Events
+            </h5>
+            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-sm btn-primary">
+              <i data-feather="list" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+              View All
+            </a>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Company</th>
+                  <th>Leaked Account</th>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if latest_events %}
+                  {% for event in latest_events %}
+                  <tr>
+                    <td>
+                      <strong class="text-dark">{{ event.company_name }}</strong>
+                    </td>
+                    <td>
+                      <span class="text-muted">{{ event.email }}</span>
+                    </td>
+                    <td>
+                      <span class="badge badge-light-{{ event.type_color }}">
+                        {{ event.type|title }}
+                      </span>
+                    </td>
+                    <td class="text-muted">
+                      {{ event.discovered_date.strftime('%b %d, %Y') if event.discovered_date else '-' }}
+                    </td>
+                    <td>
+                      {% if event.leak_category == 'corporate' %}
+                        <span class="badge badge-light-warning">Corporate</span>
+                      {% else %}
+                        <span class="badge badge-light-info">Consumer</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="action-items">
+                        <a href="{{ url_for('threat_intel.breached_creds_view', id=event.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                          <i data-feather="eye"></i>
+                        </a>
+                        {% if current_user.can_edit() %}
+                        <a href="{{ url_for('threat_intel.breached_creds_edit', id=event.id) }}" class="btn btn-sm btn-outline-info" title="Edit">
+                          <i data-feather="edit"></i>
+                        </a>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="6" class="text-center p-4">
+                      <i data-feather="inbox" style="width: 48px; height: 48px; opacity: 0.3;"></i>
+                      <p class="mb-0 mt-2 text-muted">No security events found</p>
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{{ url_for('static', filename='assets/js/chart/apex-chart/apex-chart.js') }}"></script>
+<script>
+  // Initialize feather icons
+  if (typeof feather !== 'undefined') {
+    feather.replace();
+  }
+  
+  // Chart Colors - Using Cuba Template theme colors
+  const CubaAdminConfig = {
+    primary: getComputedStyle(document.documentElement).getPropertyValue('--theme-default') || '#667eea',
+    secondary: getComputedStyle(document.documentElement).getPropertyValue('--theme-secondary') || '#6c757d',
+    success: '#28a745',
+    danger: '#dc3545',
+    warning: '#ffc107',
+    info: '#0dcaf0'
+  };
+  
+  // Leak Trends Chart - ApexCharts Line Chart
+  const leakTrendsOptions = {
+    series: [{
+      name: 'Leaks Detected',
+      data: {{ chart_data|tojson }}
+    }],
+    chart: {
+      type: 'area',
+      height: 350,
+      toolbar: {
+        show: false
+      },
+      zoom: {
+        enabled: false
+      }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    stroke: {
+      curve: 'smooth',
+      width: 3
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shadeIntensity: 1,
+        opacityFrom: 0.7,
+        opacityTo: 0.3,
+        stops: [0, 90, 100]
+      }
+    },
+    colors: [CubaAdminConfig.primary],
+    xaxis: {
+      categories: {{ chart_labels|tojson }},
+      labels: {
+        style: {
+          fontSize: '12px',
+          fontFamily: 'Rubik, sans-serif'
+        }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          fontSize: '12px',
+          fontFamily: 'Rubik, sans-serif'
+        },
+        formatter: function(val) {
+          return Math.floor(val);
+        }
+      }
+    },
+    grid: {
+      borderColor: 'rgba(0, 0, 0, 0.05)',
+      strokeDashArray: 3
+    },
+    tooltip: {
+      theme: 'dark',
+      style: {
+        fontSize: '13px',
+        fontFamily: 'Rubik, sans-serif'
+      }
+    }
+  };
+  
+  const leakTrendsChart = document.querySelector('#leakTrendsChart');
+  if (leakTrendsChart) {
+    var trendsChart = new ApexCharts(leakTrendsChart, leakTrendsOptions);
+    trendsChart.render();
+  }
+  
+  // Category Distribution Chart - ApexCharts Donut Chart
+  const categoryOptions = {
+    series: [{{ category_distribution.consumer }}, {{ category_distribution.corporate }}],
+    chart: {
+      type: 'donut',
+      height: 350
+    },
+    labels: ['Consumer', 'Corporate'],
+    colors: [CubaAdminConfig.info, CubaAdminConfig.warning],
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%'
+        }
+      }
+    },
+    legend: {
+      position: 'bottom',
+      fontSize: '12px',
+      fontFamily: 'Rubik, sans-serif'
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: function(val, opts) {
+          const total = opts.w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+          const percentage = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+          return val.toLocaleString() + ' (' + percentage + '%)';
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function(val, opts) {
+        return opts.w.globals.series[opts.seriesIndex].toLocaleString();
+      },
+      style: {
+        fontSize: '12px',
+        fontFamily: 'Rubik, sans-serif',
+        fontWeight: 600
+      }
+    }
+  };
+  
+  const categoryChart = document.querySelector('#categoryChart');
+  if (categoryChart) {
+    var catChart = new ApexCharts(categoryChart, categoryOptions);
+    catChart.render();
+  }
+  
+  // Type Distribution Chart - ApexCharts Bar Chart
+  const typeData = {{ type_chart_data|tojson }};
+  const typeLabels = Object.keys(typeData).map(l => l.charAt(0).toUpperCase() + l.slice(1));
+  const typeValues = Object.values(typeData);
+  const typeColors = Object.keys(typeData).map(type => {
+    const colorMap = {
+      'combolist': CubaAdminConfig.primary,
+      'stealer': CubaAdminConfig.danger,
+      'malware': CubaAdminConfig.warning,
+      'pastebin': CubaAdminConfig.info,
+      'breach': CubaAdminConfig.secondary,
+      'phishing': CubaAdminConfig.danger,
+      'darkweb': '#2d2d2d'
+    };
+    return colorMap[type.toLowerCase()] || CubaAdminConfig.secondary;
+  });
+  
+  const typeOptions = {
+    series: [{
+      name: 'Leaks',
+      data: typeValues
+    }],
+    chart: {
+      type: 'bar',
+      height: 350,
+      toolbar: {
+        show: false
+      }
+    },
+    plotOptions: {
+      bar: {
+        borderRadius: 8,
+        columnWidth: '55%',
+        distributed: true
+      }
+    },
+    colors: typeColors,
+    dataLabels: {
+      enabled: false
+    },
+    xaxis: {
+      categories: typeLabels,
+      labels: {
+        style: {
+          fontSize: '12px',
+          fontFamily: 'Rubik, sans-serif'
+        }
+      }
+    },
+    yaxis: {
+      labels: {
+        style: {
+          fontSize: '12px',
+          fontFamily: 'Rubik, sans-serif'
+        },
+        formatter: function(val) {
+          return Math.floor(val);
+        }
+      }
+    },
+    grid: {
+      borderColor: 'rgba(0, 0, 0, 0.05)',
+      strokeDashArray: 3
+    },
+    tooltip: {
+      theme: 'dark',
+      y: {
+        formatter: function(val) {
+          return val.toLocaleString() + ' leaks';
+        }
+      }
+    }
+  };
+  
+  const typeChart = document.querySelector('#typeChart');
+  if (typeChart) {
+    var typeChartInstance = new ApexCharts(typeChart, typeOptions);
+    typeChartInstance.render();
+  }
+  
+  // Re-initialize feather icons after charts render
+  setTimeout(() => {
+    if (typeof feather !== 'undefined') {
+      feather.replace();
+    }
+  }, 500);
+</script>
+{% endblock %}
+    

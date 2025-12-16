@@ -1,0 +1,38 @@
+<div class="container-fluid">
+  <div class="page-title">
+    <div class="row">
+      <div class="col-sm-6">
+        <h3>{% if breadcrumb %}{{ breadcrumb.child or breadcrumb.parent }}{% else %}Dashboard{% endif %}</h3>
+        {% if breadcrumb and breadcrumb.description %}
+        <p class="text-muted mb-0 small">{{ breadcrumb.description }}</p>
+        {% endif %}
+      </div>
+      <div class="col-sm-6">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="{{ url_for('main.indexPage') }}" title="Dashboard">
+              <svg class="stroke-icon">
+                <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#stroke-home"></use>
+              </svg>
+            </a>
+          </li>
+          {% if breadcrumb %}
+            {% if breadcrumb.parent %}
+            <li class="breadcrumb-item">
+              {% if breadcrumb.parent_url %}
+              <a href="{{ breadcrumb.parent_url }}">{{ breadcrumb.parent }}</a>
+              {% else %}
+              {{ breadcrumb.parent }}
+              {% endif %}
+            </li>
+            {% endif %}
+            <li class="breadcrumb-item active" aria-current="page">{{ breadcrumb.child or breadcrumb.parent }}</li>
+          {% else %}
+          <li class="breadcrumb-item active" aria-current="page">Home</li>
+          {% endif %}
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+

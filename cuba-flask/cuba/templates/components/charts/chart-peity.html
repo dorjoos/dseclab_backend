@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/charts/components/chart-peity.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/chart/peity-chart/peity.jquery.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/peity-chart/peity-custom.js')}}"></script>
+
+{% endblock %}

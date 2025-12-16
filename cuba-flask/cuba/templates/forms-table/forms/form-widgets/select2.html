@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/intltelinput.min.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/tagify.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'forms-table/forms/form-widgets/components/select2.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/select2/tagify.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/tagify.polyfills.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/intltelinput.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/telephone-input.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/custom-inputsearch.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/select3-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/height-equal.js')}}"></script>
+
+{% endblock %}

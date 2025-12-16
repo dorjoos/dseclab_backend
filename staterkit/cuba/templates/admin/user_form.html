@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5>{% if user %}Edit{% else %}Add{% endif %} User</h5>
+          <div class="card-header-right">
+            <a href="{{ url_for('admin.user_management') }}" class="btn btn-secondary btn-sm">
+              <i data-feather="arrow-left"></i> Back
+            </a>
+            <i class="icofont icofont-maximize full-card"></i>
+            <i class="icofont icofont-minus minimize-card"></i>
+            <i class="icofont icofont-error close-card"></i>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{% if user %}{{ url_for('admin.edit_user', user_id=user.id) }}{% else %}{{ url_for('admin.add_user') }}{% endif %}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="username">Username <span class="text-danger">*</span></label>
+                  <input class="form-control" id="username" name="username" type="text" 
+                         value="{{ user.username if user else '' }}" required 
+                         pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, underscores, and hyphens allowed" />
+                  <small class="form-text text-muted">3-50 characters, letters, numbers, underscores, hyphens only</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+                  <input class="form-control" id="email" name="email" type="email" 
+                         value="{{ user.email if user else '' }}" required />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="role">Role <span class="text-danger">*</span></label>
+                  <select class="form-control" id="role" name="role" required>
+                    <option value="member" {% if user and user.role == 'member' %}selected{% elif not user %}selected{% endif %}>Member</option>
+                    <option value="admin" {% if user and (user.role == 'admin' or user.isAdmin) %}selected{% endif %}>Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label" for="company_id">Company</label>
+                  <select class="form-control" id="company_id" name="company_id">
+                    <option value="">Select Company (Optional)</option>
+                    {% for company in companies %}
+                    <option value="{{ company.id }}" {% if user and user.company_id == company.id %}selected{% endif %}>
+                      {{ company.name }} ({{ company.domain }})
+                    </option>
+                    {% endfor %}
+                  </select>
+                  <small class="form-text text-muted">For members, company will be auto-detected from email domain if not selected</small>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label">Status</label>
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                           {% if not user or user.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="is_active">Active</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% if not user %}
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="password">Password <span class="text-danger">*</span></label>
+                  <input class="form-control" id="password" name="password" type="password" required />
+                  <small class="form-text text-muted">Min 8 chars, uppercase, lowercase, number</small>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="confirm_password">Confirm Password <span class="text-danger">*</span></label>
+                  <input class="form-control" id="confirm_password" name="confirm_password" type="password" required />
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="password">New Password</label>
+                  <input class="form-control" id="password" name="password" type="password" />
+                  <small class="form-text text-muted">Leave blank to keep current password</small>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="mt-4">
+              <button class="btn btn-primary btn-sm" type="submit">{% if user %}Update{% else %}Add{% endif %} User</button>
+              <a href="{{ url_for('admin.user_management') }}" class="btn btn-secondary btn-sm">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

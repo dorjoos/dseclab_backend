@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/photoswipe.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/social-app/components/social-app.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/counter/counter-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/photoswipe/photoswipe.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/photoswipe/photoswipe-ui-default.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/photoswipe/photoswipe.js')}}"></script>
+
+{% endblock %}

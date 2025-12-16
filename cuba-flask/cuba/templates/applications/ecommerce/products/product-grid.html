@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/select2.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/owlcarousel.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/range-slider.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/ecommerce/products/components/product-grid.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/range-slider/ion.rangeSlider.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/range-slider/rangeslider-script.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/touchspin_2/custom_touchspin.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/owlcarousel/owl.carousel.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/select2.full.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/select2-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/product-tab.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/common-color-selector.js')}}"></script>
+
+{% endblock %} 

@@ -1,0 +1,576 @@
+- var page_Title = 'Tasks';
+- var theme_customizer      = true;
+- var form_validation_custom= true;
+- var bs_select             = true;
+- var date_picker           = true;
+- var sidebar               = true;
+- var print                 = true;
+- var slick                 = true;
+- var header_slider         = true;
+- var scrollbar             = true;
+doctype html
+html(lang='en')
+  include ../../components/header-files
+  body
+    include ../../components/loader
+    include ../../components/taptop
+    // page-wrapper Start
+    #pageWrapper.page-wrapper.compact-wrapper
+      include ../../components/header
+      // Page Body Start
+      .page-body-wrapper
+        include ../../components/sidebar
+        .page-body
+          .container-fluid
+            .page-title
+              .row
+                .col-sm-6
+                  h3
+                    | Tasks
+
+                .col-sm-6
+                  ol.breadcrumb
+                    li.breadcrumb-item
+                      a(href='index.html')                                        
+                        svg.stroke-icon
+                          use(href='../assets/svg/icon-sprite.svg#stroke-home')
+                    li.breadcrumb-item Apps
+                    li.breadcrumb-item.active Tasks
+          // Container-fluid starts
+          .container-fluid.main-tasks
+            .email-wrap.bookmark-wrap
+              .row.main-bookmark
+                .col-xl-3.box-col-6
+                  .md-sidebar
+                    a.btn.btn-primary.md-sidebar-toggle(href='#!') task filter
+                    .md-sidebar-aside.job-left-aside.custom-scrollbar
+                      .email-left-aside
+                        .card
+                          .card-body
+                            .email-app-sidebar.left-bookmark.task-sidebar
+                              .common-flex.align-items-center
+                                .media-size-email
+                                  img.rounded-circle(src='../assets/images/user/user.png', alt='')
+                                .flex-grow-1
+                                  h6 WILLIAM C. JENNINGS
+                                  p william@jourrapide.com
+                              ul.nav.main-menu.custom-scrollbar(role='tablist')
+                                li.nav-item
+                                  button.badge-light-primary.btn-block.btn-mail.w-100(type='button', data-bs-toggle='modal', data-bs-target='#exampleModal')
+                                    i.me-2(data-feather='check-circle')
+                                    |  New Task
+                                li.nav-item
+                                  span.main-title
+                                    |  Views
+                                li
+                                  a.active(data-bs-toggle='pill', href='#pills-created', role='tab', aria-controls='pills-created', aria-selected='true')
+                                    span.title
+                                      |  Created by me
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-todaytask', role='tab', aria-controls='pills-todaytask', aria-selected='false')
+                                    span.title
+                                      |  Today's Tasks
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-delayed', role='tab', aria-controls='pills-delayed', aria-selected='false')
+                                    span.title
+                                      |  Delayed Tasks
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-upcoming', role='tab', aria-controls='pills-upcoming', aria-selected='false')
+                                    span.title
+                                      | Upcoming Tasks
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-weekly', role='tab', aria-controls='pills-weekly', aria-selected='false')
+                                    span.title
+                                      | This week tasks
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-monthly', role='tab', aria-controls='pills-monthly', aria-selected='false')
+                                    span.title
+                                      | This month tasks
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-assigned', role='tab', aria-controls='pills-assigned', aria-selected='false')
+                                    span.title
+                                      | Assigned to me
+                                li
+                                  a.show(data-bs-toggle='pill', href='#pills-tasks', role='tab', aria-controls='pills-tasks', aria-selected='false')
+                                    span.title
+                                      | My tasks
+                                li
+                                  hr
+                                li
+                                  span.main-title
+                                    |  Tags
+                                    span.float-end
+                                      a(href='#', data-bs-toggle='modal', data-bs-target='#createtag')
+                                        i(data-feather='plus-circle')
+                                li
+                                  a#pills-notification-tab.show(data-bs-toggle='pill', href='#pills-notification', role='tab', aria-controls='pills-notification', aria-selected='false')
+                                    span.title
+                                      |  notification
+                                li
+                                  a#pills-newsletter-tab.show(data-bs-toggle='pill', href='#pills-newsletter', role='tab', aria-controls='pills-newsletter', aria-selected='false')
+                                    span.title
+                                      |  Newsletter
+                                li
+                                  a#pills-business-tab.show(data-bs-toggle='pill', href='#', role='tab', aria-selected='false')
+                                    span.title
+                                      |  Business
+                                li
+                                  a#pills-holidays-tab.show(data-bs-toggle='pill', href='#', role='tab', aria-selected='false')
+                                    span.title
+                                      |  Holidays
+                .col-xl-9.col-md-12.box-col-12
+                  .email-right-aside.bookmark-tabcontent
+                    .card.email-body.radius-left
+                      .ps-0
+                        .tab-content
+                          #pills-created.tab-pane.fade.active.show(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 Created by me
+                                a(href='#' onclick="myFunction()")
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body.p-0
+                                .taskadd
+                                  .table-responsive.custom-scrollbar
+                                    table.table
+                                      tr
+                                        td
+                                          h6.task_title_0 Client meeting
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 In our future client meeting, let's talk about the project's development, significant milestones.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Plan webinar
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Join us for a thought-provoking webinar on aviation developments and how they affect the sector.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Email newsletter
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 By signing up for our email newsletter, you may be informed about our most recent news and promotions.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Publish podcast
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 We're thrilled to announce the publication of a brand-new edition of our podcast.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Lunch website
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Visit our website to find a delicious selection of lunch alternatives that will please every appetite.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Client meeting
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Getting ready to meet with the customer to go through project updates, objectives, and next actions.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Plan webinar
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Join us for a thought-provoking webinar on aviation developments and how they affect the sector.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Email newsletter
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 By signing up for our email newsletter, you may be informed about our most recent news and promotions.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                          #pills-todaytask.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 Today's Tasks
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  .row#favouriteData
+                                  .no-favourite
+                                    span No task due today.
+                          #pills-delayed.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 Delayed Tasks
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  span No tasks found.
+                          #pills-upcoming.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 Upcoming Tasks
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  span No tasks found.
+                          #pills-weekly.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 This Week Tasks
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  span No tasks found.
+                          #pills-monthly.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 This Month Tasks
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  span No tasks found.
+                          #pills-assigned.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 Assigned to me
+                                a(href='#' onclick="myFunction()")
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body.p-0
+                                .taskadd
+                                  .table-responsive.custom-scrollbar
+                                    table.table
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 A task is a particular assignment or responsibility that must be finished by a certain date or deadline. 
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Well-structured and organized task list in order to manage and accomplish jobs successfully. 
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 A task is a particular assignment or responsibility that must be finished by a certain date or deadline.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Well-structured and organized task list in order to manage and accomplish jobs successfully. 
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 A task is a particular assignment or responsibility that must be finished by a certain date or deadline.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                          #pills-tasks.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h5 My Tasks
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body.p-0
+                                .taskadd
+                                  .table-responsive.custom-scrollbar
+                                    table.table
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Well-structured and organized task list in order to manage and accomplish jobs successfully. 
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 A task is a particular assignment or responsibility that must be finished by a certain date or deadline.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 A task is a particular assignment or responsibility that must be finished by a certain date or deadline. 
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 Well-structured and organized task list in order to manage and accomplish jobs successfully. 
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                                      tr
+                                        td
+                                          h6.task_title_0 Task name
+                                          p.project_name_0 General
+                                        td
+                                          p.task_desc_0 A task is a particular assignment or responsibility that must be finished by a certain date or deadline.
+                                        td
+                                          a.me-2(href='#')
+                                            i(data-feather='link')
+                                          a(href='#')
+                                            i(data-feather='more-horizontal')
+                                        td
+                                          a(href='#')
+                                            i(data-feather='trash-2')
+                          #pills-notification.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h6.mb-0 Notification
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  span No tasks found.
+                          #pills-newsletter.fade.tab-pane(role='tabpanel')
+                            .card.mb-0
+                              .card-header.d-flex
+                                h6.mb-0 Newsletter
+                                a(href='#')
+                                  i.me-2(data-feather='printer')
+                                  | Print
+                              .card-body
+                                .details-bookmark.text-center
+                                  span No tasks found.
+                          #createtag.modal.fade.modal-bookmark(tabindex='-1', role='dialog', aria-hidden='true')
+                            .modal-dialog.modal-lg(role='document')
+                              .modal-content
+                                .modal-header
+                                  h5.modal-title Create Tag
+                                  button.btn-close(type='button', data-bs-dismiss='modal', aria-label='Close')
+                                .modal-body
+                                  form.form-bookmark.needs-validation(novalidate='')
+                                    .row
+                                      .mb-3.mt-0.col-md-12
+                                        label Tag Name
+                                        input.form-control(type='text', required='', autocomplete='off')
+                                      div.mt-0.col-md-12
+                                        label Tag color
+                                        input.form-color.d-block(type='color', value='#7366FF')
+                                    button.btn.btn-secondary(type='button') Save
+                                    button.btn.btn-primary(type='button', data-bs-dismiss='modal') Cancel
+            #exampleModal.modal.fade.modal-bookmark(tabindex='-1', role='dialog', aria-labelledby='exampleModalLabel', aria-hidden='true')
+              .modal-dialog.modal-lg(role='document')
+                .modal-content.custom-input
+                  .modal-header
+                    h5#exampleModalLabel.modal-title Add Task
+                    button.btn-close(type='button', data-bs-dismiss='modal', aria-label='Close')
+                  .modal-body
+                    form.form-bookmark#bookmark-form.needs-validation(novalidate='')
+                      .row
+                        .mb-3.mt-0.col-md-12
+                          label(for='task-title') Task Title
+                          input#task-title.form-control(type='text', required='', autocomplete='off')
+                          .valid-feedback
+                            | Looks good!
+                          .invalid-feedback
+                            | Please enter a task title.
+                        .mb-3.mt-0.col-md-12
+                          label(for='sub-task') Sub task
+                          input#sub-task.form-control(type='text', required='', autocomplete='off')
+                          .valid-feedback
+                            | Looks good!
+                          .invalid-feedback
+                            | Please enter a sub task.
+                        .mb-3.mt-0.col-md-12
+                          .d-flex.date-details
+                            .d-inline-block
+                              label.d-block.mb-0(for='chk-ani')
+                                input#chk-ani.checkbox_animated(type='checkbox')
+                                | Remind on
+                            .d-inline-block
+                              input.datepicker-here.form-control(type='text', data-language='en', placeholder='Date')
+                            .d-inline-block
+                              select.form-control
+                                option 7:00 am
+                                option 7:30 am
+                                option 8:00 am
+                                option 8:30 am
+                                option 9:00 am
+                                option 9:30 am
+                                option 10:00 am
+                                option 10:30 am
+                                option 11:00 am
+                                option 11:30 am
+                                option 12:00 pm
+                                option 12:30 pm
+                                option 1:00 pm
+                                option 2:00 pm
+                                option 3:00 pm
+                                option 4:00 pm
+                                option 5:00 pm
+                                option 6:00 pm
+                            .d-inline-block
+                              label.d-block.mb-0(for='chk-ani1')
+                                input#chk-ani1.checkbox_animated(type='checkbox') 
+                                | Notification
+                            .d-inline-block
+                              label.d-block.mb-0(for='chk-ani2')
+                                input#chk-ani2.checkbox_animated(type='checkbox')
+                                | Mail
+                        .mb-3.mt-0.col-md-6
+                          select.selectpicker.search-picker(aria-label='Group' data-live-search='true')
+                            option(value='task' selected) My Task
+                        .mb-3.mt-0.col-md-6
+                          select.selectpicker.search-picker(aria-label='Group' data-live-search='true')
+                            option(value='general' selected) General
+                        .mb-3.col-md-12.my-0
+                          textarea.form-control(required='', autocomplete='off')   
+                          .valid-feedback
+                            | Looks good!
+                          .invalid-feedback
+                            | Please enter a description.
+                      input#index_var(type='hidden', value='6' )
+                      button#Bookmark.btn.btn-secondary(onclick='submitBookMark()', type='submit') Save
+                      button.btn.btn-primary(type='button', data-bs-dismiss='modal') Cancel
+          // Container-fluid Ends
+        include ../../components/footer
+    include ../../components/footer-files

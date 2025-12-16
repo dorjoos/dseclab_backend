@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/quill.snow.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/select2.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/dropzone.min.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'miscellaneous/blog/components/add-post.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/dropzone/dropzone.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/dropzone/dropzone-script.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/select2.full.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/select2/select2-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/editors/quill.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/custom-add-product4.js')}}"></script>
+
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/charts/components/chart-apex.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/chart/apex-chart/apex-chart.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/apex-chart/stock-prices.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/apex-chart/moment.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/chart/apex-chart/chart-custom.js')}}"></script>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/dropzone.min.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/filepond.css')}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/filepond-plugin-image-preview.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/bonus-ui/components/dropzone.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/dropzone/dropzone.min.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/dropzone/dropzone-script.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/filepond/filepond-plugin-image-preview.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/filepond/filepond-plugin-file-rename.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/filepond/filepond-plugin-image-transform.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/filepond/filepond.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/filepond/custom-filepond.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/height-equal.js')}}"></script>
+
+{% endblock %}

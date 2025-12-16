@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5>Add Company</h5>
+          <div class="card-header-right">
+            <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">
+              <i data-feather="arrow-left"></i> Back
+            </a>
+            <i class="icofont icofont-maximize full-card"></i>
+            <i class="icofont icofont-minus minimize-card"></i>
+            <i class="icofont icofont-error close-card"></i>
+          </div>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('admin.add_company') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="name">Company Name <span class="text-danger">*</span></label>
+                  <input class="form-control" id="name" name="name" type="text" required />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="domain">Domain <span class="text-danger">*</span></label>
+                  <input class="form-control" id="domain" name="domain" type="text" 
+                         placeholder="example.com" required />
+                  <small class="form-text text-muted">Email domain (e.g., test.com, bank.com)</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label" for="company_type">Company Type <span class="text-danger">*</span></label>
+                  <select class="form-control" id="company_type" name="company_type" required>
+                    <option value="bank">Bank</option>
+                    <option value="operator">Telecommunications Operator</option>
+                    <option value="government">Government</option>
+                    <option value="other" selected>Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-12">
+                <div class="mb-3">
+                  <label class="form-label" for="description">Description</label>
+                  <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button class="btn btn-primary btn-sm" type="submit">Add Company</button>
+              <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">Cancel</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

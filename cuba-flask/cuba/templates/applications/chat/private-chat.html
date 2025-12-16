@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/chat/components/private-chat.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename='assets/js/common-chat.js')}}"></script>
+<script src="{{ url_for('static', filename='assets/js/common-active-chat.js')}}"></script>
+<script src="{{ url_for('static', filename='assets/js/emoji-js/custom-emoji.js')}}"></script>
+<script src="{{ url_for('static', filename='assets/js/emoji-js/custom-emojis.js')}}"></script>
+
+{% endblock %}

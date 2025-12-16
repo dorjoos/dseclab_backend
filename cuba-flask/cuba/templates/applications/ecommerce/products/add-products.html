@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block css %}
+
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/quill.snow.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/intltelinput.min.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/tagify.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/flatpickr/flatpickr.min.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/dropzone.min.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/sweetalert2.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/select/bootstrap-select.min.css' )}}">
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/ecommerce/products/components/add-products.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename='assets/js/flat-pickr/flatpickr.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/flat-pickr/custom-flatpickr.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/dropzone/dropzone.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/dropzone/dropzone-script.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/sweet-alert/sweetalert.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select2/tagify.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select2/tagify.polyfills.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select2/intltelinput.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/add-product/select4-custom.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/editors/quill.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/custom-add-product.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/tooltip-init.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/modalpage/validation-modal.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select/bootstrap-select.min.js' )}}"></script>
+    
+{% endblock %} 

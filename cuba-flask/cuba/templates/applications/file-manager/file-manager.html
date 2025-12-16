@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block css %}
+
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'applications/file-manager/components/file-manager.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/typeahead/handlebars.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/typeahead/typeahead.bundle.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/typeahead/typeahead.custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/typeahead-search/handlebars.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/typeahead-search/typeahead-custom.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/blockui/custom-blockui1.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/blockui/custom-freeze1.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/custom_filemanager.js')}}"></script>
+
+{% endblock %}   

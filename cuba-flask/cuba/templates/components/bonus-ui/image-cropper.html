@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/image-cropper.css')}}">
+{% endblock %}
+
+{% block content %}
+  
+  <div class="page-body">
+    <div class="container-fluid">
+      {% include 'layout/breadcrumb.html' %}
+    </div>
+    {% include 'components/bonus-ui/components/image-cropper.html' %}
+  </div>
+
+{% endblock %}  
+
+{% block scriptcontent %}
+        
+<script src="{{ url_for('static', filename =  'assets/js/image-cropper/cropper.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/image-cropper/cropper-main.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/height-equal.js')}}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/tooltip-init.js')}}"></script>
+
+{% endblock %}
