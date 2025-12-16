@@ -2,8 +2,10 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
+from sqlalchemy.exc import OperationalError
 import re
 from datetime import datetime
+import os
 
 from . import db
 from .models import User, Company
@@ -33,8 +35,17 @@ def login():
             return render_template("auth/login.html", email=email)
 
         # Update last login timestamp
-        user.last_login = datetime.utcnow()
-        db.session.commit()
+        # On Vercel (read-only SQLite), this write will fail, so make it optional via env flag.
+        if not os.getenv("READ_ONLY_DB", "").lower() in {"1", "true", "yes"}:
+            try:
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+            except OperationalError as e:
+                # Silently ignore readonly database errors (e.g., on Vercel with SQLite)
+                if "readonly" in str(e).lower():
+                    db.session.rollback()
+                else:
+                    raise
 
         login_user(user, remember=remember)
         next_url = request.args.get("next")
@@ -108,8 +119,16 @@ def register():
         user = User(username=username, email=email, role='member', company_id=company.id if company else None)
         user.set_password(password)
         db.session.add(user)
-        db.session.commit()
-        flash("Account created. Please sign in.", "success")
+        try:
+            db.session.commit()
+            flash("Account created. Please sign in.", "success")
+        except OperationalError as e:
+            # On read-only DB (Vercel), registration will fail - show appropriate message
+            if "readonly" in str(e).lower():
+                db.session.rollback()
+                flash("Registration is disabled in read-only mode. Please contact an administrator.", "warning")
+            else:
+                raise
         return redirect(url_for("auth.login"))
 
     return render_template("auth/register.html")
@@ -172,8 +191,16 @@ def profile():
             current_user.set_password(new_password)
             flash("Password updated successfully.", "success")
 
-        db.session.commit()
-        flash("Profile updated successfully.", "success")
+        try:
+            db.session.commit()
+            flash("Profile updated successfully.", "success")
+        except OperationalError as e:
+            # On read-only DB (Vercel), profile updates will fail
+            if "readonly" in str(e).lower():
+                db.session.rollback()
+                flash("Profile updates are disabled in read-only mode.", "warning")
+            else:
+                raise
         return redirect(url_for("auth.profile"))
 
     breadcrumb = {"parent": "User Profile", "child": "Profile"}
