@@ -6,7 +6,7 @@
     <div class="col-12">
       <div class="card">
         <div class="card-header">
-          <h5>Add Company</h5>
+          <h5>{{ 'Edit Company' if company else 'Add Company' }}</h5>
           <div class="card-header-right">
             <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">
               <i data-feather="arrow-left"></i> Back
@@ -17,21 +17,22 @@
           </div>
         </div>
         <div class="card-body">
-          <form method="POST" action="{{ url_for('admin.add_company') }}">
+          <form method="POST" action="{{ url_for('admin.edit_company', company_id=company.id) if company else url_for('admin.add_company') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label" for="name">Company Name <span class="text-danger">*</span></label>
-                  <input class="form-control" id="name" name="name" type="text" required />
+                  <input class="form-control" id="name" name="name" type="text" 
+                         value="{{ company.name if company else '' }}" required />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label" for="domain">Domain <span class="text-danger">*</span></label>
                   <input class="form-control" id="domain" name="domain" type="text" 
-                         placeholder="example.com" required />
+                         placeholder="example.com" value="{{ company.domain if company else '' }}" required />
                   <small class="form-text text-muted">Email domain (e.g., test.com, bank.com)</small>
                 </div>
               </div>
@@ -42,10 +43,10 @@
                 <div class="mb-3">
                   <label class="form-label" for="company_type">Company Type <span class="text-danger">*</span></label>
                   <select class="form-control" id="company_type" name="company_type" required>
-                    <option value="bank">Bank</option>
-                    <option value="operator">Telecommunications Operator</option>
-                    <option value="government">Government</option>
-                    <option value="other" selected>Other</option>
+                    <option value="bank" {{ 'selected' if company and company.company_type == 'bank' else '' }}>Bank</option>
+                    <option value="operator" {{ 'selected' if company and company.company_type == 'operator' else '' }}>Telecommunications Operator</option>
+                    <option value="government" {{ 'selected' if company and company.company_type == 'government' else '' }}>Government</option>
+                    <option value="other" {{ 'selected' if not company or company.company_type == 'other' else '' }}>Other</option>
                   </select>
                 </div>
               </div>
@@ -55,13 +56,61 @@
               <div class="col-md-12">
                 <div class="mb-3">
                   <label class="form-label" for="description">Description</label>
-                  <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                  <textarea class="form-control" id="description" name="description" rows="3">{{ company.description if company else '' }}</textarea>
                 </div>
               </div>
             </div>
 
+            <!-- Watchlist Section -->
+            <div class="row mt-4">
+              <div class="col-md-12">
+                <h6 class="mb-3">Watchlist Information</h6>
+                
+                <!-- Unified Watchlist Input -->
+                <div class="mb-3">
+                  <div class="input-group">
+                    <select class="form-control" id="watchlist_entry_type" style="max-width: 150px;">
+                      <option value="domain">Domain</option>
+                      <option value="url">URL</option>
+                      <option value="email">Email</option>
+                      <option value="slug">Slug</option>
+                      <option value="ip_address">IP Address</option>
+                    </select>
+                    <input type="text" class="form-control" id="watchlist_entry_value" 
+                           placeholder="test.com" />
+                    <button type="button" class="btn btn-primary" id="watchlist_add_btn">
+                      <i data-feather="plus"></i> Add
+                    </button>
+                  </div>
+                  <small class="form-text text-muted">Enter a value and press Enter or click Add to save</small>
+                </div>
+                
+                <!-- Saved Watchlist Entries (Tags) -->
+                <div id="watchlist_tags_container" class="mb-3">
+                  {% if company and company.watchlist_entries %}
+                    {% for entry in company.watchlist_entries %}
+                    <span class="badge badge-light-{{ 'success' if entry.entry_type == 'domain' else 'info' if entry.entry_type == 'url' else 'warning' if entry.entry_type == 'email' else 'secondary' if entry.entry_type == 'slug' else 'danger' }} me-2 mb-2 watchlist-tag" 
+                          data-entry-id="{{ entry.id }}" 
+                          data-entry-type="{{ entry.entry_type }}" 
+                          data-entry-value="{{ entry.entry_value }}"
+                          style="font-size: 0.9rem; padding: 0.5rem 0.75rem; cursor: pointer;">
+                      <strong>{{ entry.entry_type|title }}:</strong> {{ entry.entry_value }}
+                      {% if entry.description %}
+                        <small>({{ entry.description }})</small>
+                      {% endif %}
+                      <i data-feather="x" class="ms-1" style="width: 14px; height: 14px;" onclick="removeWatchlistTag(event, {{ entry.id }})"></i>
+                    </span>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+                
+                <!-- Hidden inputs for form submission -->
+                <div id="watchlist_hidden_inputs"></div>
+              </div>
+            </div>
+
             <div class="mt-4">
-              <button class="btn btn-primary btn-sm" type="submit">Add Company</button>
+              <button class="btn btn-primary btn-sm" type="submit">{{ 'Update Company' if company else 'Add Company' }}</button>
               <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">Cancel</a>
             </div>
           </form>
@@ -70,5 +119,214 @@
     </div>
   </div>
 </div>
+
+<script>
+const companyId = {{ company.id if company else 'null' }};
+let watchlistEntries = [];
+
+// Load existing entries
+{% if company and company.watchlist_entries %}
+  watchlistEntries = [
+    {% for entry in company.watchlist_entries %}
+    {id: {{ entry.id }}, type: '{{ entry.entry_type }}', value: '{{ entry.entry_value|e }}', description: '{{ entry.description|e if entry.description else '' }}'}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ];
+{% endif %}
+
+// Update hidden inputs for form submission
+function updateHiddenInputs() {
+  const container = document.getElementById('watchlist_hidden_inputs');
+  container.innerHTML = '';
+  watchlistEntries.forEach(entry => {
+    const valueInput = document.createElement('input');
+    valueInput.type = 'hidden';
+    valueInput.name = `watchlist_${entry.type}[]`;
+    valueInput.value = entry.value;
+    container.appendChild(valueInput);
+    
+    const descInput = document.createElement('input');
+    descInput.type = 'hidden';
+    descInput.name = `watchlist_${entry.type}_desc[]`;
+    descInput.value = entry.description || '';
+    container.appendChild(descInput);
+  });
+}
+
+// Add watchlist entry
+function addWatchlistEntry() {
+  const type = document.getElementById('watchlist_entry_type').value;
+  const valueInput = document.getElementById('watchlist_entry_value');
+  const value = valueInput.value.trim();
+  
+  if (!value) {
+    return;
+  }
+  
+  // Check for duplicates
+  if (watchlistEntries.some(e => e.type === type && e.value === value)) {
+    alert('This entry already exists!');
+    valueInput.value = '';
+    return;
+  }
+  
+  const entry = {
+    id: null, // New entry
+    type: type,
+    value: value,
+    description: ''
+  };
+  
+  // Auto-save if editing existing company
+  if (companyId) {
+    saveWatchlistEntry(entry);
+  } else {
+    // Just add to local array for new company
+    watchlistEntries.push(entry);
+    renderWatchlistTags();
+    updateHiddenInputs();
+    valueInput.value = '';
+  }
+}
+
+// Auto-save watchlist entry
+function saveWatchlistEntry(entry) {
+  const formData = new FormData();
+  formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+  formData.append('entry_type', entry.type);
+  formData.append('entry_value', entry.value);
+  formData.append('description', entry.description || '');
+  
+  fetch(`/admin/companies/${companyId}/watchlist/add`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      entry.id = data.entry_id;
+      watchlistEntries.push(entry);
+      renderWatchlistTags();
+      updateHiddenInputs();
+      document.getElementById('watchlist_entry_value').value = '';
+    } else {
+      alert('Error saving entry: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error saving entry');
+  });
+}
+
+// Remove watchlist tag
+function removeWatchlistTag(event, entryId) {
+  event.stopPropagation();
+  
+  if (companyId && entryId) {
+    // Delete from server
+    const formData = new FormData();
+    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+    
+    fetch(`/admin/companies/${companyId}/watchlist/${entryId}/delete`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        watchlistEntries = watchlistEntries.filter(e => e.id !== entryId);
+        renderWatchlistTags();
+        updateHiddenInputs();
+      } else {
+        alert('Error deleting entry: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error deleting entry');
+    });
+  } else {
+    // Remove from local array
+    watchlistEntries = watchlistEntries.filter(e => e.id !== entryId);
+    renderWatchlistTags();
+    updateHiddenInputs();
+  }
+}
+
+// Render watchlist tags
+function renderWatchlistTags() {
+  const container = document.getElementById('watchlist_tags_container');
+  container.innerHTML = '';
+  
+  const typeColors = {
+    'domain': 'success',
+    'url': 'info',
+    'email': 'warning',
+    'slug': 'secondary',
+    'ip_address': 'danger'
+  };
+  
+  watchlistEntries.forEach(entry => {
+    const tag = document.createElement('span');
+    tag.className = `badge badge-light-${typeColors[entry.type] || 'secondary'} me-2 mb-2 watchlist-tag`;
+    tag.style.cssText = 'font-size: 0.9rem; padding: 0.5rem 0.75rem; cursor: pointer;';
+    tag.setAttribute('data-entry-id', entry.id || 'new');
+    tag.setAttribute('data-entry-type', entry.type);
+    tag.setAttribute('data-entry-value', entry.value);
+    
+    const typeLabel = entry.type.charAt(0).toUpperCase() + entry.type.slice(1).replace('_', ' ');
+    tag.innerHTML = `
+      <strong>${typeLabel}:</strong> ${entry.value}
+      ${entry.description ? `<small>(${entry.description})</small>` : ''}
+      <i data-feather="x" class="ms-1" style="width: 14px; height: 14px;" onclick="removeWatchlistTag(event, ${entry.id || 'null'})"></i>
+    `;
+    
+    container.appendChild(tag);
+  });
+  
+  if (typeof feather !== 'undefined') {
+    feather.replace();
+  }
+}
+
+// Update placeholder based on selected type
+function updatePlaceholder() {
+  const type = document.getElementById('watchlist_entry_type').value;
+  const input = document.getElementById('watchlist_entry_value');
+  const placeholders = {
+    'domain': 'test.com',
+    'url': 'https://example.com',
+    'email': 'user@example.com',
+    'slug': 'company-identifier',
+    'ip_address': '192.168.1.1'
+  };
+  input.placeholder = placeholders[type] || 'Enter value...';
+  
+  // Change input type for better validation
+  if (type === 'url') {
+    input.type = 'url';
+  } else if (type === 'email') {
+    input.type = 'email';
+  } else {
+    input.type = 'text';
+  }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  renderWatchlistTags();
+  updateHiddenInputs();
+  updatePlaceholder();
+  
+  document.getElementById('watchlist_entry_type').addEventListener('change', updatePlaceholder);
+  document.getElementById('watchlist_add_btn').addEventListener('click', addWatchlistEntry);
+  document.getElementById('watchlist_entry_value').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addWatchlistEntry();
+    }
+  });
+});
+</script>
 {% endblock %}
 

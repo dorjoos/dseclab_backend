@@ -114,7 +114,8 @@ def register():
         domain = Company.extract_domain(email)
         company = None
         if domain:
-            company = Company.get_or_create_by_domain(domain, 'other')
+            # Only get existing company, don't create new one (only admins can create companies)
+            company = Company.get_or_create_by_domain(domain, 'other', allow_create=False)
         
         user = User(username=username, email=email, role='member', company_id=company.id if company else None)
         user.set_password(password)

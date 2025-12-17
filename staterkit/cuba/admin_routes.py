@@ -1,14 +1,63 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_, func
+from sqlalchemy.sql import text
 from datetime import datetime
 import re
 
 from . import db
-from .models import User, Company, BreachedCredential
+from .models import User, Company, BreachedCredential, WatchlistEntry
 from .auth import validate_password, validate_email
 
 admin_bp = Blueprint('admin', __name__)
+
+
+def build_domain_match_query(domains):
+    """
+    Build a query filter that matches breached credentials using watchlist entries.
+    
+    Matches based on:
+    - Application (company_name) matches watchlist entry (exact or contains)
+    - Email address contains the watchlist domain
+    - Email domain matches (exact or subdomain)
+    
+    Args:
+        domains: List of domain/IP/values from watchlist (e.g., ['test.com', '1.1.1.2', 'aduu.com'])
+    
+    Returns:
+        SQLAlchemy filter condition
+    """
+    if not domains:
+        return None
+    
+    conditions = []
+    for domain in domains:
+        if not domain:
+            continue
+        domain = domain.lower().strip()
+        if not domain:
+            continue
+        
+        # Match Application field - exact match or contains
+        # This allows IP addresses and other values in watchlist to match
+        conditions.append(BreachedCredential.application.ilike(f'%{domain}%'))
+        conditions.append(func.lower(BreachedCredential.application) == domain)
+        
+        # Match email field directly (handles both email format and username format)
+        # For email format: user@test.com, user@e.test.com
+        conditions.append(BreachedCredential.email.ilike(f'%@{domain}'))
+        conditions.append(BreachedCredential.email.ilike(f'%@%.{domain}'))
+        # For username format: if username equals domain
+        conditions.append(func.lower(BreachedCredential.email) == domain)
+        
+        # Also check email_domain for exact and subdomain matches
+        conditions.append(BreachedCredential.email_domain == domain)
+        conditions.append(BreachedCredential.email_domain.like(f'%.{domain}'))
+    
+    # Return None if no conditions, otherwise return or_() with at least one condition
+    if not conditions:
+        return None
+    return or_(*conditions)
 
 
 def admin_required(f):
@@ -137,12 +186,14 @@ def add_user():
         )
         user.set_password(password)
         
-        # If member and no company selected, create/link company from email domain
+        # If member and no company selected, link to existing company from email domain
+        # NO auto-creation - companies must be created through Company Management page
         if role == 'member' and not company_id:
             domain = Company.extract_domain(email)
             if domain:
-                company = Company.get_or_create_by_domain(domain, company_type='other')
-                user.company_id = company.id
+                # Only link to existing company, never create
+                company = Company.get_or_create_by_domain(domain, company_type='other', allow_create=False)
+                user.company_id = company.id if company else None
         
         db.session.add(user)
         db.session.commit()
@@ -274,9 +325,75 @@ def company_management():
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     companies = pagination.items
     
+    # Get breached credentials count for each company (by domain match including subdomains)
+    company_stats = {}
+    for company in companies:
+        # Get domains to match (company domain + all watchlist entries - domain, url, email, slug, ip_address)
+        domains_to_match = [company.domain]
+        # Get all watchlist entries (all types, not just domains)
+        watchlist_values = [entry.entry_value.strip().lower() for entry in company.watchlist_entries if entry.entry_value]
+        domains_to_match.extend(watchlist_values)
+        
+        # Build query with subdomain and email matching
+        domain_filter = build_domain_match_query(domains_to_match)
+        if domain_filter is not None:
+            breached_count = BreachedCredential.query.filter(domain_filter).count()
+        else:
+            breached_count = 0
+        company_stats[company.id] = breached_count
+    
     breadcrumb = {"parent": "Company Management", "child": "Admin"}
     return render_template('admin/company_management.html', 
                          companies=companies, 
+                         pagination=pagination,
+                         company_stats=company_stats,
+                         breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/companies/<int:company_id>/breached-creds')
+@login_required
+@admin_required
+def company_breached_creds(company_id):
+    """View breached credentials for company employees"""
+    company = Company.query.get_or_404(company_id)
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    
+    # Get domains to match (company domain + all watchlist entries - domain, url, email, slug, ip_address)
+    domains_to_match = []
+    if company.domain:
+        domains_to_match.append(company.domain.lower().strip())
+    
+    # Get all watchlist entries (all types, not just domains)
+    for entry in company.watchlist_entries:
+        if entry.entry_value:
+            entry_value = entry.entry_value.strip().lower()
+            if entry_value:
+                domains_to_match.append(entry_value)
+    
+    # Remove duplicates and empty strings
+    domains_to_match = list(set([d for d in domains_to_match if d]))
+    
+    # Debug: Log what we're matching (can be removed in production)
+    # print(f"DEBUG: Company: {company.name}, Domains to match: {domains_to_match}")
+    
+    # Build query with subdomain and email matching
+    # Matches: exact domains, subdomains (e.test.com, prod-test.com), emails (@test.com, @erp.test.com), and company_name
+    domain_filter = build_domain_match_query(domains_to_match)
+    if domain_filter is not None:
+        query = BreachedCredential.query.filter(domain_filter)
+    else:
+        query = BreachedCredential.query.filter(False)  # No matches if no domains
+    
+    query = query.order_by(BreachedCredential.created_at.desc())
+    
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    breached_creds = pagination.items
+    
+    breadcrumb = {"parent": "Company Management", "child": f"Breached Credentials - {company.name}"}
+    return render_template('admin/company_breached_creds.html',
+                         company=company,
+                         breached_creds=breached_creds,
                          pagination=pagination,
                          breadcrumb=breadcrumb)
 
@@ -318,11 +435,183 @@ def add_company():
             description=description if description else None
         )
         db.session.add(company)
-        db.session.commit()
+        db.session.flush()  # Get company.id
         
-        flash(f'Company "{name}" added successfully.', 'success')
+        # Process watchlist entries (multiple entries per type)
+        watchlist_entries = []
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address']:
+            # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
+            entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
+            entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
+            
+            for idx, value in enumerate(entry_values):
+                value = value.strip()
+                if value:  # Only add non-empty entries
+                    desc = entry_descriptions[idx].strip() if idx < len(entry_descriptions) else None
+                    watchlist_entries.append(WatchlistEntry(
+                        company_id=company.id,
+                        entry_type=entry_type,
+                        entry_value=value,
+                        description=desc if desc else None
+                    ))
+        
+        # Add all watchlist entries
+        for entry in watchlist_entries:
+            db.session.add(entry)
+        
+        try:
+            db.session.commit()
+            flash(f'Company "{name}" added successfully with {len(watchlist_entries)} watchlist entries.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error adding company: {str(e)}', 'danger')
         return redirect(url_for('admin.company_management'))
     
     breadcrumb = {"parent": "Add Company", "child": "Admin"}
     return render_template('admin/company_form.html', breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/companies/<int:company_id>/edit', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_company(company_id):
+    """Edit company"""
+    company = Company.query.get_or_404(company_id)
+    
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        domain = (request.form.get('domain') or '').strip().lower()
+        company_type = request.form.get('company_type', 'other').strip()
+        description = (request.form.get('description') or '').strip()
+        
+        # Security: Input validation
+        if not name or not domain:
+            flash('Company name and domain are required.', 'warning')
+            return render_template('admin/company_form.html', company=company,
+                                 breadcrumb={"parent": "Edit Company", "child": "Admin"})
+        
+        # Validate domain format
+        if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$', domain):
+            flash('Invalid domain format.', 'warning')
+            return render_template('admin/company_form.html', company=company,
+                                 breadcrumb={"parent": "Edit Company", "child": "Admin"})
+        
+        # Check for duplicate domain (excluding current company)
+        existing = Company.query.filter(Company.domain == domain, Company.id != company_id).first()
+        if existing:
+            flash('Company with that domain already exists.', 'warning')
+            return render_template('admin/company_form.html', company=company,
+                                 breadcrumb={"parent": "Edit Company", "child": "Admin"})
+        
+        # Update company
+        company.name = name
+        company.domain = domain
+        company.company_type = company_type
+        company.description = description if description else None
+        company.updated_at = datetime.utcnow()
+        
+        # Delete existing watchlist entries
+        WatchlistEntry.query.filter_by(company_id=company.id).delete()
+        
+        # Process new watchlist entries (multiple entries per type)
+        watchlist_entries = []
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address']:
+            # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
+            entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
+            entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
+            
+            for idx, value in enumerate(entry_values):
+                value = value.strip()
+                if value:  # Only add non-empty entries
+                    desc = entry_descriptions[idx].strip() if idx < len(entry_descriptions) else None
+                    watchlist_entries.append(WatchlistEntry(
+                        company_id=company.id,
+                        entry_type=entry_type,
+                        entry_value=value,
+                        description=desc if desc else None
+                    ))
+        
+        # Add all watchlist entries
+        for entry in watchlist_entries:
+            db.session.add(entry)
+        
+        try:
+            db.session.commit()
+            flash(f'Company "{name}" updated successfully with {len(watchlist_entries)} watchlist entries.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating company: {str(e)}', 'danger')
+        return redirect(url_for('admin.company_management'))
+    
+    breadcrumb = {"parent": "Edit Company", "child": "Admin"}
+    return render_template('admin/company_form.html', company=company, breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/companies/<int:company_id>/watchlist/add', methods=['POST'])
+@login_required
+@admin_required
+def add_watchlist_entry(company_id):
+    """Add a single watchlist entry (auto-save)"""
+    company = Company.query.get_or_404(company_id)
+    
+    entry_type = request.form.get('entry_type', '').strip()
+    entry_value = request.form.get('entry_value', '').strip()
+    description = request.form.get('description', '').strip() or None
+    
+    # Validate entry type
+    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address']:
+        return jsonify({'success': False, 'error': 'Invalid entry type'}), 400
+    
+    # Validate entry value
+    if not entry_value:
+        return jsonify({'success': False, 'error': 'Entry value is required'}), 400
+    
+    # Check for duplicates
+    existing = WatchlistEntry.query.filter_by(
+        company_id=company_id,
+        entry_type=entry_type,
+        entry_value=entry_value
+    ).first()
+    
+    if existing:
+        return jsonify({'success': False, 'error': 'This entry already exists'}), 400
+    
+    # Create new entry
+    entry = WatchlistEntry(
+        company_id=company_id,
+        entry_type=entry_type,
+        entry_value=entry_value,
+        description=description
+    )
+    
+    try:
+        db.session.add(entry)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'entry_id': entry.id,
+            'entry_type': entry.entry_type,
+            'entry_value': entry.entry_value,
+            'description': entry.description
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/companies/<int:company_id>/watchlist/<int:entry_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_watchlist_entry(company_id, entry_id):
+    """Delete a single watchlist entry"""
+    company = Company.query.get_or_404(company_id)
+    entry = WatchlistEntry.query.filter_by(id=entry_id, company_id=company_id).first_or_404()
+    
+    try:
+        db.session.delete(entry)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 

@@ -16,6 +16,7 @@ class Company(db.Model):
 
     users = db.relationship('User', backref='company', lazy=True)
     breached_credentials = db.relationship('BreachedCredential', backref='company', lazy=True)
+    watchlist_entries = db.relationship('WatchlistEntry', backref='company', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"Company('{self.name}', '{self.domain}')"
@@ -28,11 +29,21 @@ class Company(db.Model):
         return ""
 
     @staticmethod
-    def get_or_create_by_domain(domain: str, company_type: str = 'other'):
-        """Get existing company by domain or create new one"""
+    def get_or_create_by_domain(domain: str, company_type: str = 'other', allow_create: bool = False):
+        """
+        Get existing company by domain, optionally create new one
+        
+        Args:
+            domain: Domain string (e.g., 'example.com')
+            company_type: Type of company (default: 'other')
+            allow_create: If True, create company if it doesn't exist. If False, only return existing company.
+        
+        Returns:
+            Company object if found or created, None if not found and allow_create=False
+        """
         domain = domain.lower().strip()
         company = Company.query.filter_by(domain=domain).first()
-        if not company:
+        if not company and allow_create:
             company = Company(
                 name=domain,
                 domain=domain,
@@ -115,7 +126,7 @@ class Notification(db.Model):
 
 class BreachedCredential(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    company_name = db.Column(db.String(200), nullable=False, index=True)
+    application = db.Column(db.String(200), nullable=False, index=True)  # Application field (not company_name)
     company_type = db.Column(db.String(50), nullable=False)  # bank, operator, government, etc.
     email = db.Column(db.String(255), nullable=False, index=True)  # Leaked Account
     email_domain = db.Column(db.String(200), nullable=False, index=True)  # Extracted domain for filtering
@@ -146,7 +157,7 @@ class BreachedCredential(db.Model):
     marker = db.relationship('User', foreign_keys=[marked_by])
 
     def __repr__(self):
-        return f"BreachedCredential('{self.company_name}', '{self.email}', '{self.type}')"
+        return f"BreachedCredential('{self.application}', '{self.email}', '{self.type}')"
     
     @property
     def type_color(self):
@@ -168,3 +179,17 @@ class BreachedCredential(db.Model):
         if '@' in email:
             return email.split('@')[1].lower()
         return ""
+
+
+class WatchlistEntry(db.Model):
+    """Watchlist entries for companies - supports multiple entries per company"""
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    entry_type = db.Column(db.String(20), nullable=False)  # domain, url, email, slug, ip_address
+    entry_value = db.Column(db.String(500), nullable=False)  # The actual value
+    description = db.Column(db.Text, nullable=True)  # Optional description
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    
+    def __repr__(self):
+        return f"WatchlistEntry('{self.entry_type}', '{self.entry_value}')"

@@ -26,8 +26,10 @@
                   <th>Company Name</th>
                   <th>Domain</th>
                   <th>Type</th>
+                  <th>Watchlist</th>
                   <th>Users</th>
                   <th>Breached Creds</th>
+                  <th>Actions</th>
                   <th>Created</th>
                 </tr>
               </thead>
@@ -39,14 +41,35 @@
                     <td><strong>{{ company.name }}</strong></td>
                     <td><span class="badge badge-light-info">{{ company.domain }}</span></td>
                     <td><span class="badge badge-light-secondary">{{ company.company_type }}</span></td>
+                    <td>
+                      {% if company.watchlist_entries %}
+                        <span class="badge badge-light-success" data-bs-toggle="tooltip" 
+                              title="{% for entry in company.watchlist_entries %}{{ entry.entry_type|title }}: {{ entry.entry_value }}{% if not loop.last %}, {% endif %}{% endfor %}">
+                          {{ company.watchlist_entries|length }} entries
+                        </span>
+                      {% else %}
+                        <span class="badge badge-light-secondary">None</span>
+                      {% endif %}
+                    </td>
                     <td>{{ company.users|length }}</td>
-                    <td>{{ company.breached_credentials|length }}</td>
+                    <td>
+                      <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" 
+                         class="badge badge-light-danger">
+                        {{ company_stats.get(company.id, 0) }}
+                      </a>
+                    </td>
+                    <td>
+                      <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" 
+                         class="btn btn-primary btn-xs" title="Edit">
+                        <i data-feather="edit-2"></i>
+                      </a>
+                    </td>
                     <td>{{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '-' }}</td>
                   </tr>
                   {% endfor %}
                 {% else %}
                   <tr>
-                    <td colspan="7" class="text-center">No companies found.</td>
+                    <td colspan="9" class="text-center">No companies found.</td>
                   </tr>
                 {% endif %}
               </tbody>

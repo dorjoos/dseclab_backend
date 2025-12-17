@@ -24,9 +24,10 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label" for="company_name">Company Name <span class="text-danger">*</span></label>
+                  <label class="form-label" for="company_name">Application <span class="text-danger">*</span></label>
                   <input class="form-control" id="company_name" name="company_name" type="text" 
-                         value="{{ breached_cred.company_name if breached_cred else '' }}" required />
+                         value="{{ breached_cred.application if breached_cred else '' }}" required />
+                  <small class="form-text text-muted">Application domain. Domain related to watchlisted domain or IP address.</small>
                 </div>
               </div>
               <div class="col-md-6">
@@ -46,9 +47,11 @@
             <div class="row">
               <div class="col-md-12">
                 <div class="mb-3">
-                  <label class="form-label" for="email">Leaked Account (Email) <span class="text-danger">*</span></label>
-                  <input class="form-control" id="email" name="email" type="email" 
-                         value="{{ breached_cred.email if breached_cred else '' }}" required />
+                  <label class="form-label" for="email">Leaked Account <span class="text-danger">*</span></label>
+                  <input class="form-control" id="email" name="email" type="text" 
+                         value="{{ breached_cred.email if breached_cred else '' }}" 
+                         placeholder="Username or Email" required />
+                  <small class="form-text text-muted">Enter username or email address</small>
                 </div>
               </div>
             </div>

@@ -22,7 +22,7 @@ def search():
     creds_query = BreachedCredential.query.filter(
         or_(
             BreachedCredential.email.ilike(f'%{query}%'),
-            BreachedCredential.company_name.ilike(f'%{query}%'),
+            BreachedCredential.application.ilike(f'%{query}%'),
             BreachedCredential.username.ilike(f'%{query}%'),
             BreachedCredential.email_domain.ilike(f'%{query}%')
         )
@@ -35,7 +35,7 @@ def search():
     
     for cred in creds_query:
         results.append({
-            'name': f"{cred.company_name} - {cred.email}",
+            'name': f"{cred.application} - {cred.email}",
             'url': f'/threat-intelligence/breached-creds/{cred.id}',
             'type': 'Breached Credential',
             'icon': 'shield'
