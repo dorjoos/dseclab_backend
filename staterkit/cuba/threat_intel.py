@@ -5,9 +5,25 @@ from datetime import datetime, date, timedelta
 import html
 import csv
 import io
+import json
+try:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment
+    OPENPYXL_AVAILABLE = True
+except ImportError:
+    OPENPYXL_AVAILABLE = False
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib import colors
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
 
 from . import db, cache
 from .models import BreachedCredential, Company, Notification, User
+from .audit_helpers import log_audit
 
 threat_intel = Blueprint('threat_intel', __name__)
 
@@ -39,6 +55,66 @@ def _get_user_domains_to_match():
                     domains_to_match.append(entry_value)
     
     return list(set([d for d in domains_to_match if d]))
+
+
+def _can_user_access_breached_cred(breached_cred):
+    """
+    Check if current user can access a specific breached credential.
+    Uses the same watchlist matching logic as the list view.
+    
+    Returns:
+        bool: True if user can access, False otherwise
+    """
+    # Admins can access everything
+    if current_user.role == 'admin' or current_user.isAdmin:
+        return True
+    
+    # Get user's company domain
+    user_domain = get_user_company_domain()
+    if not user_domain:
+        # If user has no domain, they can't access anything
+        return False
+    
+    # Get domains to match (company domain + watchlist entries)
+    domains_to_match = _get_user_domains_to_match()
+    if not domains_to_match:
+        # Fallback to email_domain check if no watchlist
+        return breached_cred.email_domain and breached_cred.email_domain.lower() == user_domain.lower()
+    
+    # Check if breached credential matches any watchlist entry
+    # This mirrors the logic in _build_domain_match_query
+    for domain in domains_to_match:
+        if not domain:
+            continue
+        domain = domain.lower().strip()
+        
+        # Match Application field - exact match or contains (mirrors SQL ilike)
+        if breached_cred.application:
+            app_lower = breached_cred.application.lower()
+            if domain in app_lower or app_lower == domain:
+                return True
+        
+        # Match email field - check for @domain and @*.domain patterns
+        if breached_cred.email:
+            email_lower = breached_cred.email.lower()
+            # Email format: user@domain or user@*.domain
+            if f'@{domain}' in email_lower:
+                return True
+            if f'@.{domain}' in email_lower:
+                return True
+            # Username format: if email equals domain
+            if email_lower == domain:
+                return True
+        
+        # Match email_domain field - exact or subdomain
+        if breached_cred.email_domain:
+            email_domain_lower = breached_cred.email_domain.lower()
+            if email_domain_lower == domain:
+                return True
+            if email_domain_lower.endswith(f'.{domain}'):
+                return True
+    
+    return False
 
 
 def _build_domain_match_query(domains):
@@ -463,9 +539,8 @@ def breached_creds_mark(id):
     """Mark breached credential for review - Members can mark"""
     breached_cred = BreachedCredential.query.get_or_404(id)
     
-    # Security: Fix IDOR - Check if user can access this record
-    user_domain = get_user_company_domain()
-    if user_domain and breached_cred.email_domain != user_domain:
+    # Security: Fix IDOR - Check if user can access this record using watchlist matching
+    if not _can_user_access_breached_cred(breached_cred):
         flash('Access denied. You can only mark records for your company.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
     
@@ -572,15 +647,15 @@ def breached_creds_edit(id):
             except ValueError:
                 pass
         
-        breached_cred.updated_at = datetime.utcnow()
-        
+                breached_cred.updated_at = datetime.utcnow()
+                
         try:
-            db.session.commit()
-            
-            # Performance: Clear cache when data is updated
-            cache.clear()
-            
-            flash('Breached credential updated successfully.', 'success')
+                db.session.commit()
+                
+                # Performance: Clear cache when data is updated
+                cache.clear()
+                
+                flash('Breached credential updated successfully.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating credential: {str(e)}', 'danger')
@@ -622,7 +697,8 @@ def breached_creds_delete(id):
 @threat_intel.route('/threat-intelligence/breached-creds/export')
 @login_required
 def breached_creds_export():
-    """Export breached credentials to CSV"""
+    """Export breached credentials - supports CSV, Excel, JSON, PDF"""
+    export_format = request.args.get('format', 'csv').lower()  # csv, xlsx, json, pdf
     # Security: Get user's company domain for filtering
     user_domain = get_user_company_domain()
     
@@ -672,45 +748,186 @@ def breached_creds_export():
     
     breached_creds = query.order_by(BreachedCredential.created_at.desc()).all()
     
-    # Create CSV
-    output = io.StringIO()
-    writer = csv.writer(output)
+    # Log export action
+    log_audit("export", "breached_credential", None, 
+              f"Exported {len(breached_creds)} breached credentials in {export_format.upper()} format")
     
-    # Write header
-    writer.writerow([
-        'ID', 'Application', 'Company Type', 'Email', 'Email Domain', 'Username',
-        'Type', 'Status', 'Marked', 'Breach Date', 'Discovered Date',
-        'Source', 'Description', 'Created By', 'Created At'
-    ])
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # Write data
-    for cred in breached_creds:
+    # Handle different export formats
+    if export_format == 'json':
+        # JSON export
+        data = []
+        for cred in breached_creds:
+            data.append({
+                'id': cred.id,
+                'application': cred.application,
+                'company_type': cred.company_type,
+                'email': cred.email,
+                'email_domain': cred.email_domain,
+                'username': cred.username,
+                'type': cred.type or 'combolist',
+                'status': cred.status,
+                'is_marked': cred.is_marked,
+                'breach_date': cred.breach_date.isoformat() if cred.breach_date else None,
+                'discovered_date': cred.discovered_date.isoformat() if cred.discovered_date else None,
+                'source': cred.source,
+                'description': cred.description,
+                'created_by': cred.creator.username if cred.creator else None,
+                'created_at': cred.created_at.isoformat() if cred.created_at else None
+            })
+        
+        response = Response(
+            json.dumps(data, indent=2),
+            mimetype='application/json',
+            headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.json'}
+        )
+        return response
+    
+    elif export_format == 'xlsx' and OPENPYXL_AVAILABLE:
+        # Excel export
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Breached Credentials"
+        
+        # Headers
+        headers = ['ID', 'Application', 'Company Type', 'Email', 'Email Domain', 'Username',
+                  'Type', 'Status', 'Marked', 'Breach Date', 'Discovered Date',
+                  'Source', 'Description', 'Created By', 'Created At']
+        ws.append(headers)
+        
+        # Style header row
+        for cell in ws[1]:
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal='center')
+        
+        # Data rows
+        for cred in breached_creds:
+            ws.append([
+                cred.id,
+                cred.application,
+                cred.company_type,
+                cred.email,
+                cred.email_domain,
+                cred.username or '',
+                cred.type or 'combolist',
+                cred.status,
+                'Yes' if cred.is_marked else 'No',
+                cred.breach_date.strftime('%Y-%m-%d') if cred.breach_date else '',
+                cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '',
+                cred.source or '',
+                cred.description or '',
+                cred.creator.username if cred.creator else '',
+                cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
+            ])
+        
+        # Save to BytesIO
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = Response(
+            output.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.xlsx'}
+        )
+        return response
+    
+    elif export_format == 'pdf' and REPORTLAB_AVAILABLE:
+        # PDF export
+        output = io.BytesIO()
+        doc = SimpleDocTemplate(output, pagesize=letter)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Title
+        title = Paragraph("Breached Credentials Report", styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+        
+        # Summary
+        summary = Paragraph(f"Total Records: {len(breached_creds)}<br/>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
+                           styles['Normal'])
+        elements.append(summary)
+        elements.append(Spacer(1, 12))
+        
+        # Table data
+        data = [['ID', 'Application', 'Email', 'Type', 'Status', 'Discovered']]
+        for cred in breached_creds[:100]:  # Limit to 100 rows for PDF
+            data.append([
+                str(cred.id),
+                cred.application[:30],  # Truncate long values
+                cred.email[:30],
+                cred.type or 'combolist',
+                cred.status,
+                cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else ''
+            ])
+        
+        # Create table
+        table = Table(data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ]))
+        
+        elements.append(table)
+        doc.build(elements)
+        output.seek(0)
+        
+        response = Response(
+            output.getvalue(),
+            mimetype='application/pdf',
+            headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.pdf'}
+        )
+        return response
+    
+    else:
+        # Default: CSV export
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
         writer.writerow([
-            cred.id,
-            cred.application,
-            cred.company_type,
-            cred.email,
-            cred.email_domain,
-            cred.username or '',
-            cred.type or 'combolist',
-            cred.status,
-            'Yes' if cred.is_marked else 'No',
-            cred.breach_date.strftime('%Y-%m-%d') if cred.breach_date else '',
-            cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '',
-            cred.source or '',
-            cred.description or '',
-            cred.creator.username if cred.creator else '',
-            cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
+            'ID', 'Application', 'Company Type', 'Email', 'Email Domain', 'Username',
+            'Type', 'Status', 'Marked', 'Breach Date', 'Discovered Date',
+            'Source', 'Description', 'Created By', 'Created At'
         ])
-    
-    # Create response
-    output.seek(0)
-    response = Response(
-        output.getvalue(),
-        mimetype='text/csv',
-        headers={'Content-Disposition': f'attachment; filename=breached_credentials_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'}
-    )
-    return response
+        
+        # Write data
+        for cred in breached_creds:
+            writer.writerow([
+                cred.id,
+                cred.application,
+                cred.company_type,
+                cred.email,
+                cred.email_domain,
+                cred.username or '',
+                cred.type or 'combolist',
+                cred.status,
+                'Yes' if cred.is_marked else 'No',
+                cred.breach_date.strftime('%Y-%m-%d') if cred.breach_date else '',
+                cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '',
+                cred.source or '',
+                cred.description or '',
+                cred.creator.username if cred.creator else '',
+                cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
+            ])
+        
+        # Create response
+        output.seek(0)
+        response = Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.csv'}
+        )
+        return response
 
 
 @threat_intel.route('/threat-intelligence/breached-creds/<int:id>')
@@ -719,9 +936,8 @@ def breached_creds_view(id):
     """View breached credential details"""
     breached_cred = BreachedCredential.query.get_or_404(id)
     
-    # Security: Fix IDOR - Check if user can access this record
-    user_domain = get_user_company_domain()
-    if user_domain and breached_cred.email_domain != user_domain:
+    # Security: Fix IDOR - Check if user can access this record using watchlist matching
+    if not _can_user_access_breached_cred(breached_cred):
         flash('Access denied. You can only view records for your company.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
     

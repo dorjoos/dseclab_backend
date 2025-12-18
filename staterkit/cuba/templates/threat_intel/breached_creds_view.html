@@ -12,22 +12,18 @@
             <form method="POST" action="{{ url_for('threat_intel.breached_creds_mark', id=breached_cred.id) }}" style="display: inline;">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
               <button type="submit" class="btn btn-sm {% if breached_cred.is_marked %}btn-warning{% else %}btn-outline-warning{% endif %}">
-                <i data-feather="{% if breached_cred.is_marked %}check-circle{% else %}circle{% endif %}"></i> {% if breached_cred.is_marked %}Unmark{% else %}Mark{% endif %}
+                <i data-feather="{% if breached_cred.is_marked %}check-circle{% else %}circle{% endif %}" style="width: 14px; height: 14px;"></i> {% if breached_cred.is_marked %}Unmark{% else %}Mark{% endif %}
               </button>
             </form>
             {% endif %}
             {% if current_user.can_edit() %}
             <a href="{{ url_for('threat_intel.breached_creds_edit', id=breached_cred.id) }}" class="btn btn-primary btn-sm">
-              <i data-feather="edit"></i> Edit
+              <i data-feather="edit" style="width: 14px; height: 14px;"></i> Edit
             </a>
             {% endif %}
             <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="arrow-left"></i> Back
+              <i data-feather="arrow-left" style="width: 14px; height: 14px;"></i> Back
             </a>
-            <i class="icofont icofont-maximize full-card"></i>
-            <i class="icofont icofont-minus minimize-card"></i>
-            <i class="icofont icofont-refresh reload-card"></i>
-            <i class="icofont icofont-error close-card"></i>
           </div>
         </div>
         <div class="card-body">

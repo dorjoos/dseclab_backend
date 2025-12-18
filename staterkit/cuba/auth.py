@@ -9,6 +9,7 @@ import os
 
 from . import db
 from .models import User, Company
+from .audit_helpers import log_user_activity, log_audit
 
 
 auth = Blueprint("auth", __name__)
@@ -26,11 +27,17 @@ def login():
 
         user = User.query.filter_by(email=email).first()
         if not user or not user.check_password(password):
+            # Log failed login attempt
+            if user:
+                log_user_activity("login_failed", user.id, status="failed", failure_reason="invalid_password")
+            else:
+                log_user_activity("login_failed", None, status="failed", failure_reason="user_not_found")
             flash("Invalid email or password.", "danger")
             return render_template("auth/login.html", email=email)
 
         # Security: Check if user is active
         if not user.is_active:
+            log_user_activity("login_failed", user.id, status="failed", failure_reason="user_inactive")
             flash("Your account has been deactivated. Please contact an administrator.", "danger")
             return render_template("auth/login.html", email=email)
 
@@ -48,6 +55,11 @@ def login():
                     raise
 
         login_user(user, remember=remember)
+        
+        # Log successful login
+        log_user_activity("login", user.id, status="success")
+        log_audit("login", "user", user.id, f"User {user.username} logged in successfully")
+        
         next_url = request.args.get("next")
         return redirect(next_url or url_for("main.indexPage"))
 
@@ -138,6 +150,11 @@ def register():
 @auth.route("/logout")
 @login_required
 def logout():
+    # Log logout activity
+    user_id = current_user.id
+    log_user_activity("logout", user_id, status="success")
+    log_audit("logout", "user", user_id, f"User {current_user.username} logged out")
+    
     # Clear session data
     session.clear()
     logout_user()

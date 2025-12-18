@@ -1,133 +1,76 @@
 {% extends "base.html" %}
 
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/jquery.dataTables.css') }}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/dataTables.bootstrap5.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid data-source-wrapper">
   <div class="row">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
-          <h5>Breached Credentials for Companies</h5>
+        <div class="card-header pb-0 card-no-border">
+          <h5 class="mb-3">Breached Credentials for Companies</h5>
+          <p class="f-m-light mt-1">
+            Breached credential records discovered for your watchlisted applications, domains, and IPs.
+            Use the filters below to focus on what matters.
+          </p>
           <div class="card-header-right">
             {% if current_user.can_edit() %}
             <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="btn btn-primary btn-sm">
-              <i data-feather="plus"></i> Add New
+              <i data-feather="plus" style="width: 14px; height: 14px;"></i> Add New
             </a>
             {% endif %}
             <a href="{{ url_for('threat_intel.analysis') }}" class="btn btn-info btn-sm">
-              <i data-feather="bar-chart-2"></i> Analysis
+              <i data-feather="bar-chart-2" style="width: 14px; height: 14px;"></i> Analysis
             </a>
             <a href="{{ url_for('threat_intel.reports') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="file-text"></i> Reports
+              <i data-feather="file-text" style="width: 14px; height: 14px;"></i> Reports
             </a>
             <a href="{{ url_for('threat_intel.breached_creds_export', company=filters.company or '', company_type=filters.company_type or '', severity=filters.severity or '', status=filters.status or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="btn btn-success btn-sm" id="export-btn">
-              <i data-feather="download"></i> Export CSV
+              <i data-feather="download" style="width: 14px; height: 14px;"></i> Export CSV
             </a>
-            <i class="icofont icofont-maximize full-card"></i>
-            <i class="icofont icofont-minus minimize-card"></i>
-            <i class="icofont icofont-refresh reload-card"></i>
-            <i class="icofont icofont-error close-card"></i>
           </div>
         </div>
         <div class="card-body">
-          <!-- Statistics Cards -->
-          <div class="row mb-4">
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-primary rounded p-2">
-                        <i data-feather="database" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Total Records</h6>
-                      <h4 class="mb-0">{{ stats.total }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-danger rounded p-2">
-                        <i data-feather="alert-circle" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Stealer</h6>
-                      <h4 class="mb-0">{{ stats.by_type.get('stealer', 0) if stats.by_type else 0 }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-warning rounded p-2">
-                        <i data-feather="alert-triangle" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Malware</h6>
-                      <h4 class="mb-0">{{ stats.by_type.get('malware', 0) if stats.by_type else 0 }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-info rounded p-2">
-                        <i data-feather="activity" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Active</h6>
-                      <h4 class="mb-0">{{ stats.by_status.get('active', 0) if stats.by_status else 0 }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick Date Filters -->
-          <div class="mb-3">
-            <div class="btn-group" role="group">
-              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='today', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}" 
-                 class="btn btn-sm {% if filters.date_filter == 'today' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                Today
-              </a>
-              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='week', company=filters.company or '', company_type=filters.company_type or '', severity=filters.severity or '', status=filters.status or '', search=filters.search or '') }}" 
-                 class="btn btn-sm {% if filters.date_filter == 'week' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                This Week
-              </a>
-              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='month', company=filters.company or '', company_type=filters.company_type or '', severity=filters.severity or '', status=filters.status or '', search=filters.search or '') }}" 
-                 class="btn btn-sm {% if filters.date_filter == 'month' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                This Month
-              </a>
-              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='all', company=filters.company or '', company_type=filters.company_type or '', severity=filters.severity or '', status=filters.status or '', search=filters.search or '') }}" 
-                 class="btn btn-sm {% if filters.date_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                All Time
-              </a>
-            </div>
-          </div>
-
           <!-- Filters -->
           <form method="GET" class="mb-4" id="filter-form">
             <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
             <div class="row">
-              <div class="col-md-3">
+              <div class="col-md-2">
+                {% set date_filter_labels = {
+                  'today': 'Today',
+                  'week': 'This Week',
+                  'month': 'This Month',
+                  'all': 'All Time'
+                } %}
+                {% set current_date_label = date_filter_labels.get(filters.date_filter or 'week', 'This Week') %}
+                <div class="dropdown">
+                  <button type="button" class="btn btn-outline-primary dropdown-toggle form-control" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    {{ current_date_label }}
+                  </button>
+                  <div class="dropdown-menu" role="menu" aria-hidden="true" tabindex="-1">
+                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'today' %}active{% endif %}" 
+                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='today', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
+                      Today
+                    </button>
+                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'week' or not filters.date_filter %}active{% endif %}" 
+                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='week', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
+                      This Week
+                    </button>
+                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'month' %}active{% endif %}" 
+                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='month', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
+                      This Month
+                    </button>
+                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'all' %}active{% endif %}" 
+                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='all', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
+                      All Time
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2">
                 <input type="text" class="form-control" name="search" placeholder="Search email, application..." value="{{ filters.search }}">
               </div>
               <div class="col-md-2">
@@ -140,22 +83,20 @@
                 </select>
               </div>
               <div class="col-md-2">
-                <select class="form-control" name="severity">
-                  <option value="">All Severities</option>
-                  <option value="low" {% if filters.severity == 'low' %}selected{% endif %}>Low</option>
-                  <option value="medium" {% if filters.severity == 'medium' %}selected{% endif %}>Medium</option>
-                  <option value="high" {% if filters.severity == 'high' %}selected{% endif %}>High</option>
-                  <option value="critical" {% if filters.severity == 'critical' %}selected{% endif %}>Critical</option>
+                <select class="form-control" name="leak_category">
+                  <option value="">All Categories</option>
+                  <option value="consumer" {% if filters.leak_category == 'consumer' %}selected{% endif %}>Consumer</option>
+                  <option value="corporate" {% if filters.leak_category == 'corporate' %}selected{% endif %}>Corporate</option>
                 </select>
               </div>
               <div class="col-md-2">
-                        <select class="form-control" name="status">
-                          <option value="">All Statuses</option>
-                          <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
-                          <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
-                        </select>
+                <select class="form-control" name="status">
+                  <option value="">All Statuses</option>
+                  <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
+                  <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
+                </select>
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <button type="submit" class="btn btn-primary btn-sm" id="filter-btn">
                   <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                   Filter
@@ -166,8 +107,8 @@
           </form>
 
           <!-- Table -->
-          <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+          <div class="table-responsive dom-source-data custom-scrollbar">
+            <table class="display table-striped" id="breached-creds-table" style="width:100%">
               <thead>
                 <tr>
                   <th>Application</th>
@@ -175,8 +116,6 @@
                   <th>Leaked Account</th>
                   <th>Domain</th>
                   <th>Type</th>
-                  <th>Category</th>
-                  <th>Status</th>
                   <th>Marked</th>
                   <th>Discovered</th>
                   <th>Actions</th>
@@ -198,22 +137,6 @@
                       </span>
                     </td>
                     <td>
-                      {% if cred.leak_category == 'corporate' %}
-                        <span class="badge badge-light-warning">Corporate</span>
-                      {% else %}
-                        <span class="badge badge-light-info">Consumer</span>
-                      {% endif %}
-                    </td>
-                    <td>
-                      {% if cred.status == 'active' %}
-                        <span class="badge badge-light-danger">Active</span>
-                      {% elif cred.status == 'new' %}
-                        <span class="badge badge-light-primary">New</span>
-                      {% else %}
-                        <span class="badge badge-light-secondary">{{ cred.status|title }}</span>
-                      {% endif %}
-                    </td>
-                    <td>
                       {% if cred.is_marked %}
                         <span class="badge badge-light-warning" title="Marked by {{ cred.marker.username if cred.marker else 'Unknown' }}">
                           <i data-feather="check-circle" style="width: 12px; height: 12px;"></i> Marked
@@ -224,32 +147,30 @@
                     </td>
                     <td>{{ cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '-' }}</td>
                     <td>
-                      <div class="action-items">
-                        <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" class="btn btn-outline-primary btn-xs" title="View" data-bs-toggle="tooltip">
-                          <i data-feather="eye"></i>
-                        </a>
-                        {% if current_user.can_mark() %}
-                        <form method="POST" action="{{ url_for('threat_intel.breached_creds_mark', id=cred.id) }}" style="display: inline;">
-                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                          <button type="submit" class="btn btn-xs {% if cred.is_marked %}btn-warning{% else %}btn-outline-warning{% endif %}" title="{% if cred.is_marked %}Unmark{% else %}Mark{% endif %}" data-bs-toggle="tooltip">
-                            <i data-feather="{% if cred.is_marked %}check-circle{% else %}circle{% endif %}"></i>
-                          </button>
-                        </form>
-                        {% endif %}
+                      <ul class="action mb-0">
+                        <li class="edit">
+                          <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" title="View">
+                            <i class="fa-regular fa-eye"></i>
+                          </a>
+                        </li>
                         {% if current_user.can_edit() %}
-                        <a href="{{ url_for('threat_intel.breached_creds_edit', id=cred.id) }}" class="btn btn-outline-primary btn-xs" title="Edit" data-bs-toggle="tooltip">
-                          <i data-feather="edit"></i>
-                        </a>
+                        <li class="edit">
+                          <a href="{{ url_for('threat_intel.breached_creds_edit', id=cred.id) }}" title="Edit">
+                            <i class="fa-regular fa-pen-to-square"></i>
+                          </a>
+                        </li>
                         {% endif %}
                         {% if current_user.can_delete() %}
-                        <form method="POST" action="{{ url_for('threat_intel.breached_creds_delete', id=cred.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this record?');">
-                          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                          <button type="submit" class="btn btn-outline-danger btn-xs" title="Delete" data-bs-toggle="tooltip">
-                            <i data-feather="trash-2"></i>
-                          </button>
-                        </form>
+                        <li class="delete">
+                          <form method="POST" action="{{ url_for('threat_intel.breached_creds_delete', id=cred.id) }}" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this record?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" style="border:0;background:transparent;padding:0;" title="Delete">
+                              <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                          </form>
+                        </li>
                         {% endif %}
-                      </div>
+                      </ul>
                     </td>
                   </tr>
                   {% endfor %}
@@ -364,3 +285,29 @@
   </div>
 </div>
 {% endblock %}
+
+{% block scriptcontent %}
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/jquery.dataTables.min.js') }}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/dataTables1.js') }}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/dataTables.bootstrap5.js') }}"></script>
+<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/datatable.custom2.js') }}"></script>
+
+<script>
+  (function() {
+    if (!window.jQuery || !$.fn.DataTable) {
+      return;
+    }
+
+    $('#breached-creds-table').DataTable({
+      paging: false,
+      info: false,
+      searching: false,
+      order: [[8, 'desc']],  // Discovered date column
+      columnDefs: [
+        { orderable: false, targets: -1 } // Actions column
+      ]
+    });
+  })();
+</script>
+{% endblock %}
+

@@ -9,12 +9,8 @@
           <h5>Company Management</h5>
           <div class="card-header-right">
             <a href="{{ url_for('admin.add_company') }}" class="btn btn-primary btn-sm">
-              <i data-feather="settings"></i> Add Company
+              <i data-feather="settings" style="width: 14px; height: 14px;"></i> Add Company
             </a>
-            <i class="icofont icofont-maximize full-card"></i>
-            <i class="icofont icofont-minus minimize-card"></i>
-            <i class="icofont icofont-refresh reload-card"></i>
-            <i class="icofont icofont-error close-card"></i>
           </div>
         </div>
         <div class="card-body">
@@ -60,8 +56,8 @@
                     </td>
                     <td>
                       <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" 
-                         class="btn btn-primary btn-xs" title="Edit">
-                        <i data-feather="edit-2"></i>
+                         class="btn btn-primary btn-sm" title="Edit">
+                        <i data-feather="edit-2" style="width: 14px; height: 14px;"></i>
                       </a>
                     </td>
                     <td>{{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '-' }}</td>

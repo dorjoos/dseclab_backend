@@ -6,8 +6,9 @@ from datetime import datetime
 import re
 
 from . import db
-from .models import User, Company, BreachedCredential, WatchlistEntry
+from .models import User, Company, BreachedCredential, WatchlistEntry, AuditLog, UserActivity
 from .auth import validate_password, validate_email
+from .audit_helpers import log_audit
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -614,4 +615,117 @@ def delete_watchlist_entry(company_id, entry_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin_bp.route('/admin/audit-logs')
+@login_required
+@admin_required
+def audit_logs():
+    """View audit logs - Admin only"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Filters
+    action_filter = request.args.get('action_type', '')
+    resource_filter = request.args.get('resource_type', '')
+    user_filter = request.args.get('user_id', type=int)
+    status_filter = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    query = AuditLog.query
+    
+    # Apply filters
+    if action_filter:
+        query = query.filter(AuditLog.action_type == action_filter)
+    if resource_filter:
+        query = query.filter(AuditLog.resource_type == resource_filter)
+    if user_filter:
+        query = query.filter(AuditLog.user_id == user_filter)
+    if status_filter:
+        query = query.filter(AuditLog.status == status_filter)
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(AuditLog.created_at >= date_from_obj)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            query = query.filter(AuditLog.created_at <= date_to_obj)
+        except ValueError:
+            pass
+    
+    # Order by most recent first
+    query = query.order_by(AuditLog.created_at.desc())
+    
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    audit_logs = pagination.items
+    
+    # Get unique action types and resource types for filters
+    action_types = db.session.query(AuditLog.action_type).distinct().all()
+    resource_types = db.session.query(AuditLog.resource_type).distinct().all()
+    
+    breadcrumb = {"parent": "Audit Logs", "child": "Admin"}
+    return render_template('admin/audit_logs.html',
+                         audit_logs=audit_logs,
+                         pagination=pagination,
+                         action_types=[a[0] for a in action_types],
+                         resource_types=[r[0] for r in resource_types],
+                         breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/user-activities')
+@login_required
+@admin_required
+def user_activities():
+    """View user activities - Admin only"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 50
+    
+    # Filters
+    activity_filter = request.args.get('activity_type', '')
+    user_filter = request.args.get('user_id', type=int)
+    status_filter = request.args.get('status', '')
+    date_from = request.args.get('date_from', '')
+    date_to = request.args.get('date_to', '')
+    
+    query = UserActivity.query
+    
+    # Apply filters
+    if activity_filter:
+        query = query.filter(UserActivity.activity_type == activity_filter)
+    if user_filter:
+        query = query.filter(UserActivity.user_id == user_filter)
+    if status_filter:
+        query = query.filter(UserActivity.status == status_filter)
+    if date_from:
+        try:
+            date_from_obj = datetime.strptime(date_from, '%Y-%m-%d')
+            query = query.filter(UserActivity.created_at >= date_from_obj)
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+            query = query.filter(UserActivity.created_at <= date_to_obj)
+        except ValueError:
+            pass
+    
+    # Order by most recent first
+    query = query.order_by(UserActivity.created_at.desc())
+    
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    activities = pagination.items
+    
+    # Get unique activity types for filters
+    activity_types = db.session.query(UserActivity.activity_type).distinct().all()
+    
+    breadcrumb = {"parent": "User Activities", "child": "Admin"}
+    return render_template('admin/user_activities.html',
+                         activities=activities,
+                         pagination=pagination,
+                         activity_types=[a[0] for a in activity_types],
+                         breadcrumb=breadcrumb)
 

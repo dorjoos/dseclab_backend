@@ -126,10 +126,33 @@ app.register_blueprint(search_blueprint)
 from .notification_routes import notification_bp as notification_blueprint
 app.register_blueprint(notification_blueprint)
 
-from .models import User, Todo, BreachedCredential, Company, Notification
+from .models import User, Todo, BreachedCredential, Company, Notification, AuditLog, UserActivity
 # admin.add_view(ModelView(Todo,db.session))
 # admin.add_view(ModelView(User,db.session))
 
 # @login_manager.user_loader
 # def load_user(user_id):
 #     return User.query.get(int(user_id))
+
+
+# Error handlers
+@app.errorhandler(403)
+def forbidden_error(error):
+    """Handle 403 Forbidden errors"""
+    from flask import render_template
+    return render_template('pages/error-pages/error-403.html'), 403
+
+
+@app.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 Not Found errors"""
+    from flask import render_template
+    return render_template('pages/error-pages/error-404.html'), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 Internal Server errors"""
+    from flask import render_template
+    db.session.rollback()
+    return render_template('pages/error-pages/error-500.html'), 500

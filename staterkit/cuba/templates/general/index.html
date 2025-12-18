@@ -290,13 +290,13 @@
                       {% endif %}
                     </td>
                     <td>
-                      <div class="action-items">
+                      <div class="btn-group">
                         <a href="{{ url_for('threat_intel.breached_creds_view', id=event.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
-                          <i data-feather="eye"></i>
+                          <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                         </a>
                         {% if current_user.can_edit() %}
                         <a href="{{ url_for('threat_intel.breached_creds_edit', id=event.id) }}" class="btn btn-sm btn-outline-info" title="Edit">
-                          <i data-feather="edit"></i>
+                          <i data-feather="edit" style="width: 14px; height: 14px;"></i>
                         </a>
                         {% endif %}
                       </div>

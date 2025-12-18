@@ -9,15 +9,11 @@
           <h5>Breached Credentials - {{ company.name }}</h5>
           <div class="card-header-right">
             <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="arrow-left"></i> Back to Companies
+              <i data-feather="arrow-left" style="width: 14px; height: 14px;"></i> Back to Companies
             </a>
             <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" class="btn btn-primary btn-sm">
-              <i data-feather="edit-2"></i> Edit Company
+              <i data-feather="edit-2" style="width: 14px; height: 14px;"></i> Edit Company
             </a>
-            <i class="icofont icofont-maximize full-card"></i>
-            <i class="icofont icofont-minus minimize-card"></i>
-            <i class="icofont icofont-refresh reload-card"></i>
-            <i class="icofont icofont-error close-card"></i>
           </div>
         </div>
         <div class="card-body">
@@ -113,7 +109,7 @@
                     <td>{{ cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '-' }}</td>
                     <td>
                       <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" 
-                         class="btn btn-primary btn-xs" title="View Details">
+                         class="btn btn-primary btn-sm" title="View Details">
                         <i data-feather="eye"></i>
                       </a>
                     </td>

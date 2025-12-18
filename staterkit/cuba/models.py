@@ -193,3 +193,45 @@ class WatchlistEntry(db.Model):
     
     def __repr__(self):
         return f"WatchlistEntry('{self.entry_type}', '{self.entry_value}')"
+
+
+class AuditLog(db.Model):
+    """Audit log for tracking all important system actions"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for system actions
+    action_type = db.Column(db.String(50), nullable=False, index=True)  # create, update, delete, login, logout, export, etc.
+    resource_type = db.Column(db.String(50), nullable=False, index=True)  # user, company, breached_credential, watchlist, etc.
+    resource_id = db.Column(db.Integer, nullable=True)  # ID of the affected resource
+    description = db.Column(db.Text, nullable=False)  # Human-readable description
+    ip_address = db.Column(db.String(45), nullable=True)  # IPv4 or IPv6
+    user_agent = db.Column(db.String(500), nullable=True)  # Browser/user agent
+    old_values = db.Column(db.Text, nullable=True)  # JSON string of old values (for updates)
+    new_values = db.Column(db.Text, nullable=True)  # JSON string of new values (for updates)
+    status = db.Column(db.String(20), default='success', nullable=False)  # success, failed, error
+    error_message = db.Column(db.Text, nullable=True)  # Error message if status is failed/error
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, index=True)
+    
+    # Relationships
+    user = db.relationship('User', backref='audit_logs')
+    
+    def __repr__(self):
+        return f"AuditLog('{self.action_type}', '{self.resource_type}', '{self.user_id}', '{self.created_at}')"
+
+
+class UserActivity(db.Model):
+    """User activity tracking - login history, failed attempts, etc."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for failed login attempts
+    activity_type = db.Column(db.String(50), nullable=False, index=True)  # login, logout, login_failed, password_change, etc.
+    ip_address = db.Column(db.String(45), nullable=True, index=True)  # IPv4 or IPv6
+    user_agent = db.Column(db.String(500), nullable=True)  # Browser/user agent
+    location = db.Column(db.String(200), nullable=True)  # Geographic location (if available)
+    status = db.Column(db.String(20), default='success', nullable=False)  # success, failed
+    failure_reason = db.Column(db.String(200), nullable=True)  # Reason for failure (invalid_password, user_inactive, etc.)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, index=True)
+    
+    # Relationships
+    user = db.relationship('User', backref='activities')
+    
+    def __repr__(self):
+        return f"UserActivity('{self.activity_type}', '{self.user_id}', '{self.status}', '{self.created_at}')"

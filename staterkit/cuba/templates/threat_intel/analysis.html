@@ -17,10 +17,6 @@
             <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-primary btn-sm">
               <i data-feather="list"></i> View All
             </a>
-            <i class="icofont icofont-maximize full-card"></i>
-            <i class="icofont icofont-minus minimize-card"></i>
-            <i class="icofont icofont-refresh reload-card"></i>
-            <i class="icofont icofont-error close-card"></i>
           </div>
         </div>
         <div class="card-body">
@@ -234,7 +230,7 @@
                             </td>
                             <td>{{ cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '-' }}</td>
                             <td>
-                              <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" class="btn btn-outline-primary btn-xs">
+                              <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" class="btn btn-outline-primary btn-sm">
                                 <i data-feather="eye"></i>
                               </a>
                             </td>
