@@ -18,9 +18,9 @@ def build_domain_match_query(domains):
     Build a query filter that matches breached credentials using watchlist entries.
     
     Matches based on:
-    - Application (company_name) matches watchlist entry (exact or contains)
-    - Email address contains the watchlist domain
-    - Email domain matches (exact or subdomain)
+    - Domain field matches watchlist entry (exact or contains)
+    - Username field contains the watchlist domain
+    - URL field contains the watchlist domain
     
     Args:
         domains: List of domain/IP/values from watchlist (e.g., ['test.com', '1.1.1.2', 'aduu.com'])
@@ -39,21 +39,20 @@ def build_domain_match_query(domains):
         if not domain:
             continue
         
-        # Match Application field - exact match or contains
-        # This allows IP addresses and other values in watchlist to match
-        conditions.append(BreachedCredential.application.ilike(f'%{domain}%'))
-        conditions.append(func.lower(BreachedCredential.application) == domain)
+        # Match domain field - exact match or contains
+        conditions.append(BreachedCredential.domain.ilike(f'%{domain}%'))
+        conditions.append(func.lower(BreachedCredential.domain) == domain)
         
-        # Match email field directly (handles both email format and username format)
+        # Match username field (handles both email format and username format)
         # For email format: user@test.com, user@e.test.com
-        conditions.append(BreachedCredential.email.ilike(f'%@{domain}'))
-        conditions.append(BreachedCredential.email.ilike(f'%@%.{domain}'))
+        conditions.append(BreachedCredential.username.ilike(f'%@{domain}'))
+        conditions.append(BreachedCredential.username.ilike(f'%@%.{domain}'))
         # For username format: if username equals domain
-        conditions.append(func.lower(BreachedCredential.email) == domain)
+        conditions.append(func.lower(BreachedCredential.username) == domain)
+        conditions.append(BreachedCredential.username.ilike(f'%{domain}%'))
         
-        # Also check email_domain for exact and subdomain matches
-        conditions.append(BreachedCredential.email_domain == domain)
-        conditions.append(BreachedCredential.email_domain.like(f'%.{domain}'))
+        # Match URL field - contains domain
+        conditions.append(BreachedCredential.url.ilike(f'%{domain}%'))
     
     # Return None if no conditions, otherwise return or_() with at least one condition
     if not conditions:

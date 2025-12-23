@@ -13,10 +13,13 @@ def get_notifications():
     """Get recent notifications for current user"""
     try:
         limit = int(request.args.get('limit', 5))
+        unread_only = request.args.get('unread_only', '').lower() in ('1', 'true', 'yes', 'on')
         
-        notifications = Notification.query.filter_by(
-            user_id=current_user.id
-        ).order_by(Notification.created_at.desc()).limit(limit).all()
+        q = Notification.query.filter_by(user_id=current_user.id)
+        if unread_only:
+            q = q.filter_by(is_read=False)
+
+        notifications = q.order_by(Notification.created_at.desc()).limit(limit).all()
         
         unread_count = Notification.query.filter_by(
             user_id=current_user.id,

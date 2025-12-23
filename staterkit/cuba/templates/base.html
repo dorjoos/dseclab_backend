@@ -114,6 +114,9 @@
     
     <!-- Ensure Feather icons are initialized in card-header-right -->
     <script>
+      // CSRF token for same-origin AJAX (Flask-WTF CSRFProtect)
+      window.CSRF_TOKEN = {{ csrf_token()|tojson }};
+
       // Re-initialize Feather icons after page load and for dynamically added content
       if (typeof feather !== 'undefined') {
         feather.replace();
@@ -171,6 +174,10 @@
           const revealed = mask.querySelector('.revealed-password');
           
           if (masked && revealed) {
+            // Ensure initial state is fully masked (prevents partial reveal on first render)
+            masked.style.display = 'inline-block';
+            revealed.style.display = 'none';
+
             mask.addEventListener('mouseenter', function() {
               masked.style.display = 'none';
               revealed.style.display = 'inline-block';
@@ -266,7 +273,7 @@
             return;
           }
           
-          fetch('/api/notifications?limit=5', {
+          fetch('/api/notifications?limit=5&unread_only=1', {
             method: 'GET',
             credentials: 'same-origin',
             headers: {
@@ -347,18 +354,33 @@
                   link.addEventListener('click', function(e) {
                     const notifId = this.getAttribute('data-notification-id');
                     if (notifId) {
-                      fetch(`/api/notifications/${notifId}/read`, {
+                      const href = this.getAttribute('href');
+                      const shouldNavigate = href && href !== '#' && href !== 'javascript:void(0)' && href !== 'javascript:void(0);';
+                      if (shouldNavigate) e.preventDefault();
+
+                      const markPromise = fetch(`/api/notifications/${notifId}/read`, {
                         method: 'POST',
+                        credentials: 'same-origin',
+                        keepalive: true,
                         headers: {
-                          'Content-Type': 'application/json',
+                          'Accept': 'application/json',
+                          'X-CSRFToken': window.CSRF_TOKEN,
                         }
                       })
-                      .then(response => response.json())
-                      .then(() => {
-                        // Don't prevent navigation, just mark as read
-                        loadNotifications();
+                      .then(response => {
+                        if (!response.ok) {
+                          throw new Error('Failed to mark notification as read: ' + response.status);
+                        }
+                        return response.json().catch(() => ({}));
                       })
+                      .then(() => loadNotifications())
                       .catch(error => console.error('Error marking notification as read:', error));
+
+                      // If this click navigates away, give the POST a tiny window to flush.
+                      if (shouldNavigate) {
+                        Promise.race([markPromise, new Promise(resolve => setTimeout(resolve, 250))])
+                          .finally(() => { window.location.href = href; });
+                      }
                     }
                   });
                 });
@@ -374,8 +396,11 @@
                       e.preventDefault();
                       fetch('/api/notifications/mark-all-read', {
                         method: 'POST',
+                        credentials: 'same-origin',
+                        keepalive: true,
                         headers: {
-                          'Content-Type': 'application/json',
+                          'Accept': 'application/json',
+                          'X-CSRFToken': window.CSRF_TOKEN,
                         }
                       })
                       .then(response => response.json())
@@ -450,7 +475,7 @@
             
             function loadNotifications() {
               console.log('Loading notifications...');
-              fetch('/api/notifications?limit=5', {
+              fetch('/api/notifications?limit=5&unread_only=1', {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers: {
@@ -522,17 +547,32 @@
                       link.addEventListener('click', function(e) {
                         const notifId = this.getAttribute('data-notification-id');
                         if (notifId) {
-                          fetch(`/api/notifications/${notifId}/read`, {
+                          const href = this.getAttribute('href');
+                          const shouldNavigate = href && href !== '#' && href !== 'javascript:void(0)' && href !== 'javascript:void(0);';
+                          if (shouldNavigate) e.preventDefault();
+
+                          const markPromise = fetch(`/api/notifications/${notifId}/read`, {
                             method: 'POST',
+                            credentials: 'same-origin',
+                            keepalive: true,
                             headers: {
-                              'Content-Type': 'application/json',
+                              'Accept': 'application/json',
+                              'X-CSRFToken': window.CSRF_TOKEN,
                             }
                           })
-                          .then(response => response.json())
-                          .then(() => {
-                            loadNotifications();
+                          .then(response => {
+                            if (!response.ok) {
+                              throw new Error('Failed to mark notification as read: ' + response.status);
+                            }
+                            return response.json().catch(() => ({}));
                           })
+                          .then(() => loadNotifications())
                           .catch(error => console.error('Error marking notification as read:', error));
+
+                          if (shouldNavigate) {
+                            Promise.race([markPromise, new Promise(resolve => setTimeout(resolve, 250))])
+                              .finally(() => { window.location.href = href; });
+                          }
                         }
                       });
                     });
@@ -548,8 +588,11 @@
                           e.preventDefault();
                           fetch('/api/notifications/mark-all-read', {
                             method: 'POST',
+                            credentials: 'same-origin',
+                            keepalive: true,
                             headers: {
-                              'Content-Type': 'application/json',
+                              'Accept': 'application/json',
+                              'X-CSRFToken': window.CSRF_TOKEN,
                             }
                           })
                           .then(response => response.json())

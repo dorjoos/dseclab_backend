@@ -55,20 +55,20 @@
           </div>
 
           <!-- Detailed Report Table -->
-          <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+          <div class="table-responsive dom-source-data custom-scrollbar">
+            <table class="display table-striped" style="width:100%">
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Company</th>
-                  <th>Company Type</th>
-                  <th>Leaked Account</th>
+                  <th>Username</th>
+                  <th>Domain</th>
+                  <th>Domain</th>
                   <th>Domain</th>
                   <th>Type</th>
-                  <th>Category</th>
-                  <th>Status</th>
+                  <th>Source</th>
+                  <th>Type</th>
                   <th>Marked</th>
-                  <th>Discovered</th>
+                  <th>Created</th>
                   <th>Source</th>
                 </tr>
               </thead>
@@ -77,30 +77,20 @@
                   {% for cred in breached_creds %}
                   <tr>
                     <td>{{ loop.index }}</td>
-                    <td><strong>{{ cred.application }}</strong></td>
-                    <td><span class="badge badge-light-secondary">{{ cred.company_type }}</span></td>
-                    <td>{{ cred.email }}</td>
-                    <td><span class="badge badge-light-info">{{ cred.email_domain }}</span></td>
+                    <td><strong>{{ cred.username or '-' }}</strong></td>
+                    <td><span class="badge badge-light-secondary">{{ cred.domain or '-' }}</span></td>
+                    <td>{{ cred.domain or '-' }}</td>
+                    <td><span class="badge badge-light-info">{{ cred.domain or '-' }}</span></td>
                     <td>
                       <span class="badge badge-light-{{ cred.type_color }}">
-                        {{ cred.type|title }}
+                        {{ cred.type|title if cred.type else '-' }}
                       </span>
                     </td>
                     <td>
-                      {% if cred.leak_category == 'corporate' %}
-                        <span class="badge badge-light-warning">Corporate</span>
-                      {% else %}
-                        <span class="badge badge-light-info">Consumer</span>
-                      {% endif %}
+                      <span class="badge badge-light-secondary">{{ cred.source or '-' }}</span>
                     </td>
                     <td>
-                      {% if cred.status == 'active' %}
-                        <span class="badge badge-light-danger">Active</span>
-                      {% elif cred.status == 'new' %}
-                        <span class="badge badge-light-primary">New</span>
-                      {% else %}
-                        <span class="badge badge-light-secondary">{{ cred.status|title }}</span>
-                      {% endif %}
+                      <span class="badge badge-light-secondary">{{ cred.type|title if cred.type else '-' }}</span>
                     </td>
                     <td>
                       {% if cred.is_marked %}
@@ -109,7 +99,7 @@
                         <span class="text-muted">No</span>
                       {% endif %}
                     </td>
-                    <td>{{ cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '-' }}</td>
+                    <td>{{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}</td>
                     <td>{{ cred.source or '-' }}</td>
                   </tr>
                   {% endfor %}

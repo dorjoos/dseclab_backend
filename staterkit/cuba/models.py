@@ -126,42 +126,37 @@ class Notification(db.Model):
 
 class BreachedCredential(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    application = db.Column(db.String(200), nullable=False, index=True)  # Application field (not company_name)
-    company_type = db.Column(db.String(50), nullable=False)  # bank, operator, government, etc.
-    email = db.Column(db.String(255), nullable=False, index=True)  # Leaked Account
-    email_domain = db.Column(db.String(200), nullable=False, index=True)  # Extracted domain for filtering
-    username = db.Column(db.String(200))
-    password_hash = db.Column(db.String(255))  # Hashed password if available
-    source = db.Column(db.String(200))  # Where the breach was discovered
-    breach_date = db.Column(db.Date)  # Date of the breach
-    discovered_date = db.Column(db.Date, default=datetime.date.today)  # When we discovered it
-    type = db.Column(db.String(50), default='combolist', nullable=False, index=True)  # combolist, stealer, malware, pastebin, etc.
-    leak_category = db.Column(db.String(20), default='consumer', nullable=False, index=True)  # consumer, corporate
-    ip_address = db.Column(db.String(45), nullable=True, index=True)  # IPv4 or IPv6
-    device_info = db.Column(db.String(200), nullable=True)  # Device identifier
-    status = db.Column(db.String(20), default='active')  # active, verified, false_positive, resolved
+    _id = db.Column(db.String(200), nullable=True, index=True)  # External ID
+    _ignored = db.Column(db.Boolean, default=False)  # Ignored flag
+    _index = db.Column(db.String(200), nullable=True)  # Index reference
+    _score = db.Column(db.Float, nullable=True)  # Score value
+    domain = db.Column(db.String(200), nullable=True, index=True)  # Domain
+    password = db.Column(db.String(500), nullable=True)  # Password (plain text)
+    source = db.Column(db.String(200), nullable=True)  # Source
+    type = db.Column(db.String(50), nullable=True, index=True)  # Type
+    url = db.Column(db.String(500), nullable=True)  # URL
+    username = db.Column(db.String(200), nullable=True, index=True)  # Username
+    
+    # Metadata fields (kept for system functionality)
     is_marked = db.Column(db.Boolean, default=False)  # Marked by member for review
     marked_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     marked_at = db.Column(db.DateTime, nullable=True)
-    is_new = db.Column(db.Boolean, default=True)  # New tag for recently added credentials
-    description = db.Column(db.Text)  # Additional notes
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
-    
-    # Legacy field for backward compatibility (will be removed in future)
-    severity = db.Column(db.String(20), nullable=True)  # Deprecated: use 'type' instead
 
     creator = db.relationship('User', foreign_keys=[created_by], backref='breached_credentials')
     marker = db.relationship('User', foreign_keys=[marked_by])
 
     def __repr__(self):
-        return f"BreachedCredential('{self.application}', '{self.email}', '{self.type}')"
+        return f"BreachedCredential('{self.username}', '{self.domain}', '{self.type}')"
     
     @property
     def type_color(self):
         """Get color class for type tag"""
+        if not self.type:
+            return 'secondary'
         type_colors = {
             'combolist': 'primary',
             'stealer': 'danger',
@@ -172,13 +167,6 @@ class BreachedCredential(db.Model):
             'darkweb': 'dark'
         }
         return type_colors.get(self.type.lower(), 'secondary')
-
-    @staticmethod
-    def extract_domain(email: str) -> str:
-        """Extract domain from email address"""
-        if '@' in email:
-            return email.split('@')[1].lower()
-        return ""
 
 
 class WatchlistEntry(db.Model):

@@ -54,110 +54,224 @@
 {% block content %}
 <div class="container-fluid dashboard-container">
   <!-- Statistics Cards Row - Using compare-order structure -->
-  <div class="row g-4 section-spacing">
-    <div class="col-md-3 col-sm-6">
-      <div class="card compare-order">
-        <div class="card-header card-no-border">
-          <div class="header-top">
-            <div class="compare-icon shadow-primary">
-              <i data-feather="database"></i>
+  <div class="row widget-grid g-4 section-spacing">
+    <div class="col-xxl-4 col-sm-6 box-col-6">
+      <div class="card profile-box">
+        <div class="card-body">
+          <div class="d-flex media-wrapper justify-content-between">
+            <div class="flex-grow-1">
+              <div class="greeting-user">
+                <h2 class="f-w-600">Welcome to D-sec lab</h2>
+                <p>Here whats happing in your account today</p>
+                <div class="whatsnew-btn">
+                  <button class="btn btn-outline-white" type="button">Whats New !</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="clockbox">
+                <svg id="clock" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+                  <g id="face">
+                    <circle class="circle" cx="300" cy="300" r="253.9"></circle>
+                    <path class="hour-marks" d="M300.5 94V61M506 300.5h32M300.5 506v33M94 300.5H60M411.3 107.8l7.9-13.8M493 190.2l13-7.4M492.1 411.4l16.5 9.5M411 492.3l8.9 15.3M189 492.3l-9.2 15.9M107.7 411L93 419.5M107.5 189.3l-17.1-9.9M188.1 108.2l-9-15.6"></path>
+                    <circle class="mid-circle" cx="300" cy="300" r="16.2"></circle>
+                  </g>
+                  <g id="hour">
+                    <path class="hour-hand" d="M300.5 298V142"></path>
+                    <circle class="sizing-box" cx="300" cy="300" r="253.9"></circle>
+                  </g>
+                  <g id="minute">
+                    <path class="minute-hand" d="M300.5 298V67"></path>
+                    <circle class="sizing-box" cx="300" cy="300" r="253.9"></circle>
+                  </g>
+                  <g id="second">
+                    <path class="second-hand" d="M300.5 350V55"></path>
+                    <circle class="sizing-box" cx="300" cy="300" r="253.9"></circle>
+                  </g>
+                </svg>
+              </div>
+              <div class="badge f-10 p-0" id="txt"></div>
             </div>
           </div>
-        </div>
-        <div class="card-body pt-0">
-          <span class="f-w-500 c-o-light">Total Leaks</span>
-          <h4 class="mb-2"><span class="counter">{{ total_leaks|int|format_number }}</span></h4>
-          <div role="progressbar" class="progress">
-            <div class="bg-primary progress-bar" style="width: {% if total_leaks > 0 %}{{ ((total_leaks / (total_leaks + 1000)) * 100)|round(1) }}{% else %}0{% endif %}%;"></div>
+          <div class="cartoon">
+            <img class="img-fluid" src="{{ url_for('static', filename = 'assets/images/dashboard/cartoon.svg') }}" alt="vector women with leptop">
           </div>
-          <span class="user-growth f-12 f-w-500">
-            <i data-feather="{% if total_change >= 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 12px; height: 12px;" class="{% if total_change >= 0 %}txt-success{% else %}txt-danger{% endif %}"></i>
-            <span class="{% if total_change >= 0 %}txt-success{% else %}txt-danger{% endif %}">
-              {% if total_change >= 0 %}+{% endif %}{{ total_change }}
-            </span>
-          </span>
-          <span class="user-text">last month</span>
         </div>
       </div>
     </div>
-    
-    <div class="col-md-3 col-sm-6">
-      <div class="card compare-order">
-        <div class="card-header card-no-border">
-          <div class="header-top">
-            <div class="compare-icon shadow-primary" style="background-color: rgba(13, 202, 240, 0.1);">
-              <i data-feather="users" style="color: #0dcaf0;"></i>
+
+    {% set _type_counts = type_chart_data|default({}) %}
+    {% set _combolist_count = (_type_counts.get('combolist', 0) or 0) %}
+    {% set _malware_count = (_type_counts.get('malware', 0) or 0) %}
+
+    <div class="col-xxl-auto col-xl-3 col-sm-6 box-col-3">
+      <div class="row">
+        <div class="col-xl-12">
+          <div class="card widget-1">
+            <div class="card-body">
+              <div class="widget-content">
+                <div class="widget-round primary">
+                  <div class="bg-round">
+                    <svg>
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#c-invoice"></use>
+                    </svg>
+                    <svg class="half-circle svg-fill">
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#halfcircle"></use>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4><span class="counter">{{ total_leaks|int|format_number }}</span></h4><span class="f-light">Total Leaks</span>
+                </div>
+              </div>
+              <div class="font-{% if total_change >= 0 %}success{% else %}danger{% endif %} f-w-500">
+                <i class="bookmark-search me-1" data-feather="{% if total_change >= 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 14px; height: 14px;"></i>
+                <span class="{% if total_change >= 0 %}txt-success{% else %}txt-danger{% endif %}">{% if total_change >= 0 %}+{% endif %}{{ total_change }}</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="card-body pt-0">
-          <span class="f-w-500 c-o-light">Consumer Leaks</span>
-          <h4 class="mb-2"><span class="counter">{{ consumer_leaks|int|format_number }}</span></h4>
-          <div role="progressbar" class="progress">
-            <div class="bg-primary progress-bar" style="width: {% if total_leaks > 0 %}{{ ((consumer_leaks / total_leaks) * 100)|round(1) }}{% else %}0{% endif %}%; background-color: #0dcaf0 !important;"></div>
+        <div class="col-xl-12">
+          <div class="card widget-1">
+            <div class="card-body">
+              <div class="widget-content">
+                <div class="widget-round secondary">
+                  <div class="bg-round">
+                    <svg>
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#c-customer"></use>
+                    </svg>
+                    <svg class="half-circle svg-fill">
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#halfcircle"></use>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4><span class="counter">{{ consumer_leaks|int|format_number }}</span></h4><span class="f-light">Consumer Leaks</span>
+                </div>
+              </div>
+              <div class="font-{% if consumer_change >= 0 %}success{% else %}danger{% endif %} f-w-500">
+                <i class="bookmark-search me-1" data-feather="{% if consumer_change >= 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 14px; height: 14px;"></i>
+                <span class="{% if consumer_change >= 0 %}txt-success{% else %}txt-danger{% endif %}">{% if consumer_change >= 0 %}+{% endif %}{{ consumer_change }}</span>
+              </div>
+            </div>
           </div>
-          <span class="user-growth f-12 f-w-500">
-            <i data-feather="{% if consumer_change >= 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 12px; height: 12px;" class="{% if consumer_change >= 0 %}txt-success{% else %}txt-danger{% endif %}"></i>
-            <span class="{% if consumer_change >= 0 %}txt-success{% else %}txt-danger{% endif %}">
-              {% if consumer_change >= 0 %}+{% endif %}{{ consumer_change }}
-            </span>
-          </span>
-          <span class="user-text">last month</span>
         </div>
       </div>
     </div>
-    
-    <div class="col-md-3 col-sm-6">
-      <div class="card compare-order">
-        <div class="card-header card-no-border">
-          <div class="header-top">
-            <div class="compare-icon shadow-primary" style="background-color: rgba(255, 193, 7, 0.1);">
-              <i data-feather="briefcase" style="color: #ffc107;"></i>
+
+    <div class="col-xxl-auto col-xl-3 col-sm-6 box-col-3">
+      <div class="row">
+        <div class="col-xl-12">
+          <div class="card widget-1">
+            <div class="card-body">
+              <div class="widget-content">
+                <div class="widget-round warning">
+                  <div class="bg-round">
+                    <svg>
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#c-revenue"></use>
+                    </svg>
+                    <svg class="half-circle svg-fill">
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#halfcircle"></use>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4><span class="counter">{{ corporate_leaks|int|format_number }}</span></h4><span class="f-light">Corporate Leaks</span>
+                </div>
+              </div>
+              {% if corporate_change == 0 %}
+              <div class="font-secondary f-w-500">
+                <i class="bookmark-search me-1" data-feather="minus" style="width: 14px; height: 14px;"></i>
+                <span class="txt-muted">0</span>
+              </div>
+              {% else %}
+              <div class="font-{% if corporate_change > 0 %}success{% else %}danger{% endif %} f-w-500">
+                <i class="bookmark-search me-1" data-feather="{% if corporate_change > 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 14px; height: 14px;"></i>
+                <span class="{% if corporate_change > 0 %}txt-success{% else %}txt-danger{% endif %}">{% if corporate_change > 0 %}+{% endif %}{{ corporate_change }}</span>
+              </div>
+              {% endif %}
             </div>
           </div>
         </div>
-        <div class="card-body pt-0">
-          <span class="f-w-500 c-o-light">Corporate Leaks</span>
-          <h4 class="mb-2"><span class="counter">{{ corporate_leaks|int|format_number }}</span></h4>
-          <div role="progressbar" class="progress">
-            <div class="bg-primary progress-bar" style="width: {% if total_leaks > 0 %}{{ ((corporate_leaks / total_leaks) * 100)|round(1) }}{% else %}0{% endif %}%; background-color: #ffc107 !important;"></div>
+        <div class="col-xl-12">
+          <div class="card widget-1">
+            <div class="card-body">
+              <div class="widget-content">
+                <div class="widget-round secondary">
+                  <div class="bg-round">
+                    <svg>
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#fill-error"></use>
+                    </svg>
+                    <svg class="half-circle svg-fill">
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#halfcircle"></use>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4><span class="counter">{{ infected_ips_count|int|format_number }}</span></h4><span class="f-light">Infected IPs</span>
+                </div>
+              </div>
+              <div class="font-secondary f-w-500">
+                <i class="bookmark-search me-1" data-feather="minus" style="width: 14px; height: 14px;"></i>
+                <span class="txt-muted">No change</span>
+              </div>
+            </div>
           </div>
-          <span class="user-growth f-12 f-w-500">
-            {% if corporate_change == 0 %}
-              <i data-feather="minus" style="width: 12px; height: 12px;" class="txt-muted"></i>
-              <span class="txt-muted">0</span>
-            {% else %}
-              <i data-feather="{% if corporate_change > 0 %}trending-up{% else %}trending-down{% endif %}" style="width: 12px; height: 12px;" class="{% if corporate_change > 0 %}txt-success{% else %}txt-danger{% endif %}"></i>
-              <span class="{% if corporate_change > 0 %}txt-success{% else %}txt-danger{% endif %}">
-                {% if corporate_change > 0 %}+{% endif %}{{ corporate_change }}
-              </span>
-            {% endif %}
-          </span>
-          <span class="user-text">last month</span>
         </div>
       </div>
     </div>
-    
-    <div class="col-md-3 col-sm-6">
-      <div class="card compare-order">
-        <div class="card-header card-no-border">
-          <div class="header-top">
-            <div class="compare-icon shadow-primary" style="background-color: rgba(220, 53, 69, 0.1);">
-              <i data-feather="alert-triangle" style="color: #dc3545;"></i>
+
+    <div class="col-xxl-auto col-xl-3 col-sm-6 box-col-3">
+      <div class="row">
+        <div class="col-xl-12">
+          <div class="card widget-1">
+            <div class="card-body">
+              <div class="widget-content">
+                <div class="widget-round info">
+                  <div class="bg-round">
+                    <svg>
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#stroke-activity"></use>
+                    </svg>
+                    <svg class="half-circle svg-fill">
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#halfcircle"></use>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4><span class="counter">{{ _malware_count|int|format_number }}</span></h4><span class="f-light">Malware Leaks</span>
+                </div>
+              </div>
+              <div class="font-secondary f-w-500">
+                <i class="bookmark-search me-1" data-feather="minus" style="width: 14px; height: 14px;"></i>
+                <span class="txt-muted">No change</span>
+              </div>
             </div>
           </div>
         </div>
-        <div class="card-body pt-0">
-          <span class="f-w-500 c-o-light">Infected IPs</span>
-          <h4 class="mb-2"><span class="counter">{{ infected_ips_count|int|format_number }}</span></h4>
-          <div role="progressbar" class="progress">
-            <div class="bg-primary progress-bar" style="width: {% if infected_ips_count > 0 %}50{% else %}0{% endif %}%; background-color: #dc3545 !important;"></div>
+        <div class="col-xl-12">
+          <div class="card widget-1">
+            <div class="card-body">
+              <div class="widget-content">
+                <div class="widget-round success">
+                  <div class="bg-round">
+                    <svg>
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#orders"></use>
+                    </svg>
+                    <svg class="half-circle svg-fill">
+                      <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#halfcircle"></use>
+                    </svg>
+                  </div>
+                </div>
+                <div>
+                  <h4><span class="counter">{{ _combolist_count|int|format_number }}</span></h4><span class="f-light">Combolist Leaks</span>
+                </div>
+              </div>
+              <div class="font-secondary f-w-500">
+                <i class="bookmark-search me-1" data-feather="minus" style="width: 14px; height: 14px;"></i>
+                <span class="txt-muted">No change</span>
+              </div>
+            </div>
           </div>
-          <span class="user-growth f-12 f-w-500">
-            <i data-feather="minus" style="width: 12px; height: 12px;" class="txt-muted"></i>
-            <span class="txt-muted">No change</span>
-          </span>
-          <span class="user-text">last month</span>
         </div>
       </div>
     </div>
@@ -165,29 +279,47 @@
   
   <!-- Charts Row - Using Cuba Template card and chart-container classes -->
   <div class="row g-4 section-spacing">
-    <div class="col-xl-8">
-      <div class="card">
-        <div class="card-header">
-          <h5>
-            <i data-feather="trending-up"></i>
-            Leak Detection Trends (Last 30 Days)
-          </h5>
+    <div class="col-xl-6">
+      <div class="card visits-wrapper">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <h5>Leak Detection Trends</h5>
+            <div class="card-header-right-icon">
+              <div class="dropdown custom-dropdown">
+                <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Last 30 Days</button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#!">Last 7 Days</a></li>
+                  <li><a class="dropdown-item" href="#!">Last 30 Days</a></li>
+                  <li><a class="dropdown-item" href="#!">Last 90 Days</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
+        <div class="card-body pt-0">
           <div id="leakTrendsChart" class="apexcharts-inner apexcharts-graphical"></div>
         </div>
       </div>
     </div>
     
-    <div class="col-xl-4">
-      <div class="card">
-        <div class="card-header">
-          <h5>
-            <i data-feather="pie-chart"></i>
-            Category Distribution
-          </h5>
+    <div class="col-xl-6">
+      <div class="card visits-wrapper">
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <h5>Category Distribution</h5>
+            <div class="card-header-right-icon">
+              <div class="dropdown custom-dropdown">
+                <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">Last 30 Days</button>
+                <ul class="dropdown-menu">
+                  <li><a class="dropdown-item" href="#!">Last 7 Days</a></li>
+                  <li><a class="dropdown-item" href="#!">Last 30 Days</a></li>
+                  <li><a class="dropdown-item" href="#!">Last 90 Days</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
+        <div class="card-body pt-0">
           <div id="categoryChart" class="apexcharts-inner apexcharts-graphical"></div>
         </div>
       </div>
@@ -220,16 +352,93 @@
       </div>
     </div>
     
-    <div class="col-xl-9">
+    <div class="col-xxl-7 col-lg-8 col-md-7 box-col-8">
       <div class="card">
-        <div class="card-header">
-          <h5>
-            <i data-feather="bar-chart-2"></i>
-            Leak Distribution by Type
-          </h5>
+        <div class="card-header card-no-border">
+          <div class="header-top">
+            <h5>Leak Distribution by Type</h5>
+            <div class="card-header-right-icon">
+              <div class="dropdown icon-dropdown">
+                <button class="btn dropdown-toggle" id="leakTypeOverview" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="icon-more-alt"></i></button>
+                <div class="dropdown-menu dropdown-menu-end" aria-labelledby="leakTypeOverview">
+                  <a class="dropdown-item" href="#!">Last 7 Days</a>
+                  <a class="dropdown-item" href="#!">Last 30 Days</a>
+                  <a class="dropdown-item" href="#!">Last 90 Days</a>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div id="typeChart" class="apexcharts-inner apexcharts-graphical"></div>
+        <div class="card-body pt-0">
+          <div class="row m-0 overall-card overview-card">
+            <div class="col-xl-9 col-md-8 col-sm-8 p-0 box-col-8 w-md-100">
+              <div class="chart-right">
+                <div class="row">
+                  <div class="col-xl-12">
+                    <div class="card-body p-0">
+                      {% set _type_bg = {
+                        'combolist': 'bg-primary',
+                        'stealer': 'bg-danger',
+                        'malware': 'bg-warning',
+                        'pastebin': 'bg-info',
+                        'breach': 'bg-secondary',
+                        'phishing': 'bg-danger',
+                        'darkweb': 'bg-dark'
+                      } %}
+                      {# Prefer Malware first, then Stealer, then Combolist; fill remaining by count #}
+                      {% set _type_counts = type_chart_data|default({}) %}
+                      {% set _preferred = ['malware', 'stealer', 'combolist'] %}
+                      {% set _top_types = [] %}
+                      {% for t in _preferred %}
+                        {% if t in _type_counts %}
+                          {% set _ = _top_types.append([t, _type_counts.get(t)]) %}
+                        {% endif %}
+                      {% endfor %}
+                      {% if _top_types|length < 3 %}
+                        {% for t, cnt in (_type_counts|dictsort(by='value')|reverse|list) %}
+                          {% if _top_types|length < 3 and t not in _preferred %}
+                            {% set _ = _top_types.append([t, cnt]) %}
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                      {% if _top_types and _top_types|length > 0 %}
+                      <ul class="balance-data">
+                        {% for t, cnt in _top_types %}
+                        <li><span class="circle {{ _type_bg.get(t, 'bg-secondary') }}"></span><span class="f-light ms-1">{{ t|title }}</span></li>
+                        {% endfor %}
+                      </ul>
+                      {% endif %}
+                      <div class="current-sale-container order-container">
+                        <div class="overview-wrapper">
+                          <div id="typeChart" class="apexcharts-inner apexcharts-graphical"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-xl-3 col-md-4 col-sm-4 p-0 box-col-4e ds-md-none">
+              <div class="row g-sm-3 g-2">
+                {% set _icon_ids = ['orders', 'expense', 'doller-return'] %}
+                {% for t, cnt in _top_types %}
+                <div class="col-md-12">
+                  <div class="light-card balance-card widget-hover">
+                    <div class="svg-box">
+                      <svg class="svg-fill">
+                        <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg')}}#{{ _icon_ids[loop.index0] if loop.index0 < (_icon_ids|length) else 'orders' }}"></use>
+                      </svg>
+                    </div>
+                    <div>
+                      <span class="f-light">{{ t|title }}</span>
+                      <h6 class="mt-1 mb-0"><span class="counter">{{ (cnt or 0)|int|format_number }}</span></h6>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -252,15 +461,15 @@
           </div>
         </div>
         <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
+          <div class="table-responsive dom-source-data custom-scrollbar">
+            <table class="display table-striped mb-0" style="width:100%">
               <thead>
                 <tr>
-                  <th>Company</th>
-                  <th>Leaked Account</th>
+                  <th>Username</th>
+                  <th>Domain</th>
                   <th>Type</th>
                   <th>Date</th>
-                  <th>Category</th>
+                  <th>Source</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -269,33 +478,29 @@
                   {% for event in latest_events %}
                   <tr>
                     <td>
-                      <strong class="text-dark">{{ event.application }}</strong>
+                      <strong class="text-dark">{{ event.username or '-' }}</strong>
                     </td>
                     <td>
-                      <span class="text-muted">{{ event.email }}</span>
+                      <span class="badge badge-light-info">{{ event.domain or '-' }}</span>
                     </td>
                     <td>
                       <span class="badge badge-light-{{ event.type_color }}">
-                        {{ event.type|title }}
+                        {{ event.type|title if event.type else '-' }}
                       </span>
                     </td>
                     <td class="text-muted">
-                      {{ event.discovered_date.strftime('%b %d, %Y') if event.discovered_date else '-' }}
+                      {{ event.created_at.strftime('%b %d, %Y') if event.created_at else '-' }}
                     </td>
                     <td>
-                      {% if event.leak_category == 'corporate' %}
-                        <span class="badge badge-light-warning">Corporate</span>
-                      {% else %}
-                        <span class="badge badge-light-info">Consumer</span>
-                      {% endif %}
+                      <span class="badge badge-light-secondary">{{ event.source or '-' }}</span>
                     </td>
                     <td>
                       <div class="btn-group">
-                        <a href="{{ url_for('threat_intel.breached_creds_view', id=event.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                        <a href="{{ url_for('threat_intel.breached_creds_view', id=event.id) }}" class="btn btn-sm btn-primary" title="View Details">
                           <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                         </a>
                         {% if current_user.can_edit() %}
-                        <a href="{{ url_for('threat_intel.breached_creds_edit', id=event.id) }}" class="btn btn-sm btn-outline-info" title="Edit">
+                        <a href="{{ url_for('threat_intel.breached_creds_edit', id=event.id) }}" class="btn btn-sm btn-info" title="Edit">
                           <i data-feather="edit" style="width: 14px; height: 14px;"></i>
                         </a>
                         {% endif %}
@@ -463,9 +668,13 @@
   
   // Type Distribution Chart - ApexCharts Bar Chart
   const typeData = {{ type_chart_data|tojson }};
-  const typeLabels = Object.keys(typeData).map(l => l.charAt(0).toUpperCase() + l.slice(1));
-  const typeValues = Object.values(typeData);
-  const typeColors = Object.keys(typeData).map(type => {
+  const preferredTypeOrder = ['malware', 'stealer', 'combolist', 'pastebin', 'breach', 'phishing', 'darkweb'];
+  const remainingKeys = Object.keys(typeData).filter(k => !preferredTypeOrder.includes(k)).sort();
+  const orderedTypeKeys = preferredTypeOrder.filter(k => Object.prototype.hasOwnProperty.call(typeData, k)).concat(remainingKeys);
+
+  const typeLabels = orderedTypeKeys.map(l => l.charAt(0).toUpperCase() + l.slice(1));
+  const typeValues = orderedTypeKeys.map(k => typeData[k] || 0);
+  const typeColors = orderedTypeKeys.map(type => {
     const colorMap = {
       'combolist': CubaAdminConfig.primary,
       'stealer': CubaAdminConfig.danger,
@@ -547,6 +756,31 @@
       feather.replace();
     }
   }, 500);
+
+  // Dashboard clock (digital time)
+  (function() {
+    const txt = document.getElementById('txt');
+    if (!txt) return;
+
+    function pad2(n) {
+      return n < 10 ? ('0' + n) : String(n);
+    }
+
+    function updateTime() {
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12;
+      txt.textContent = `${h}:${pad2(m)} ${ampm}`;
+    }
+
+    updateTime();
+    setInterval(updateTime, 1000);
+  })();
 </script>
+
+<script src="{{ url_for('static', filename= 'assets/js/clock.js') }}"></script>
 {% endblock %}
     

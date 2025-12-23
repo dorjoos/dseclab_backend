@@ -154,7 +154,7 @@ def create_demo_data():
             companies_created.append(company)
             
             # Create 20 breached credentials for this company
-            existing_count = BreachedCredential.query.filter_by(email_domain=company.domain).count()
+            existing_count = BreachedCredential.query.filter_by(domain=company.domain).count()
             needed = 20 - existing_count
             
             if needed > 0:
@@ -164,43 +164,49 @@ def create_demo_data():
                     # Random data generation
                     first_name = random.choice(FIRST_NAMES)
                     last_name = random.choice(LAST_NAMES)
-                    email = generate_email(company.domain, first_name, last_name, i)
                     leak_type = random.choice(LEAK_TYPES)
-                    leak_category = random.choice(LEAK_CATEGORIES)
-                    status = random.choice(STATUS_OPTIONS)
+                    source = random.choice(SOURCES)
                     
-                    # Generate dates
-                    breach_date = generate_date_range(days_back=180)
-                    discovered_date = breach_date + timedelta(days=random.randint(0, 30))
-                    if discovered_date > date.today():
-                        discovered_date = date.today() - timedelta(days=random.randint(0, 7))
+                    # Generate username (can be email format or just username)
+                    if random.random() > 0.5:  # 50% chance of email format
+                        username = generate_email(company.domain, first_name, last_name, i)
+                    else:
+                        username = f"{first_name.lower()}{random.randint(1, 999)}"
                     
-                    # Generate IP and device info (only for corporate leaks)
-                    ip_address = None
-                    device_info = None
-                    if leak_category == 'corporate' and random.random() > 0.3:  # 70% chance
-                        ip_address = generate_ip_address()
-                        device_info = random.choice(DEVICE_INFOS)
+                    # Generate domain (use company domain or random domain)
+                    domain = company.domain
+                    if random.random() > 0.8:  # 20% chance of different domain
+                        domain = random.choice(['example.com', 'test.com', 'demo.org'])
                     
-                    # Create breached credential
+                    # Generate password (30% chance of having password)
+                    password = None
+                    if random.random() > 0.7:
+                        password = f"Pass{random.randint(1000, 9999)}!"
+                    
+                    # Generate URL (40% chance)
+                    url = None
+                    if random.random() > 0.6:
+                        url = f"https://{random.choice(['pastebin.com', 'github.com', 'example.com'])}/leak/{random.randint(1000, 9999)}"
+                    
+                    # Generate _id, _index, _score (Elasticsearch-like fields)
+                    _id = f"breach_{company.domain}_{i}_{random.randint(10000, 99999)}"
+                    _index = random.choice(['breaches-2024', 'leaks-2024', 'credentials-2024'])
+                    _score = round(random.uniform(0.5, 10.0), 2) if random.random() > 0.3 else None
+                    _ignored = random.random() > 0.9  # 10% chance of being ignored
+                    
+                    # Create breached credential with new field structure
                     credential = BreachedCredential(
-                        company_name=company.name,
-                        company_type=company.company_type,
-                        email=email,
-                        email_domain=company.domain,
-                        username=first_name.lower(),
-                        password_hash=None,  # No password hash for demo
-                        source=random.choice(SOURCES),
-                        breach_date=breach_date,
-                        discovered_date=discovered_date,
+                        _id=_id,
+                        _index=_index,
+                        _score=_score,
+                        _ignored=_ignored,
+                        username=username,
+                        domain=domain,
+                        password=password,
+                        source=source,
                         type=leak_type,
-                        leak_category=leak_category,
-                        ip_address=ip_address,
-                        device_info=device_info,
-                        status=status,
+                        url=url,
                         is_marked=random.random() > 0.7,  # 30% chance of being marked
-                        is_new=random.random() > 0.5,  # 50% chance of being new
-                        description=f"Demo credential #{i+1} for {company.name}",
                         company_id=company.id,
                         created_by=admin_user.id
                     )
@@ -217,7 +223,7 @@ def create_demo_data():
         print("Demo Data Creation Summary:")
         print("="*50)
         for company in companies_created:
-            count = BreachedCredential.query.filter_by(email_domain=company.domain).count()
+            count = BreachedCredential.query.filter_by(domain=company.domain).count()
             print(f"  {company.name} ({company.domain}): {count} credentials")
         
         total_creds = BreachedCredential.query.count()

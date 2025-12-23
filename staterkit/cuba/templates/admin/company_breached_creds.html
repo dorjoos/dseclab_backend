@@ -72,16 +72,16 @@
           </div>
 
           <!-- Breached Credentials Table -->
-          <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+          <div class="table-responsive dom-source-data custom-scrollbar">
+            <table class="display table-striped" style="width:100%">
               <thead>
                 <tr>
-                  <th>Email</th>
                   <th>Username</th>
+                  <th>Domain</th>
                   <th>Type</th>
-                  <th>Leak Category</th>
-                  <th>Status</th>
-                  <th>Discovered</th>
+                  <th>Source</th>
+                  <th>Type</th>
+                  <th>Created</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -89,24 +89,20 @@
                 {% if breached_creds %}
                   {% for cred in breached_creds %}
                   <tr>
-                    <td><strong>{{ cred.email }}</strong></td>
-                    <td>{{ cred.username or '-' }}</td>
+                    <td><strong>{{ cred.username or '-' }}</strong></td>
+                    <td>{{ cred.domain or '-' }}</td>
                     <td>
                       <span class="badge badge-light-{{ cred.type_color }}">
-                        {{ cred.type }}
+                        {{ cred.type or '-' }}
                       </span>
                     </td>
                     <td>
-                      <span class="badge badge-light-{{ 'primary' if cred.leak_category == 'corporate' else 'secondary' }}">
-                        {{ cred.leak_category }}
-                      </span>
+                      <span class="badge badge-light-secondary">{{ cred.source or '-' }}</span>
                     </td>
                     <td>
-                      <span class="badge badge-light-{{ 'success' if cred.status == 'resolved' else 'danger' if cred.status == 'active' else 'warning' }}">
-                        {{ cred.status }}
-                      </span>
+                      <span class="badge badge-light-secondary">{{ cred.type or '-' }}</span>
                     </td>
-                    <td>{{ cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '-' }}</td>
+                    <td>{{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}</td>
                     <td>
                       <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" 
                          class="btn btn-primary btn-sm" title="View Details">

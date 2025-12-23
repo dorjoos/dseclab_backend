@@ -78,8 +78,8 @@ def _can_user_access_breached_cred(breached_cred):
     # Get domains to match (company domain + watchlist entries)
     domains_to_match = _get_user_domains_to_match()
     if not domains_to_match:
-        # Fallback to email_domain check if no watchlist
-        return breached_cred.email_domain and breached_cred.email_domain.lower() == user_domain.lower()
+        # Fallback to domain check if no watchlist
+        return breached_cred.domain and breached_cred.domain.lower() == user_domain.lower()
     
     # Check if breached credential matches any watchlist entry
     # This mirrors the logic in _build_domain_match_query
@@ -88,30 +88,28 @@ def _can_user_access_breached_cred(breached_cred):
             continue
         domain = domain.lower().strip()
         
-        # Match Application field - exact match or contains (mirrors SQL ilike)
-        if breached_cred.application:
-            app_lower = breached_cred.application.lower()
-            if domain in app_lower or app_lower == domain:
+        # Match domain field - exact match or contains
+        if breached_cred.domain:
+            domain_lower = breached_cred.domain.lower()
+            if domain in domain_lower or domain_lower == domain:
                 return True
         
-        # Match email field - check for @domain and @*.domain patterns
-        if breached_cred.email:
-            email_lower = breached_cred.email.lower()
-            # Email format: user@domain or user@*.domain
-            if f'@{domain}' in email_lower:
+        # Match username field - check if username contains domain or equals domain
+        if breached_cred.username:
+            username_lower = breached_cred.username.lower()
+            if domain in username_lower or username_lower == domain:
                 return True
-            if f'@.{domain}' in email_lower:
-                return True
-            # Username format: if email equals domain
-            if email_lower == domain:
-                return True
+            # Check if username is an email format
+            if '@' in username_lower:
+                if f'@{domain}' in username_lower:
+                    return True
+                if f'@.{domain}' in username_lower:
+                    return True
         
-        # Match email_domain field - exact or subdomain
-        if breached_cred.email_domain:
-            email_domain_lower = breached_cred.email_domain.lower()
-            if email_domain_lower == domain:
-                return True
-            if email_domain_lower.endswith(f'.{domain}'):
+        # Match URL field - check if URL contains domain
+        if breached_cred.url:
+            url_lower = breached_cred.url.lower()
+            if domain in url_lower:
                 return True
     
     return False
@@ -122,9 +120,9 @@ def _build_domain_match_query(domains):
     Build a query filter that matches breached credentials using watchlist entries.
     
     Matches based on:
-    - Application (company_name) matches watchlist entry (exact or contains)
-    - Email address contains the watchlist domain
-    - Email domain matches (exact or subdomain)
+    - Domain field matches watchlist entry (exact or contains)
+    - Username field contains the watchlist domain
+    - URL field contains the watchlist domain
     
     Args:
         domains: List of domain/IP/values from watchlist (e.g., ['test.com', '1.1.1.2', 'aduu.com'])
@@ -143,21 +141,20 @@ def _build_domain_match_query(domains):
         if not domain:
             continue
         
-        # Match Application field - exact match or contains
-        # This allows IP addresses and other values in watchlist to match
-        conditions.append(BreachedCredential.application.ilike(f'%{domain}%'))
-        conditions.append(func.lower(BreachedCredential.application) == domain)
+        # Match domain field - exact match or contains
+        conditions.append(BreachedCredential.domain.ilike(f'%{domain}%'))
+        conditions.append(func.lower(BreachedCredential.domain) == domain)
         
-        # Match email field directly (handles both email format and username format)
+        # Match username field (handles both email format and username format)
         # For email format: user@test.com, user@e.test.com
-        conditions.append(BreachedCredential.email.ilike(f'%@{domain}'))
-        conditions.append(BreachedCredential.email.ilike(f'%@%.{domain}'))
-        # For username format: if username equals domain
-        conditions.append(func.lower(BreachedCredential.email) == domain)
+        conditions.append(BreachedCredential.username.ilike(f'%@{domain}'))
+        conditions.append(BreachedCredential.username.ilike(f'%@%.{domain}'))
+        # For username format: if username equals domain or contains domain
+        conditions.append(func.lower(BreachedCredential.username) == domain)
+        conditions.append(BreachedCredential.username.ilike(f'%{domain}%'))
         
-        # Also check email_domain for exact and subdomain matches
-        conditions.append(BreachedCredential.email_domain == domain)
-        conditions.append(BreachedCredential.email_domain.like(f'%.{domain}'))
+        # Match URL field - contains domain
+        conditions.append(BreachedCredential.url.ilike(f'%{domain}%'))
     
     # Return None if no conditions, otherwise return or_() with at least one condition
     if not conditions:
@@ -238,13 +235,11 @@ def breached_creds_list():
     per_page = 10
     
     # Security: Sanitize input
-    company_filter = sanitize_input(request.args.get('company', ''))
-    company_type_filter = sanitize_input(request.args.get('company_type', ''))
     type_filter = sanitize_input(request.args.get('type', ''))  # combolist, stealer, malware, etc.
-    leak_category_filter = sanitize_input(request.args.get('leak_category', ''))  # consumer, corporate
-    status_filter = sanitize_input(request.args.get('status', ''))
+    source_filter = sanitize_input(request.args.get('source', ''))
+    domain_filter_param = sanitize_input(request.args.get('domain', ''))
     search_query = sanitize_input(request.args.get('search', ''))
-    date_filter = sanitize_input(request.args.get('date_filter', 'week'))  # today, week, month (default: week)
+    date_filter = sanitize_input(request.args.get('date_filter', 'all'))  # today, week, month, all (default: all)
     
     # Get user's company domain for filtering
     user_domain = get_user_company_domain()
@@ -256,49 +251,46 @@ def breached_creds_list():
         # Get domains to match (company domain + watchlist domains)
         domains_to_match = _get_user_domains_to_match()
         
-        # Use the same matching logic as admin (Application first, then email)
+        # Use the same matching logic as admin
         domain_filter = _build_domain_match_query(domains_to_match)
         if domain_filter is not None:
             query = query.filter(domain_filter)
         else:
             # Fallback to original behavior if no watchlist
-            query = query.filter(BreachedCredential.email_domain == user_domain)
+            query = query.filter(BreachedCredential.domain == user_domain)
     
-    # Quick date filters (default to 'week' if not specified)
+    # Quick date filters (default to 'all' if not specified)
     today = date.today()
-    if date_filter == 'all':
-        # Don't filter by date - show all
+    if date_filter == 'all' or not date_filter or date_filter == '':
+        # Default to 'all' - show all records regardless of date
+        if not date_filter or date_filter == '':
+            date_filter = 'all'
+        # Don't filter by date
         pass
     elif date_filter == 'today':
-        query = query.filter(BreachedCredential.discovered_date == today)
-    elif date_filter == 'week' or not date_filter or date_filter == '':
-        # Default to 'week' if not specified or empty
+        query = query.filter(BreachedCredential.created_at >= datetime.combine(today, datetime.min.time()))
+    elif date_filter == 'week':
         week_ago = today - timedelta(days=7)
-        query = query.filter(BreachedCredential.discovered_date >= week_ago)
-        if not date_filter or date_filter == '':
-            date_filter = 'week'
+        query = query.filter(BreachedCredential.created_at >= datetime.combine(week_ago, datetime.min.time()))
     elif date_filter == 'month':
         month_ago = today - timedelta(days=30)
-        query = query.filter(BreachedCredential.discovered_date >= month_ago)
+        query = query.filter(BreachedCredential.created_at >= datetime.combine(month_ago, datetime.min.time()))
     
     # Additional filters
-    if company_filter:
-        query = query.filter(BreachedCredential.application.ilike(f'%{company_filter}%'))
-    if company_type_filter:
-        query = query.filter(BreachedCredential.company_type == company_type_filter)
     if type_filter:
         query = query.filter(BreachedCredential.type == type_filter)
-    if leak_category_filter:
-        query = query.filter(BreachedCredential.leak_category == leak_category_filter)
-    if status_filter:
-        query = query.filter(BreachedCredential.status == status_filter)
+    if source_filter:
+        query = query.filter(BreachedCredential.source.ilike(f'%{source_filter}%'))
+    if domain_filter_param:
+        query = query.filter(BreachedCredential.domain.ilike(f'%{domain_filter_param}%'))
     if search_query:
         # Security: Use parameterized query to prevent SQL injection
         query = query.filter(
             or_(
-                BreachedCredential.email.ilike(f'%{search_query}%'),
                 BreachedCredential.username.ilike(f'%{search_query}%'),
-                BreachedCredential.application.ilike(f'%{search_query}%')
+                BreachedCredential.domain.ilike(f'%{search_query}%'),
+                BreachedCredential.password.ilike(f'%{search_query}%'),
+                BreachedCredential.source.ilike(f'%{search_query}%')
             )
         )
     
@@ -316,7 +308,7 @@ def breached_creds_list():
         if stats_domain_filter is not None:
             stats_query = stats_query.filter(stats_domain_filter)
         else:
-            stats_query = stats_query.filter(BreachedCredential.email_domain == user_domain)
+            stats_query = stats_query.filter(BreachedCredential.domain == user_domain)
     
     # Get statistics as dictionaries
     by_type_query = db.session.query(
@@ -329,54 +321,12 @@ def breached_creds_list():
         if stats_domain_filter is not None:
             by_type_query = by_type_query.filter(stats_domain_filter)
         else:
-            by_type_query = by_type_query.filter(BreachedCredential.email_domain == user_domain)
+            by_type_query = by_type_query.filter(BreachedCredential.domain == user_domain)
     by_type_result = by_type_query.group_by(BreachedCredential.type).all()
-    
-    by_leak_category_query = db.session.query(
-        BreachedCredential.leak_category,
-        func.count(BreachedCredential.id)
-    )
-    if user_domain:
-        domains_to_match = _get_user_domains_to_match()
-        stats_domain_filter = _build_domain_match_query(domains_to_match)
-        if stats_domain_filter is not None:
-            by_leak_category_query = by_leak_category_query.filter(stats_domain_filter)
-        else:
-            by_leak_category_query = by_leak_category_query.filter(BreachedCredential.email_domain == user_domain)
-    by_leak_category_result = by_leak_category_query.group_by(BreachedCredential.leak_category).all()
-    
-    by_company_type_query = db.session.query(
-        BreachedCredential.company_type,
-        func.count(BreachedCredential.id)
-    )
-    if user_domain:
-        domains_to_match = _get_user_domains_to_match()
-        stats_domain_filter = _build_domain_match_query(domains_to_match)
-        if stats_domain_filter is not None:
-            by_company_type_query = by_company_type_query.filter(stats_domain_filter)
-        else:
-            by_company_type_query = by_company_type_query.filter(BreachedCredential.email_domain == user_domain)
-    by_company_type_result = by_company_type_query.group_by(BreachedCredential.company_type).all()
-    
-    by_status_query = db.session.query(
-        BreachedCredential.status,
-        func.count(BreachedCredential.id)
-    )
-    if user_domain:
-        domains_to_match = _get_user_domains_to_match()
-        stats_domain_filter = _build_domain_match_query(domains_to_match)
-        if stats_domain_filter is not None:
-            by_status_query = by_status_query.filter(stats_domain_filter)
-        else:
-            by_status_query = by_status_query.filter(BreachedCredential.email_domain == user_domain)
-    by_status_result = by_status_query.group_by(BreachedCredential.status).all()
     
     stats = {
         'total': stats_query.count(),
         'by_type': dict(by_type_result),
-        'by_leak_category': dict(by_leak_category_result),
-        'by_company_type': dict(by_company_type_result),
-        'by_status': dict(by_status_result),
     }
     
     breadcrumb = {"parent": "Threat Intelligence", "child": "Breached Credentials", "description": "View and manage breached credentials"}
@@ -387,11 +337,9 @@ def breached_creds_list():
         date_filter = 'week'
     
     filter_dict = {
-        'company': company_filter or '',
-        'company_type': company_type_filter or '',
         'type': type_filter or '',
-        'leak_category': leak_category_filter or '',
-        'status': status_filter or '',
+        'source': source_filter or '',
+        'domain': domain_filter_param or '',
         'search': search_query or '',
         'date_filter': date_filter
     }
@@ -415,104 +363,47 @@ def breached_creds_add():
     
     if request.method == 'POST':
         # Security: Sanitize all inputs
-        application = sanitize_input(request.form.get('company_name', ''))  # Form field name is still 'company_name' for backward compatibility
-        company_type = sanitize_input(request.form.get('company_type', ''))
-        email_input = sanitize_input(request.form.get('email', ''))  # Can be email or username
+        _id = sanitize_input(request.form.get('_id', ''))
+        _index = sanitize_input(request.form.get('_index', ''))
+        _score_str = request.form.get('_score', '')
+        _ignored_str = request.form.get('_ignored', '0')
         username = sanitize_input(request.form.get('username', ''))
-        password_hash = sanitize_input(request.form.get('password_hash', ''))
+        domain = sanitize_input(request.form.get('domain', ''))
+        password = sanitize_input(request.form.get('password', ''))
         source = sanitize_input(request.form.get('source', ''))
-        breach_date_str = request.form.get('breach_date', '')
-        discovered_date_str = request.form.get('discovered_date', '')
-        type_value = sanitize_input(request.form.get('type', 'combolist'))
-        leak_category = sanitize_input(request.form.get('leak_category', 'consumer'))
-        ip_address = sanitize_input(request.form.get('ip_address', ''))
-        device_info = sanitize_input(request.form.get('device_info', ''))
-        status = sanitize_input(request.form.get('status', 'active'))
-        description = sanitize_input(request.form.get('description', ''))
+        type_value = sanitize_input(request.form.get('type', ''))
+        url = sanitize_input(request.form.get('url', ''))
         
-        # Validation
-        if not application or not email_input or not company_type:
-            flash('Application, leaked account, and company type are required.', 'warning')
-            return render_template('threat_intel/breached_creds_form.html',
-                                 breadcrumb={"parent": "Add Breached Credential", "child": "Threat Intelligence"})
-        
-        # Security: Validate email/username format
-        # Accept either email format (contains @) or username (no @)
-        # If it's an email, extract domain; if it's a username, use username as domain or empty
-        if '@' in email_input:
-            # It's an email, validate format and lowercase
-            email = email_input.lower().strip()
-            if not Company.extract_domain(email):
-                flash('Invalid email format.', 'warning')
-                return render_template('threat_intel/breached_creds_form.html',
-                                     breadcrumb={"parent": "Add Breached Credential", "child": "Threat Intelligence"})
-            email_domain = Company.extract_domain(email)
-        else:
-            # It's a username, keep as-is (don't lowercase) and use username as domain
-            email = email_input.strip()
-            email_domain = email.lower().strip() if email else ''
-        
-        # Security: Validate type, leak_category, and status
-        valid_types = ['combolist', 'stealer', 'malware', 'pastebin', 'breach', 'phishing', 'darkweb']
-        type_value = type_value if type_value in valid_types else 'combolist'
-        leak_category = leak_category if leak_category in ['consumer', 'corporate'] else 'consumer'
-        if status not in ['active', 'verified', 'false_positive', 'resolved']:
-            status = 'active'
-        
-        # Parse dates
-        breach_date = None
-        if breach_date_str:
+        # Parse _score
+        _score = None
+        if _score_str:
             try:
-                breach_date = datetime.strptime(breach_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                flash('Invalid breach date format.', 'warning')
-                return render_template('threat_intel/breached_creds_form.html',
-                                     breadcrumb={"parent": "Add Breached Credential", "child": "Threat Intelligence"})
-        
-        discovered_date = date.today()
-        if discovered_date_str:
-            try:
-                discovered_date = datetime.strptime(discovered_date_str, '%Y-%m-%d').date()
+                _score = float(_score_str)
             except ValueError:
                 pass
         
-        # Link to existing company only - NO auto-creation
-        # Companies can only be created through Company Management page by admins
+        # Parse _ignored
+        _ignored = _ignored_str == '1'
+        
+        # Link to existing company if domain is provided
         company = None
-        if application:
-            application_clean = application.strip().lower()
-            # Check if it looks like a domain (contains dot, no @, and not just an IP address pattern)
-            is_ip_address = False
-            if '.' in application_clean:
-                parts = application_clean.split('.')
-                # Check if all parts are numeric (likely an IP address)
-                if len(parts) == 4 and all(part.isdigit() for part in parts):
-                    is_ip_address = True
-            
-            # Only link to existing company if it's a domain (has dot, no @, not an IP address)
-            # Do NOT create new companies - only link to existing ones
-            if '.' in application_clean and '@' not in application_clean and not is_ip_address:
-                # Only get existing company, never create
-                company = Company.get_or_create_by_domain(application_clean, company_type, allow_create=False)
-            # If application is not a domain (e.g., IP address, username), company_id will remain None
+        if domain:
+            domain_clean = domain.strip().lower()
+            # Try to find existing company by domain
+            company = Company.query.filter_by(domain=domain_clean).first()
         
         # Create new breached credential
         breached_cred = BreachedCredential(
-            application=application,
-            company_type=company_type,
-            email=email,
-            email_domain=email_domain,
+            _id=_id if _id else None,
+            _index=_index if _index else None,
+            _score=_score,
+            _ignored=_ignored,
             username=username if username else None,
-            password_hash=password_hash if password_hash else None,
+            domain=domain if domain else None,
+            password=password if password else None,
             source=source if source else None,
-            breach_date=breach_date,
-            discovered_date=discovered_date,
-            type=type_value,
-            leak_category=leak_category,
-            ip_address=ip_address if ip_address else None,
-            device_info=device_info if device_info else None,
-            status=status,
-            description=description if description else None,
+            type=type_value if type_value else None,
+            url=url if url else None,
             company_id=company.id if company else None,
             created_by=current_user.id
         )
@@ -521,12 +412,13 @@ def breached_creds_add():
         db.session.commit()
         
         # Create notifications for users in the same company
-        _notify_new_breach(breached_cred.id, email_domain, application, email)
+        if domain:
+            _notify_new_breach(breached_cred.id, domain, domain, username or domain)
         
         # Performance: Clear cache when new data is added
         cache.clear()
         
-        flash(f'Breached credential for {application} added successfully.', 'success')
+        flash(f'Breached credential added successfully.', 'success')
         return redirect(url_for('threat_intel.breached_creds_list'))
     
     breadcrumb = {"parent": "Add Breached Credential", "child": "Threat Intelligence"}
@@ -579,88 +471,50 @@ def breached_creds_edit(id):
     
     if request.method == 'POST':
         # Security: Sanitize all inputs
-        breached_cred.application = sanitize_input(request.form.get('company_name', ''))  # Form field name is still 'company_name'
-        breached_cred.company_type = sanitize_input(request.form.get('company_type', ''))
-        email_input = sanitize_input(request.form.get('email', ''))  # Can be email or username
-        
-        # Handle email or username
-        if '@' in email_input:
-            # It's an email, lowercase it
-            breached_cred.email = email_input.lower().strip()
-            breached_cred.email_domain = Company.extract_domain(breached_cred.email)
-        else:
-            # It's a username, keep as-is
-            breached_cred.email = email_input.strip()
-            breached_cred.email_domain = email_input.lower().strip() if email_input else ''
+        breached_cred._id = sanitize_input(request.form.get('_id', '')) or None
+        breached_cred._index = sanitize_input(request.form.get('_index', '')) or None
+        _score_str = request.form.get('_score', '')
+        _ignored_str = request.form.get('_ignored', '0')
         breached_cred.username = sanitize_input(request.form.get('username', '')) or None
-        breached_cred.password_hash = sanitize_input(request.form.get('password_hash', '')) or None
+        breached_cred.domain = sanitize_input(request.form.get('domain', '')) or None
+        breached_cred.password = sanitize_input(request.form.get('password', '')) or None
         breached_cred.source = sanitize_input(request.form.get('source', '')) or None
-        type_value = sanitize_input(request.form.get('type', 'combolist'))
-        leak_category = sanitize_input(request.form.get('leak_category', 'consumer'))
-        ip_address = sanitize_input(request.form.get('ip_address', ''))
-        device_info = sanitize_input(request.form.get('device_info', ''))
-        status = sanitize_input(request.form.get('status', 'active'))
+        breached_cred.type = sanitize_input(request.form.get('type', '')) or None
+        breached_cred.url = sanitize_input(request.form.get('url', '')) or None
         
-        valid_types = ['combolist', 'stealer', 'malware', 'pastebin', 'breach', 'phishing', 'darkweb']
-        breached_cred.type = type_value if type_value in valid_types else 'combolist'
-        breached_cred.leak_category = leak_category if leak_category in ['consumer', 'corporate'] else 'consumer'
-        breached_cred.ip_address = ip_address if ip_address else None
-        breached_cred.device_info = device_info if device_info else None
-        breached_cred.status = status if status in ['active', 'new'] else 'active'
-        breached_cred.description = sanitize_input(request.form.get('description', '')) or None
+        # Parse _score
+        if _score_str:
+            try:
+                breached_cred._score = float(_score_str)
+            except ValueError:
+                breached_cred._score = None
+        else:
+            breached_cred._score = None
         
-        # Update company relationship - Link to existing company only, NO auto-creation
-        # Companies can only be created through Company Management page by admins
+        # Parse _ignored
+        breached_cred._ignored = _ignored_str == '1'
+        
+        # Update company relationship - Link to existing company if domain is provided
         company = None
-        if breached_cred.application:
-            application_clean = breached_cred.application.strip().lower()
-            # Check if it looks like a domain (contains dot, no @, and not just an IP address pattern)
-            is_ip_address = False
-            if '.' in application_clean:
-                parts = application_clean.split('.')
-                # Check if all parts are numeric (likely an IP address)
-                if len(parts) == 4 and all(part.isdigit() for part in parts):
-                    is_ip_address = True
-            
-            # Only link to existing company if it's a domain (has dot, no @, not an IP address)
-            # Do NOT create new companies - only link to existing ones
-            if '.' in application_clean and '@' not in application_clean and not is_ip_address:
-                # Only get existing company, never create
-                company = Company.get_or_create_by_domain(application_clean, breached_cred.company_type, allow_create=False)
+        if breached_cred.domain:
+            domain_clean = breached_cred.domain.strip().lower()
+            # Try to find existing company by domain
+            company = Company.query.filter_by(domain=domain_clean).first()
         
         breached_cred.company_id = company.id if company else None
-        
-        # Parse dates
-        breach_date_str = request.form.get('breach_date', '')
-        if breach_date_str:
-            try:
-                breached_cred.breach_date = datetime.strptime(breach_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                flash('Invalid breach date format.', 'warning')
-        else:
-            breached_cred.breach_date = None
-        
-        discovered_date_str = request.form.get('discovered_date', '')
-        if discovered_date_str:
-            try:
-                breached_cred.discovered_date = datetime.strptime(discovered_date_str, '%Y-%m-%d').date()
-            except ValueError:
-                pass
-        
-                breached_cred.updated_at = datetime.utcnow()
-                
+        breached_cred.updated_at = datetime.utcnow()
+
         try:
-                db.session.commit()
-                
-                # Performance: Clear cache when data is updated
-                cache.clear()
-                
-                flash('Breached credential updated successfully.', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error updating credential: {str(e)}', 'danger')
-        
-        return redirect(url_for('threat_intel.breached_creds_list'))
+            db.session.commit()
+            flash('Breached credential updated successfully.', 'success')
+        except OperationalError as e:
+            # On read-only DB (Vercel), updates will fail
+            if "readonly" in str(e).lower():
+                db.session.rollback()
+                flash('Updates are disabled in read-only mode.', 'warning')
+            else:
+                raise
+                return redirect(url_for('threat_intel.breached_creds_list'))
     
     breadcrumb = {"parent": "Edit Breached Credential", "child": "Threat Intelligence"}
     return render_template('threat_intel/breached_creds_form.html',
@@ -682,7 +536,7 @@ def breached_creds_delete(id):
     # Security: Fix IDOR - Verify record ownership/access before deletion
     # Additional validation can be added here for multi-tenant scenarios
     
-    application = breached_cred.application
+    identifier = breached_cred.username or breached_cred.domain or str(breached_cred.id)
     
     db.session.delete(breached_cred)
     db.session.commit()
@@ -690,7 +544,7 @@ def breached_creds_delete(id):
     # Performance: Clear cache when data is deleted
     cache.clear()
     
-    flash(f'Breached credential for {application} deleted successfully.', 'success')
+    flash(f'Breached credential deleted successfully.', 'success')
     return redirect(url_for('threat_intel.breached_creds_list'))
 
 
@@ -706,43 +560,43 @@ def breached_creds_export():
     
     # Security: Filter by company domain for members (data isolation)
     if user_domain:
-        query = query.filter(BreachedCredential.email_domain == user_domain)
+        domains_to_match = _get_user_domains_to_match()
+        domain_filter = _build_domain_match_query(domains_to_match)
+        if domain_filter is not None:
+            query = query.filter(domain_filter)
+        else:
+            query = query.filter(BreachedCredential.domain == user_domain)
     
     # Apply same filters as list view
-    company_filter = sanitize_input(request.args.get('company', ''))
-    company_type_filter = sanitize_input(request.args.get('company_type', ''))
     type_filter = sanitize_input(request.args.get('type', ''))
-    leak_category_filter = sanitize_input(request.args.get('leak_category', ''))
-    status_filter = sanitize_input(request.args.get('status', ''))
+    source_filter = sanitize_input(request.args.get('source', ''))
+    domain_filter_param = sanitize_input(request.args.get('domain', ''))
     search_query = sanitize_input(request.args.get('search', ''))
     date_filter = sanitize_input(request.args.get('date_filter', ''))
     
     today = date.today()
     if date_filter == 'today':
-        query = query.filter(BreachedCredential.discovered_date == today)
+        query = query.filter(BreachedCredential.created_at >= datetime.combine(today, datetime.min.time()))
     elif date_filter == 'week':
         week_ago = today - timedelta(days=7)
-        query = query.filter(BreachedCredential.discovered_date >= week_ago)
+        query = query.filter(BreachedCredential.created_at >= datetime.combine(week_ago, datetime.min.time()))
     elif date_filter == 'month':
         month_ago = today - timedelta(days=30)
-        query = query.filter(BreachedCredential.discovered_date >= month_ago)
+        query = query.filter(BreachedCredential.created_at >= datetime.combine(month_ago, datetime.min.time()))
     
-    if company_filter:
-        query = query.filter(BreachedCredential.application.ilike(f'%{company_filter}%'))
-    if company_type_filter:
-        query = query.filter(BreachedCredential.company_type == company_type_filter)
     if type_filter:
         query = query.filter(BreachedCredential.type == type_filter)
-    if leak_category_filter:
-        query = query.filter(BreachedCredential.leak_category == leak_category_filter)
-    if status_filter:
-        query = query.filter(BreachedCredential.status == status_filter)
+    if source_filter:
+        query = query.filter(BreachedCredential.source.ilike(f'%{source_filter}%'))
+    if domain_filter_param:
+        query = query.filter(BreachedCredential.domain.ilike(f'%{domain_filter_param}%'))
     if search_query:
         query = query.filter(
             or_(
-                BreachedCredential.email.ilike(f'%{search_query}%'),
                 BreachedCredential.username.ilike(f'%{search_query}%'),
-                BreachedCredential.application.ilike(f'%{search_query}%')
+                BreachedCredential.domain.ilike(f'%{search_query}%'),
+                BreachedCredential.password.ilike(f'%{search_query}%'),
+                BreachedCredential.source.ilike(f'%{search_query}%')
             )
         )
     
@@ -761,18 +615,17 @@ def breached_creds_export():
         for cred in breached_creds:
             data.append({
                 'id': cred.id,
-                'application': cred.application,
-                'company_type': cred.company_type,
-                'email': cred.email,
-                'email_domain': cred.email_domain,
+                '_id': cred._id,
+                '_index': cred._index,
+                '_score': cred._score,
+                '_ignored': cred._ignored,
                 'username': cred.username,
-                'type': cred.type or 'combolist',
-                'status': cred.status,
-                'is_marked': cred.is_marked,
-                'breach_date': cred.breach_date.isoformat() if cred.breach_date else None,
-                'discovered_date': cred.discovered_date.isoformat() if cred.discovered_date else None,
+                'domain': cred.domain,
+                'password': cred.password,
                 'source': cred.source,
-                'description': cred.description,
+                'type': cred.type,
+                'url': cred.url,
+                'is_marked': cred.is_marked,
                 'created_by': cred.creator.username if cred.creator else None,
                 'created_at': cred.created_at.isoformat() if cred.created_at else None
             })
@@ -791,9 +644,8 @@ def breached_creds_export():
         ws.title = "Breached Credentials"
         
         # Headers
-        headers = ['ID', 'Application', 'Company Type', 'Email', 'Email Domain', 'Username',
-                  'Type', 'Status', 'Marked', 'Breach Date', 'Discovered Date',
-                  'Source', 'Description', 'Created By', 'Created At']
+        headers = ['ID', '_id', '_index', '_score', '_ignored', 'Username', 'Domain', 'Password',
+                  'Source', 'Type', 'URL', 'Marked', 'Created By', 'Created At']
         ws.append(headers)
         
         # Style header row
@@ -805,18 +657,17 @@ def breached_creds_export():
         for cred in breached_creds:
             ws.append([
                 cred.id,
-                cred.application,
-                cred.company_type,
-                cred.email,
-                cred.email_domain,
+                cred._id or '',
+                cred._index or '',
+                cred._score if cred._score is not None else '',
+                'Yes' if cred._ignored else 'No',
                 cred.username or '',
-                cred.type or 'combolist',
-                cred.status,
-                'Yes' if cred.is_marked else 'No',
-                cred.breach_date.strftime('%Y-%m-%d') if cred.breach_date else '',
-                cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '',
+                cred.domain or '',
+                cred.password or '',
                 cred.source or '',
-                cred.description or '',
+                cred.type or '',
+                cred.url or '',
+                'Yes' if cred.is_marked else 'No',
                 cred.creator.username if cred.creator else '',
                 cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
             ])
@@ -852,15 +703,15 @@ def breached_creds_export():
         elements.append(Spacer(1, 12))
         
         # Table data
-        data = [['ID', 'Application', 'Email', 'Type', 'Status', 'Discovered']]
+        data = [['ID', 'Username', 'Domain', 'Type', 'Source', 'Created']]
         for cred in breached_creds[:100]:  # Limit to 100 rows for PDF
             data.append([
                 str(cred.id),
-                cred.application[:30],  # Truncate long values
-                cred.email[:30],
-                cred.type or 'combolist',
-                cred.status,
-                cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else ''
+                (cred.username or '')[:30],  # Truncate long values
+                (cred.domain or '')[:30],
+                cred.type or '',
+                (cred.source or '')[:30],
+                cred.created_at.strftime('%Y-%m-%d') if cred.created_at else ''
             ])
         
         # Create table
@@ -892,42 +743,34 @@ def breached_creds_export():
         # Default: CSV export
         output = io.StringIO()
         writer = csv.writer(output)
-        
-        # Write header
+        writer.writerow(['ID', '_id', '_index', '_score', '_ignored', 'Username', 'Domain', 'Password',
+                        'Source', 'Type', 'URL', 'Marked', 'Created By', 'Created At'])
+    for cred in breached_creds:
         writer.writerow([
-            'ID', 'Application', 'Company Type', 'Email', 'Email Domain', 'Username',
-            'Type', 'Status', 'Marked', 'Breach Date', 'Discovered Date',
-            'Source', 'Description', 'Created By', 'Created At'
-        ])
-        
-        # Write data
-        for cred in breached_creds:
-            writer.writerow([
-                cred.id,
-                cred.application,
-                cred.company_type,
-                cred.email,
-                cred.email_domain,
-                cred.username or '',
-                cred.type or 'combolist',
-                cred.status,
-                'Yes' if cred.is_marked else 'No',
-                cred.breach_date.strftime('%Y-%m-%d') if cred.breach_date else '',
-                cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '',
+            cred.id,
+                cred._id or '',
+                cred._index or '',
+                cred._score if cred._score is not none else '',
+                'Yes' if cred._ignored else 'No',
+            cred.username or '',
+                cred.domain or '',
+                cred.password or '',
                 cred.source or '',
-                cred.description or '',
-                cred.creator.username if cred.creator else '',
-                cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
-            ])
-        
-        # Create response
-        output.seek(0)
-        response = Response(
-            output.getvalue(),
-            mimetype='text/csv',
-            headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.csv'}
-        )
-        return response
+                cred.type or '',
+                cred.url or '',
+            'Yes' if cred.is_marked else 'No',
+            cred.creator.username if cred.creator else '',
+            cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
+        ])
+    
+    # Create response
+    output.seek(0)
+    response = Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.csv'}
+    )
+    return response
 
 
 @threat_intel.route('/threat-intelligence/breached-creds/<int:id>')
@@ -941,11 +784,7 @@ def breached_creds_view(id):
         flash('Access denied. You can only view records for your company.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
     
-    # Remove "new" tag when viewed
-    if breached_cred.is_new:
-        breached_cred.is_new = False
-        db.session.commit()
-        cache.clear()
+    # No is_new field in new structure, so this check is removed
     
     breadcrumb = {"parent": "Breached Credential Details", "child": "Threat Intelligence"}
     return render_template('threat_intel/breached_creds_view.html',
@@ -967,7 +806,12 @@ def analysis():
         # Base query
         query = BreachedCredential.query
         if user_domain:
-            query = query.filter(BreachedCredential.email_domain == user_domain)
+            domains_to_match = _get_user_domains_to_match()
+            domain_filter = _build_domain_match_query(domains_to_match)
+            if domain_filter is not None:
+                query = query.filter(domain_filter)
+            else:
+                query = query.filter(BreachedCredential.domain == user_domain)
         
         # Statistics
         total = query.count()
@@ -976,35 +820,44 @@ def analysis():
             func.count(BreachedCredential.id).label('count')
         )
         if user_domain:
-            by_type = by_type.filter(BreachedCredential.email_domain == user_domain)
+            domains_to_match = _get_user_domains_to_match()
+            domain_filter = _build_domain_match_query(domains_to_match)
+            if domain_filter is not None:
+                by_type = by_type.filter(domain_filter)
+            else:
+                by_type = by_type.filter(BreachedCredential.domain == user_domain)
         by_type = by_type.group_by(BreachedCredential.type).all()
         
-        by_leak_category = db.session.query(
-            BreachedCredential.leak_category,
+        # Statistics by source
+        by_source = db.session.query(
+            BreachedCredential.source,
             func.count(BreachedCredential.id).label('count')
         )
         if user_domain:
-            by_leak_category = by_leak_category.filter(BreachedCredential.email_domain == user_domain)
-        by_leak_category = by_leak_category.group_by(BreachedCredential.leak_category).all()
+            domains_to_match = _get_user_domains_to_match()
+            domain_filter = _build_domain_match_query(domains_to_match)
+            if domain_filter is not None:
+                by_source = by_source.filter(domain_filter)
+            else:
+                by_source = by_source.filter(BreachedCredential.domain == user_domain)
+        by_source = by_source.group_by(BreachedCredential.source).all()
         
-        by_status = db.session.query(
-            BreachedCredential.status,
+        # Statistics by domain (top 10)
+        by_domain = db.session.query(
+            BreachedCredential.domain,
             func.count(BreachedCredential.id).label('count')
         )
         if user_domain:
-            by_status = by_status.filter(BreachedCredential.email_domain == user_domain)
-        by_status = by_status.group_by(BreachedCredential.status).all()
-        
-        by_company_type = db.session.query(
-            BreachedCredential.company_type,
-            func.count(BreachedCredential.id).label('count')
-        )
-        if user_domain:
-            by_company_type = by_company_type.filter(BreachedCredential.email_domain == user_domain)
-        by_company_type = by_company_type.group_by(BreachedCredential.company_type).all()
+            domains_to_match = _get_user_domains_to_match()
+            domain_filter = _build_domain_match_query(domains_to_match)
+            if domain_filter is not None:
+                by_domain = by_domain.filter(domain_filter)
+            else:
+                by_domain = by_domain.filter(BreachedCredential.domain == user_domain)
+        by_domain = by_domain.group_by(BreachedCredential.domain).order_by(func.count(BreachedCredential.id).desc()).limit(10).all()
         
         # Recent breaches (for analysis page - no pagination needed, just top 10)
-        recent = query.order_by(BreachedCredential.discovered_date.desc()).limit(10).all()
+        recent = query.order_by(BreachedCredential.created_at.desc()).limit(10).all()
         
         # Marked items
         marked_count = query.filter(BreachedCredential.is_marked == True).count()
@@ -1012,9 +865,8 @@ def analysis():
         stats = {
             'total': total,
             'by_type': dict(by_type),
-            'by_leak_category': dict(by_leak_category),
-            'by_status': dict(by_status),
-            'by_company_type': dict(by_company_type),
+            'by_source': dict(by_source),
+            'by_domain': dict(by_domain),
             'recent': recent,
             'marked_count': marked_count
         }
@@ -1026,9 +878,8 @@ def analysis():
     return render_template('threat_intel/analysis.html',
                          total=stats['total'],
                          by_type=stats['by_type'],
-                         by_leak_category=stats['by_leak_category'],
-                         by_status=stats['by_status'],
-                         by_company_type=stats['by_company_type'],
+                         by_source=stats['by_source'],
+                         by_domain=stats['by_domain'],
                          recent=stats['recent'],
                          marked_count=stats['marked_count'],
                          user_domain=user_domain,
@@ -1046,10 +897,15 @@ def reports():
     
     query = BreachedCredential.query
     if user_domain:
-        query = query.filter(BreachedCredential.email_domain == user_domain)
+        domains_to_match = _get_user_domains_to_match()
+        domain_filter = _build_domain_match_query(domains_to_match)
+        if domain_filter is not None:
+            query = query.filter(domain_filter)
+        else:
+            query = query.filter(BreachedCredential.domain == user_domain)
     
     # Order and paginate
-    query = query.order_by(BreachedCredential.discovered_date.desc())
+    query = query.order_by(BreachedCredential.created_at.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     breached_creds = pagination.items
     

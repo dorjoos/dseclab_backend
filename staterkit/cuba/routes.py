@@ -29,9 +29,9 @@ def indexPage():
     # Base query
     query = BreachedCredential.query
     if user_domain:
-        query = query.filter(BreachedCredential.email_domain == user_domain)
+        query = query.filter(BreachedCredential.domain == user_domain)
     
-    # Total Leaks (combined consumer and corporate)
+    # Total Leaks
     total_leaks = query.count()
     
     # Get previous month count for comparison
@@ -40,49 +40,37 @@ def indexPage():
     current_month_start = date.today().replace(day=1)
     
     previous_total = query.filter(
-        BreachedCredential.discovered_date >= last_month_start,
-        BreachedCredential.discovered_date < current_month_start
+        BreachedCredential.created_at >= datetime.combine(last_month_start, datetime.min.time()),
+        BreachedCredential.created_at < datetime.combine(current_month_start, datetime.min.time())
     ).count()
     total_change = total_leaks - previous_total
     total_change_text = f"{'+' if total_change >= 0 else ''}{total_change} since {last_month.strftime('%b %Y')}"
     
-    # Consumer Leaks
-    consumer_leaks = query.filter(BreachedCredential.leak_category == 'consumer').count()
+    # Consumer Leaks - using type field as proxy (combolist = consumer-like)
+    consumer_leaks = query.filter(BreachedCredential.type == 'combolist').count()
     previous_consumer = query.filter(
-        BreachedCredential.leak_category == 'consumer',
-        BreachedCredential.discovered_date >= last_month_start,
-        BreachedCredential.discovered_date < current_month_start
+        BreachedCredential.type == 'combolist',
+        BreachedCredential.created_at >= datetime.combine(last_month_start, datetime.min.time()),
+        BreachedCredential.created_at < datetime.combine(current_month_start, datetime.min.time())
     ).count()
     consumer_change = consumer_leaks - previous_consumer
     consumer_change_text = f"{'+' if consumer_change >= 0 else ''}{consumer_change} since {last_month.strftime('%b %Y')}"
     
-    # Corporate Leaks
-    corporate_leaks = query.filter(BreachedCredential.leak_category == 'corporate').count()
+    # Corporate Leaks - using type field as proxy (stealer, malware = corporate-like)
+    corporate_leaks = query.filter(BreachedCredential.type.in_(['stealer', 'malware'])).count()
     previous_corporate = query.filter(
-        BreachedCredential.leak_category == 'corporate',
-        BreachedCredential.discovered_date >= last_month_start,
-        BreachedCredential.discovered_date < current_month_start
+        BreachedCredential.type.in_(['stealer', 'malware']),
+        BreachedCredential.created_at >= datetime.combine(last_month_start, datetime.min.time()),
+        BreachedCredential.created_at < datetime.combine(current_month_start, datetime.min.time())
     ).count()
     corporate_change = corporate_leaks - previous_corporate
     corporate_change_text = "↔ Stable" if corporate_change == 0 else f"{'+' if corporate_change >= 0 else ''}{corporate_change} since {last_month.strftime('%b %Y')}"
     
-    # Infected IP Addresses (unique IPs linked to corporate emails)
-    infected_ips = db.session.query(func.count(func.distinct(BreachedCredential.ip_address))).filter(
-        BreachedCredential.leak_category == 'corporate',
-        BreachedCredential.ip_address.isnot(None)
-    )
-    if user_domain:
-        infected_ips = infected_ips.filter(BreachedCredential.email_domain == user_domain)
-    infected_ips_count = infected_ips.scalar() or 0
+    # Infected IP Addresses - not available in new structure, set to 0
+    infected_ips_count = 0
     
-    # Affected Computers (unique devices)
-    affected_computers = db.session.query(func.count(func.distinct(BreachedCredential.device_info))).filter(
-        BreachedCredential.leak_category == 'corporate',
-        BreachedCredential.device_info.isnot(None)
-    )
-    if user_domain:
-        affected_computers = affected_computers.filter(BreachedCredential.email_domain == user_domain)
-    affected_computers_count = affected_computers.scalar() or 0
+    # Affected Computers - not available in new structure, set to 0
+    affected_computers_count = 0
     
     # Recent Exposure - This month's records by type
     this_month_start = date.today().replace(day=1)
@@ -90,36 +78,42 @@ def indexPage():
         BreachedCredential.type,
         func.count(BreachedCredential.id).label('count')
     ).filter(
-        BreachedCredential.discovered_date >= this_month_start
+        BreachedCredential.created_at >= datetime.combine(this_month_start, datetime.min.time())
     )
     if user_domain:
-        recent_exposure = recent_exposure.filter(BreachedCredential.email_domain == user_domain)
+        recent_exposure = recent_exposure.filter(BreachedCredential.domain == user_domain)
     recent_exposure = recent_exposure.group_by(BreachedCredential.type).all()
-    recent_exposure_dict = {item[0]: item[1] for item in recent_exposure}
+    recent_exposure_dict = {item[0]: item[1] for item in recent_exposure if item[0]}
     
     # Latest Events - Recent breaches
-    latest_events = query.order_by(BreachedCredential.discovered_date.desc(), BreachedCredential.created_at.desc()).limit(10).all()
+    latest_events = query.order_by(BreachedCredential.created_at.desc()).limit(10).all()
     
     # Chart data: Leak trends over last 30 days
     days_ago_30 = date.today() - timedelta(days=30)
     
     # Get daily leak counts - SQLite compatible approach
     daily_leaks_dict = {}
+    # Use strftime for SQLite date extraction
     daily_leaks_query = db.session.query(
-        BreachedCredential.discovered_date,
+        func.strftime('%Y-%m-%d', BreachedCredential.created_at).label('created_date'),
         func.count(BreachedCredential.id).label('count')
     ).filter(
-        BreachedCredential.discovered_date >= days_ago_30,
-        BreachedCredential.discovered_date.isnot(None)
+        BreachedCredential.created_at >= datetime.combine(days_ago_30, datetime.min.time()),
+        BreachedCredential.created_at.isnot(None)
     )
     if user_domain:
-        daily_leaks_query = daily_leaks_query.filter(BreachedCredential.email_domain == user_domain)
-    daily_leaks_query = daily_leaks_query.group_by(BreachedCredential.discovered_date).all()
+        daily_leaks_query = daily_leaks_query.filter(BreachedCredential.domain == user_domain)
+    daily_leaks_query = daily_leaks_query.group_by(func.strftime('%Y-%m-%d', BreachedCredential.created_at)).all()
     
-    # Convert to dictionary for easy lookup
+    # Convert to dictionary for easy lookup (key is string 'YYYY-MM-DD')
     for item in daily_leaks_query:
-        if item[0]:  # discovered_date
-            daily_leaks_dict[item[0]] = item[1]
+        if item[0]:  # created_date (string format)
+            # Convert string to date object for lookup
+            try:
+                date_obj = datetime.strptime(item[0], '%Y-%m-%d').date()
+                daily_leaks_dict[date_obj] = item[1]
+            except (ValueError, TypeError):
+                continue
     
     # Prepare chart data - ensure we have data for all 30 days
     chart_labels = []
@@ -131,7 +125,7 @@ def indexPage():
         count = daily_leaks_dict.get(day, 0)
         chart_data.append(count)
     
-    # Leak category distribution (for pie chart)
+    # Leak category distribution (for pie chart) - simplified
     category_distribution = {
         'consumer': consumer_leaks,
         'corporate': corporate_leaks
@@ -143,9 +137,9 @@ def indexPage():
         func.count(BreachedCredential.id).label('count')
     )
     if user_domain:
-        type_distribution = type_distribution.filter(BreachedCredential.email_domain == user_domain)
+        type_distribution = type_distribution.filter(BreachedCredential.domain == user_domain)
     type_distribution = type_distribution.group_by(BreachedCredential.type).all()
-    type_chart_data = {item[0]: item[1] for item in type_distribution}
+    type_chart_data = {item[0]: item[1] for item in type_distribution if item[0]}
     
     context = {
         "breadcrumb": {"parent": "Threat Intelligence Dashboard", "child": "Dashboard"},

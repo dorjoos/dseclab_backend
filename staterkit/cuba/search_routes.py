@@ -21,21 +21,25 @@ def search():
     # Search breached credentials
     creds_query = BreachedCredential.query.filter(
         or_(
-            BreachedCredential.email.ilike(f'%{query}%'),
-            BreachedCredential.application.ilike(f'%{query}%'),
             BreachedCredential.username.ilike(f'%{query}%'),
-            BreachedCredential.email_domain.ilike(f'%{query}%')
+            BreachedCredential.domain.ilike(f'%{query}%'),
+            BreachedCredential.source.ilike(f'%{query}%'),
+            BreachedCredential.type.ilike(f'%{query}%'),
+            BreachedCredential.url.ilike(f'%{query}%')
         )
     ).limit(5).all()
     
     # Filter by company domain for members
     if current_user.role != 'admin' and not current_user.isAdmin:
         user_domain = current_user.company_domain
-        creds_query = [c for c in creds_query if c.email_domain == user_domain]
+        creds_query = [c for c in creds_query if c.domain == user_domain]
     
     for cred in creds_query:
+        display_name = f"{cred.username or 'N/A'}"
+        if cred.domain:
+            display_name += f" ({cred.domain})"
         results.append({
-            'name': f"{cred.application} - {cred.email}",
+            'name': display_name,
             'url': f'/threat-intelligence/breached-creds/{cred.id}',
             'type': 'Breached Credential',
             'icon': 'shield'

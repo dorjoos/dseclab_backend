@@ -1,12 +1,7 @@
 {% extends "base.html" %}
 
-{% block css %}
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/jquery.dataTables.css') }}">
-<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename =  'assets/css/vendors/dataTables.bootstrap5.css') }}">
-{% endblock %}
-
 {% block content %}
-<div class="container-fluid data-source-wrapper">
+<div class="container-fluid">
   <div class="row">
     <div class="col-12">
       <div class="card">
@@ -28,75 +23,60 @@
             <a href="{{ url_for('threat_intel.reports') }}" class="btn btn-secondary btn-sm">
               <i data-feather="file-text" style="width: 14px; height: 14px;"></i> Reports
             </a>
-            <a href="{{ url_for('threat_intel.breached_creds_export', company=filters.company or '', company_type=filters.company_type or '', severity=filters.severity or '', status=filters.status or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="btn btn-success btn-sm" id="export-btn">
+            <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="btn btn-success btn-sm" id="export-btn">
               <i data-feather="download" style="width: 14px; height: 14px;"></i> Export CSV
             </a>
           </div>
         </div>
         <div class="card-body">
+          <!-- Quick Date Filters (reverted from screenshot-style dropdown) -->
+          <div class="mb-3">
+            <div class="btn-group" role="group" aria-label="Date filter">
+              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='today', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
+                 class="btn btn-sm {% if filters.date_filter == 'today' %}btn-primary{% else %}btn-secondary{% endif %}">
+                Today
+              </a>
+              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='week', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
+                 class="btn btn-sm {% if filters.date_filter == 'week' or not filters.date_filter %}btn-primary{% else %}btn-secondary{% endif %}">
+                This Week
+              </a>
+              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='month', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
+                 class="btn btn-sm {% if filters.date_filter == 'month' %}btn-primary{% else %}btn-secondary{% endif %}">
+                This Month
+              </a>
+              <a href="{{ url_for('threat_intel.breached_creds_list', date_filter='all', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
+                 class="btn btn-sm {% if filters.date_filter == 'all' %}btn-primary{% else %}btn-secondary{% endif %}">
+                All Time
+              </a>
+            </div>
+          </div>
+
           <!-- Filters -->
           <form method="GET" class="mb-4" id="filter-form">
             <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
-            <div class="row">
-              <div class="col-md-2">
-                {% set date_filter_labels = {
-                  'today': 'Today',
-                  'week': 'This Week',
-                  'month': 'This Month',
-                  'all': 'All Time'
-                } %}
-                {% set current_date_label = date_filter_labels.get(filters.date_filter or 'week', 'This Week') %}
-                <div class="dropdown">
-                  <button type="button" class="btn btn-outline-primary dropdown-toggle form-control" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    {{ current_date_label }}
-                  </button>
-                  <div class="dropdown-menu" role="menu" aria-hidden="true" tabindex="-1">
-                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'today' %}active{% endif %}" 
-                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='today', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
-                      Today
-                    </button>
-                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'week' or not filters.date_filter %}active{% endif %}" 
-                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='week', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
-                      This Week
-                    </button>
-                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'month' %}active{% endif %}" 
-                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='month', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
-                      This Month
-                    </button>
-                    <button type="button" tabindex="0" role="menuitem" class="dropdown-item {% if filters.date_filter == 'all' %}active{% endif %}" 
-                            onclick="window.location.href='{{ url_for('threat_intel.breached_creds_list', date_filter='all', company=filters.company or '', company_type=filters.company_type or '', type=filters.type or '', leak_category=filters.leak_category or '', status=filters.status or '', search=filters.search or '') }}'">
-                      All Time
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-2">
-                <input type="text" class="form-control" name="search" placeholder="Search email, application..." value="{{ filters.search }}">
-              </div>
-              <div class="col-md-2">
-                <select class="form-control" name="company_type">
-                  <option value="">All Company Types</option>
-                  <option value="bank" {% if filters.company_type == 'bank' %}selected{% endif %}>Bank</option>
-                  <option value="operator" {% if filters.company_type == 'operator' %}selected{% endif %}>Operator</option>
-                  <option value="government" {% if filters.company_type == 'government' %}selected{% endif %}>Government</option>
-                  <option value="other" {% if filters.company_type == 'other' %}selected{% endif %}>Other</option>
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Type</label>
+                <select class="form-select" name="type">
+                  <option value="">All Types</option>
+                  <option value="combolist" {% if filters.type == 'combolist' %}selected{% endif %}>Combolist</option>
+                  <option value="stealer" {% if filters.type == 'stealer' %}selected{% endif %}>Stealer</option>
+                  <option value="malware" {% if filters.type == 'malware' %}selected{% endif %}>Malware</option>
+                  <option value="pastebin" {% if filters.type == 'pastebin' %}selected{% endif %}>Pastebin</option>
+                  <option value="breach" {% if filters.type == 'breach' %}selected{% endif %}>Breach</option>
+                  <option value="phishing" {% if filters.type == 'phishing' %}selected{% endif %}>Phishing</option>
+                  <option value="darkweb" {% if filters.type == 'darkweb' %}selected{% endif %}>Darkweb</option>
                 </select>
               </div>
-              <div class="col-md-2">
-                <select class="form-control" name="leak_category">
-                  <option value="">All Categories</option>
-                  <option value="consumer" {% if filters.leak_category == 'consumer' %}selected{% endif %}>Consumer</option>
-                  <option value="corporate" {% if filters.leak_category == 'corporate' %}selected{% endif %}>Corporate</option>
-                </select>
+              <div class="col-md-3">
+                <label class="form-label">Source</label>
+                <input type="text" class="form-control" name="source" placeholder="Filter by source" value="{{ filters.source or '' }}">
               </div>
-              <div class="col-md-2">
-                <select class="form-control" name="status">
-                  <option value="">All Statuses</option>
-                  <option value="active" {% if filters.status == 'active' %}selected{% endif %}>Active</option>
-                  <option value="new" {% if filters.status == 'new' %}selected{% endif %}>New</option>
-                </select>
+              <div class="col-md-3">
+                <label class="form-label">Domain</label>
+                <input type="text" class="form-control" name="domain" placeholder="Filter by domain" value="{{ filters.domain or '' }}">
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3 d-flex align-items-end justify-content-end gap-2">
                 <button type="submit" class="btn btn-primary btn-sm" id="filter-btn">
                   <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                   Filter
@@ -104,20 +84,30 @@
                 <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-secondary btn-sm">Clear</a>
               </div>
             </div>
+
+            <!-- Search row (split from filter selects, like screenshot) -->
+            <div class="d-flex justify-content-end align-items-center mt-3">
+              <div class="d-flex align-items-center gap-2">
+                <label class="col-form-label mb-0">Search:</label>
+                <input type="text" class="form-control" name="search" placeholder="Search username, domain, password..." value="{{ filters.search }}">
+              </div>
+            </div>
           </form>
 
           <!-- Table -->
-          <div class="table-responsive dom-source-data custom-scrollbar">
-            <table class="display table-striped" id="breached-creds-table" style="width:100%">
+          <div class="table-responsive">
+            <table class="table table-striped table-bordered">
               <thead>
                 <tr>
-                  <th>Application</th>
-                  <th>Company Type</th>
-                  <th>Leaked Account</th>
+                  <th>Username</th>
                   <th>Domain</th>
+                  <th>Password</th>
+                  <th>Source</th>
                   <th>Type</th>
+                  <th>URL</th>
+                  <th>Score</th>
+                  <th>Created</th>
                   <th>Marked</th>
-                  <th>Discovered</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -125,17 +115,43 @@
                 {% if breached_creds %}
                   {% for cred in breached_creds %}
                   <tr>
+                    <td>{{ cred.username or '-' }}</td>
+                    <td><span class="badge badge-light-info">{{ cred.domain or '-' }}</span></td>
                     <td>
-                      <strong>{{ cred.application }}</strong>
+                      {% if cred.password %}
+                        <span class="password-mask" data-password="{{ cred.password }}" title="Hover to reveal password">
+                          <span class="masked-password">••••••••</span>
+                          <span class="revealed-password">{{ cred.password }}</span>
+                        </span>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
                     </td>
-                    <td><span class="badge badge-light-secondary">{{ cred.company_type }}</span></td>
-                    <td>{{ cred.email }}</td>
-                    <td><span class="badge badge-light-info">{{ cred.email_domain }}</span></td>
+                    <td>{{ cred.source or '-' }}</td>
                     <td>
-                      <span class="badge badge-light-{{ cred.type_color }}">
-                        {{ cred.type|title }}
-                      </span>
+                      {% if cred.type %}
+                        <span class="badge badge-light-{{ cred.type_color }}">{{ cred.type|title }}</span>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
                     </td>
+                    <td>
+                      {% if cred.url %}
+                        <a href="{{ cred.url }}" target="_blank" rel="noopener noreferrer" class="text-truncate d-inline-block" style="max-width: 200px;" title="{{ cred.url }}">
+                          {{ cred.url }}
+                        </a>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if cred._score is not none %}
+                        <span class="badge badge-light-secondary">{{ "%.2f"|format(cred._score) }}</span>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>{{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}</td>
                     <td>
                       {% if cred.is_marked %}
                         <span class="badge badge-light-warning" title="Marked by {{ cred.marker.username if cred.marker else 'Unknown' }}">
@@ -145,7 +161,6 @@
                         <span class="text-muted">-</span>
                       {% endif %}
                     </td>
-                    <td>{{ cred.discovered_date.strftime('%Y-%m-%d') if cred.discovered_date else '-' }}</td>
                     <td>
                       <ul class="action mb-0">
                         <li class="edit">
@@ -176,7 +191,7 @@
                   {% endfor %}
                 {% else %}
                   <tr>
-                    <td colspan="11" class="text-center">No breached credentials found.</td>
+                    <td colspan="10" class="text-center">No breached credentials found.</td>
                   </tr>
                 {% endif %}
               </tbody>
@@ -188,95 +203,61 @@
           <div class="table-responsive">
             <nav aria-label="Page navigation" class="mt-3">
               <ul class="pagination pagination-primary justify-content-center">
-                <!-- First Page Button -->
                 {% if pagination.has_prev %}
                   <li class="page-item">
-                    <a class="page-link" href="?page=1{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.company %}&company={{ filters.company }}{% endif %}{% if filters.company_type %}&company_type={{ filters.company_type }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.leak_category %}&leak_category={{ filters.leak_category }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="First">
+                    <a class="page-link" href="?page=1{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="First">
                       <span aria-hidden="true">&laquo;</span>
                     </a>
                   </li>
                 {% else %}
-                  <li class="page-item disabled">
-                    <span class="page-link" aria-label="First">
-                      <span aria-hidden="true">&laquo;</span>
-                    </span>
-                  </li>
+                  <li class="page-item disabled"><span class="page-link" aria-label="First"><span aria-hidden="true">&laquo;</span></span></li>
                 {% endif %}
-                
-                <!-- Previous Page Button -->
+
                 {% if pagination.has_prev %}
                   <li class="page-item">
-                    <a class="page-link" href="?page={{ pagination.prev_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.company %}&company={{ filters.company }}{% endif %}{% if filters.company_type %}&company_type={{ filters.company_type }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.leak_category %}&leak_category={{ filters.leak_category }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="Previous">
+                    <a class="page-link" href="?page={{ pagination.prev_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="Previous">
                       <span aria-hidden="true">&lsaquo;</span>
                     </a>
                   </li>
                 {% else %}
-                  <li class="page-item disabled">
-                    <span class="page-link" aria-label="Previous">
-                      <span aria-hidden="true">&lsaquo;</span>
-                    </span>
-                  </li>
+                  <li class="page-item disabled"><span class="page-link" aria-label="Previous"><span aria-hidden="true">&lsaquo;</span></span></li>
                 {% endif %}
-                
-                <!-- Page Numbers -->
+
                 {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
                   {% if page_num %}
                     {% if page_num == pagination.page %}
-                      <li class="page-item active">
-                        <span class="page-link">{{ page_num }}</span>
-                      </li>
+                      <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
                     {% else %}
                       <li class="page-item">
-                        <a class="page-link" href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.company %}&company={{ filters.company }}{% endif %}{% if filters.company_type %}&company_type={{ filters.company_type }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.leak_category %}&leak_category={{ filters.leak_category }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">
-                          {{ page_num }}
-                        </a>
+                        <a class="page-link" href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">{{ page_num }}</a>
                       </li>
                     {% endif %}
                   {% else %}
-                    <li class="page-item disabled">
-                      <span class="page-link">...</span>
-                    </li>
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
                   {% endif %}
                 {% endfor %}
-                
-                <!-- Next Page Button -->
+
                 {% if pagination.has_next %}
                   <li class="page-item">
-                    <a class="page-link" href="?page={{ pagination.next_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.company %}&company={{ filters.company }}{% endif %}{% if filters.company_type %}&company_type={{ filters.company_type }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.leak_category %}&leak_category={{ filters.leak_category }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="Next">
+                    <a class="page-link" href="?page={{ pagination.next_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="Next">
                       <span aria-hidden="true">&rsaquo;</span>
                     </a>
                   </li>
                 {% else %}
-                  <li class="page-item disabled">
-                    <span class="page-link" aria-label="Next">
-                      <span aria-hidden="true">&rsaquo;</span>
-                    </span>
-                  </li>
+                  <li class="page-item disabled"><span class="page-link" aria-label="Next"><span aria-hidden="true">&rsaquo;</span></span></li>
                 {% endif %}
-                
-                <!-- Last Page Button -->
+
                 {% if pagination.has_next %}
                   <li class="page-item">
-                    <a class="page-link" href="?page={{ pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.company %}&company={{ filters.company }}{% endif %}{% if filters.company_type %}&company_type={{ filters.company_type }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.leak_category %}&leak_category={{ filters.leak_category }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="Last">
+                    <a class="page-link" href="?page={{ pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" aria-label="Last">
                       <span aria-hidden="true">&raquo;</span>
                     </a>
                   </li>
                 {% else %}
-                  <li class="page-item disabled">
-                    <span class="page-link" aria-label="Last">
-                      <span aria-hidden="true">&raquo;</span>
-                    </span>
-                  </li>
+                  <li class="page-item disabled"><span class="page-link" aria-label="Last"><span aria-hidden="true">&raquo;</span></span></li>
                 {% endif %}
               </ul>
             </nav>
-            <div class="text-center mt-2">
-              <small class="text-muted">
-                Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to 
-                {{ pagination.page * pagination.per_page if pagination.page * pagination.per_page < pagination.total else pagination.total }} 
-                of {{ pagination.total }} entries
-              </small>
-            </div>
           </div>
           {% endif %}
         </div>
@@ -287,27 +268,5 @@
 {% endblock %}
 
 {% block scriptcontent %}
-<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/jquery.dataTables.min.js') }}"></script>
-<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/dataTables1.js') }}"></script>
-<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/dataTables.bootstrap5.js') }}"></script>
-<script src="{{ url_for('static', filename =  'assets/js/datatable/datatables/datatable.custom2.js') }}"></script>
-
-<script>
-  (function() {
-    if (!window.jQuery || !$.fn.DataTable) {
-      return;
-    }
-
-    $('#breached-creds-table').DataTable({
-      paging: false,
-      info: false,
-      searching: false,
-      order: [[8, 'desc']],  // Discovered date column
-      columnDefs: [
-        { orderable: false, targets: -1 } // Actions column
-      ]
-    });
-  })();
-</script>
 {% endblock %}
 
