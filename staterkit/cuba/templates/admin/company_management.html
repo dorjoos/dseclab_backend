@@ -1,173 +1,180 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
+<!-- Container-fluid starts-->
+<div class="container-fluid list-product-view product-wrapper">
+  <div class="row"> 
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
-          <h5>Company Management</h5>
-          <div class="card-header-right">
-            <a href="{{ url_for('admin.add_company') }}" class="btn btn-primary btn-sm">
-              <i data-feather="settings" style="width: 14px; height: 14px;"></i> Add Company
+        <div class="card-header card-no-border text-end">
+          <div class="card-header-right-icon">
+            <a class="btn btn-primary f-w-500" href="{{ url_for('admin.add_company') }}">
+              <i class="fa fa-plus pe-2"></i>Add Company
             </a>
           </div>
         </div>
-        <div class="card-body">
-          <div class="table-responsive dom-source-data custom-scrollbar">
-            <table class="display table-striped" style="width:100%">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Company Name</th>
-                  <th>Domain</th>
-                  <th>Type</th>
-                  <th>Watchlist</th>
-                  <th>Users</th>
-                  <th>Breached Creds</th>
-                  <th>Actions</th>
-                  <th>Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% if companies %}
-                  {% for company in companies %}
+        <div class="card-body px-0 pt-0">
+          <div class="list-product">
+            <div class="recent-table table-responsive custom-scrollbar product-list-table">
+              <table class="table" id="product-list-view">
+                <thead>
                   <tr>
-                    <td>{{ company.id }}</td>
-                    <td><strong>{{ company.name }}</strong></td>
-                    <td><span class="badge badge-light-info">{{ company.domain }}</span></td>
-                    <td><span class="badge badge-light-secondary">{{ company.company_type }}</span></td>
-                    <td>
-                      {% if company.watchlist_entries %}
-                        <span class="badge badge-light-success" data-bs-toggle="tooltip" 
-                              title="{% for entry in company.watchlist_entries %}{{ entry.entry_type|title }}: {{ entry.entry_value }}{% if not loop.last %}, {% endif %}{% endfor %}">
-                          {{ company.watchlist_entries|length }} entries
-                        </span>
-                      {% else %}
-                        <span class="badge badge-light-secondary">None</span>
-                      {% endif %}
-                    </td>
-                    <td>{{ company.users|length }}</td>
-                    <td>
-                      <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" 
-                         class="badge badge-light-danger">
-                        {{ company_stats.get(company.id, 0) }}
-                      </a>
-                    </td>
-                    <td>
-                      <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" 
-                         class="btn btn-primary btn-sm" title="Edit">
-                        <i data-feather="edit-2" style="width: 14px; height: 14px;"></i>
-                      </a>
-                    </td>
-                    <td>{{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '-' }}</td>
+                    <th></th>
+                    <th> <span class="c-o-light f-w-600">Company</span></th>
+                    <th> <span class="c-o-light f-w-600">Domain</span></th>
+                    <th> <span class="c-o-light f-w-600">Type</span></th>
+                    <th> <span class="c-o-light f-w-600">Watchlist</span></th>
+                    <th> <span class="c-o-light f-w-600">Users</span></th>
+                    <th> <span class="c-o-light f-w-600">Breached Creds</span></th>
+                    <th> <span class="c-o-light f-w-600">Created</span></th>
+                    <th> <span class="c-o-light f-w-600">Action</span></th>
                   </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="9" class="text-center">No companies found.</td>
-                  </tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
-
-          <!-- Pagination -->
-          {% if pagination.pages > 1 %}
-          <nav aria-label="Page navigation" class="mt-3">
-            <ul class="pagination pagination-primary justify-content-center">
-              <!-- First Page Button -->
-              {% if pagination.has_prev %}
-                <li class="page-item">
-                  <a class="page-link" href="?page=1" aria-label="First">
-                    <span aria-hidden="true">&laquo;</span>
-                  </a>
-                </li>
-              {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link" aria-label="First">
-                    <span aria-hidden="true">&laquo;</span>
-                  </span>
-                </li>
-              {% endif %}
-              
-              <!-- Previous Page Button -->
-              {% if pagination.has_prev %}
-                <li class="page-item">
-                  <a class="page-link" href="?page={{ pagination.prev_num }}" aria-label="Previous">
-                    <span aria-hidden="true">&lsaquo;</span>
-                  </a>
-                </li>
-              {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link" aria-label="Previous">
-                    <span aria-hidden="true">&lsaquo;</span>
-                  </span>
-                </li>
-              {% endif %}
-              
-              <!-- Page Numbers -->
-              {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                {% if page_num %}
-                  {% if page_num == pagination.page %}
-                    <li class="page-item active">
-                      <span class="page-link">{{ page_num }}</span>
-                    </li>
+                </thead>
+                <tbody>
+                  {% if companies %}
+                    {% for company in companies %}
+                    <tr class="product-removes">
+                      <td></td>
+                      <td> 
+                        <div class="product-names">
+                          <div class="light-product-box">
+                            <!-- keep product image style; use a generic company icon -->
+                            <img class="img-fluid"
+                                 src="{{ url_for('static', filename = 'assets/images/dashboard-8/product-categories/laptop.png') }}"
+                                 alt="{{ company.name or 'Company' }}">
+                          </div>
+                          <p>{{ company.name }}</p>
+                        </div>
+                      </td>
+                      <td>
+                        <!-- SKU column → show domain -->
+                        <p class="c-o-light">{{ company.domain or '-' }}</p>
+                      </td>
+                      <td>
+                        <!-- Category column → company type -->
+                        <p class="c-o-light">{{ company.company_type or 'other' }}</p>
+                      </td>
+                      <td>
+                        <!-- Price column → watchlist count -->
+                        <p class="c-o-light">
+                          {{ company.watchlist_entries|length }} watchlist
+                        </p>
+                      </td>
+                      <td>
+                        <!-- Qty column → user count -->
+                        <p class="c-o-light">
+                          {{ company.users|length }} users
+                        </p>
+                      </td>
+                      <td>
+                        <!-- Status column → breached creds count badge -->
+                        <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" 
+                           class="badge badge-light-danger">
+                          {{ company_stats.get(company.id, 0) }} breaches
+                        </a>
+                      </td>
+                      <td>
+                        <!-- Rating column → created date -->
+                        <p class="c-o-light">
+                          {{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '-' }}
+                        </p>
+                      </td>
+                      <td>
+                        <div class="product-action">
+                          <a class="square-white"
+                             href="{{ url_for('admin.edit_company', company_id=company.id) }}"
+                             title="Edit Company">
+                            <svg>
+                              <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#edit-content"></use>
+                            </svg>
+                          </a>
+                          {% if current_user.can_delete() %}
+                          <form method="POST"
+                                action="{{ url_for('admin.delete_company', company_id=company.id) }}"
+                                class="company-delete-form"
+                                data-company-name="{{ company.name }}"
+                                style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="square-white company-delete-btn" title="Delete Company" style="border:0;background:transparent;padding:0;">
+                              <svg>
+                                <use href="{{ url_for('static', filename = 'assets/svg/icon-sprite.svg' )}}#trash1"></use>
+                              </svg>
+                            </button>
+                          </form>
+                          {% endif %}
+                        </div>
+                      </td>
+                    </tr>
+                    {% endfor %}
                   {% else %}
-                    <li class="page-item">
-                      <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-                    </li>
+                    <tr>
+                      <td colspan="9" class="text-center">No companies found.</td>
+                    </tr>
                   {% endif %}
-                {% else %}
-                  <li class="page-item disabled">
-                    <span class="page-link">...</span>
-                  </li>
-                {% endif %}
-              {% endfor %}
-              
-              <!-- Next Page Button -->
-              {% if pagination.has_next %}
-                <li class="page-item">
-                  <a class="page-link" href="?page={{ pagination.next_num }}" aria-label="Next">
-                    <span aria-hidden="true">&rsaquo;</span>
-                  </a>
-                </li>
-              {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link" aria-label="Next">
-                    <span aria-hidden="true">&rsaquo;</span>
-                  </span>
-                </li>
-              {% endif %}
-              
-              <!-- Last Page Button -->
-              {% if pagination.has_next %}
-                <li class="page-item">
-                  <a class="page-link" href="?page={{ pagination.pages }}" aria-label="Last">
-                    <span aria-hidden="true">&raquo;</span>
-                  </a>
-                </li>
-              {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link" aria-label="Last">
-                    <span aria-hidden="true">&raquo;</span>
-                  </span>
-                </li>
-              {% endif %}
-            </ul>
-          </nav>
-          <div class="text-center mt-2">
-            <small class="text-muted">
-              Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to 
-              {{ pagination.page * pagination.per_page if pagination.page * pagination.per_page < pagination.total else pagination.total }} 
-              of {{ pagination.total }} entries
-            </small>
+                </tbody>
+              </table>
+            </div>
           </div>
-          {% endif %}
         </div>
       </div>
     </div>
   </div>
-</div>
+></div>
+<!-- Container-fluid Ends-->
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{{ url_for('static', filename = 'assets/js/sweet-alert/sweetalert.min.js')}}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Require either SweetAlert2 (Swal) or SweetAlert (swal)
+    if (typeof Swal === 'undefined' && typeof swal === 'undefined') {
+      return;
+    }
+    document.querySelectorAll('.company-delete-form').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var companyName = form.getAttribute('data-company-name') || 'this company';
+
+        if (typeof Swal !== 'undefined') {
+          // SweetAlert2 style
+          Swal.fire({
+            title: 'Are you sure?',
+            html: 'Do you really want to delete <strong>' + companyName + '</strong>?',
+            imageUrl: "{{ url_for('static', filename = 'assets/images/gif/trash.gif') }}",
+            imageWidth: 120,
+            imageHeight: 120,
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            reverseButtons: true
+          }).then(function (result) {
+            if (result.isConfirmed) {
+              form.submit();
+            }
+          });
+        } else if (typeof swal !== 'undefined') {
+          // SweetAlert v1 style
+          swal({
+            title: 'Are you sure?',
+            text: 'Do you really want to delete ' + companyName + '?',
+            icon: 'warning',
+            buttons: ['Cancel', 'Yes, delete it!'],
+            dangerMode: true
+          }).then(function (willDelete) {
+            if (willDelete) {
+              form.submit();
+            }
+          });
+        } else {
+          // Fallback
+          if (confirm('Are you sure you want to delete ' + companyName + '?')) {
+            form.submit();
+          }
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}
 

@@ -1,121 +1,174 @@
 {% extends "base.html" %}
 
+{% block css %}
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/quill.snow.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/intltelinput.min.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/tagify.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/flatpickr/flatpickr.min.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/dropzone.min.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/sweetalert2.css' )}}">
+<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='assets/css/vendors/select/bootstrap-select.min.css' )}}">
+
+{% endblock %}
+
 {% block content %}
+<!-- Container-fluid starts-->
+<!-- Container-fluid starts-->
 <div class="container-fluid">
   <div class="row">
     <div class="col-12">
       <div class="card">
         <div class="card-header">
           <h5>{{ 'Edit Company' if company else 'Add Company' }}</h5>
-          <div class="card-header-right">
-            <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="arrow-left"></i> Back
-            </a>
-          </div>
         </div>
         <div class="card-body">
-          <form method="POST" action="{{ url_for('admin.edit_company', company_id=company.id) if company else url_for('admin.add_company') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="name">Company Name <span class="text-danger">*</span></label>
-                  <input class="form-control" id="name" name="name" type="text" 
-                         value="{{ company.name if company else '' }}" required />
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="domain">Domain <span class="text-danger">*</span></label>
-                  <input class="form-control" id="domain" name="domain" type="text" 
-                         placeholder="example.com" value="{{ company.domain if company else '' }}" required />
-                  <small class="form-text text-muted">Email domain (e.g., test.com, bank.com)</small>
-                </div>
-              </div>
+          <div class="row g-xl-5 g-3">
+            <div class="col-xxl-3 col-xl-4 box-col-4e sidebar-left-wrapper">
+              <ul class="sidebar-left-icons nav nav-pills" id="company-form-pills-tab" role="tablist">
+                <li class="nav-item"> <a class="nav-link active" id="company-details-tab" data-bs-toggle="pill" href="#company-details" role="tab" aria-controls="company-details" aria-selected="true">
+                    <div class="nav-rounded">
+                      <div class="product-icons">
+                        <svg class="stroke-icon">
+                          <use href="{{ url_for('static', filename='assets/svg/icon-sprite.svg' )}}#product-detail"></use>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="product-tab-content">
+                      <h6>Company Details</h6>
+                      <p>Basic information and description</p>
+                    </div></a></li>
+                <li class="nav-item"> <a class="nav-link" id="company-watchlist-tab" data-bs-toggle="pill" href="#company-watchlist" role="tab" aria-controls="company-watchlist" aria-selected="false">
+                    <div class="nav-rounded">
+                      <div class="product-icons">
+                        <svg class="stroke-icon">
+                          <use href="{{ url_for('static', filename='assets/svg/icon-sprite.svg' )}}#product-category"></use>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="product-tab-content">
+                      <h6>Watchlist</h6>
+                      <p>Domains, URLs, emails and IPs</p>
+                    </div></a></li>
+              </ul>
             </div>
-
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="company_type">Company Type <span class="text-danger">*</span></label>
-                  <select class="form-control" id="company_type" name="company_type" required>
-                    <option value="bank" {{ 'selected' if company and company.company_type == 'bank' else '' }}>Bank</option>
-                    <option value="operator" {{ 'selected' if company and company.company_type == 'operator' else '' }}>Telecommunications Operator</option>
-                    <option value="government" {{ 'selected' if company and company.company_type == 'government' else '' }}>Government</option>
-                    <option value="other" {{ 'selected' if not company or company.company_type == 'other' else '' }}>Other</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-12">
-                <div class="mb-3">
-                  <label class="form-label" for="description">Description</label>
-                  <textarea class="form-control" id="description" name="description" rows="3">{{ company.description if company else '' }}</textarea>
-                </div>
-              </div>
-            </div>
-
-            <!-- Watchlist Section -->
-            <div class="row mt-4">
-              <div class="col-md-12">
-                <h6 class="mb-3">Watchlist Information</h6>
-                
-                <!-- Unified Watchlist Input -->
-                <div class="mb-3">
-                  <div class="input-group">
-                    <select class="form-control" id="watchlist_entry_type" style="max-width: 150px;">
-                      <option value="domain">Domain</option>
-                      <option value="url">URL</option>
-                      <option value="email">Email</option>
-                      <option value="slug">Slug</option>
-                      <option value="ip_address">IP Address</option>
-                    </select>
-                    <input type="text" class="form-control" id="watchlist_entry_value" 
-                           placeholder="test.com" />
-                    <button type="button" class="btn btn-primary" id="watchlist_add_btn">
-                      <i data-feather="plus"></i> Add
-                    </button>
+            <div class="col-xxl-9 col-xl-8 box-col-8 position-relative">
+              <div class="tab-content custom-input" id="company-form-pills-tabContent">
+                <div class="tab-pane fade show active" id="company-details" role="tabpanel" aria-labelledby="company-details-tab">
+                  <div class="sidebar-body">
+                    <form class="row g-3 common-form" method="POST" action="{{ url_for('admin.edit_company', company_id=company.id) if company else url_for('admin.add_company') }}" id="company-details-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <div class="col-12">
+                        <label class="form-label" for="name">Company Name <span class="txt-danger">*</span></label>
+                        <input class="form-control" id="name" name="name" type="text" 
+                               value="{{ company.name if company else '' }}" placeholder="Enter company name" required />
+                      </div>
+                      <div class="col-md-12">
+                        <label class="form-label" for="domain">Domain <span class="txt-danger">*</span></label>
+                        <input class="form-control" id="domain" name="domain" type="text" 
+                               placeholder="example.com" value="{{ company.domain if company else '' }}" required />
+                        <small class="form-text text-muted">Email domain (e.g., test.com, bank.com)</small>
+                      </div>
+                      <div class="col-md-12">
+                        <label class="form-label" for="company_type">Company Type <span class="txt-danger">*</span></label>
+                        <select class="form-control" id="company_type" name="company_type" required>
+                          <option value="bank" {{ 'selected' if company and company.company_type == 'bank' else '' }}>Bank</option>
+                          <option value="operator" {{ 'selected' if company and company.company_type == 'operator' else '' }}>Telecommunications Operator</option>
+                          <option value="government" {{ 'selected' if company and company.company_type == 'government' else '' }}>Government</option>
+                          <option value="other" {{ 'selected' if not company or company.company_type == 'other' else '' }}>Other</option>
+                        </select>
+                      </div>
+                      <div class="col-md-12">
+                        <label class="form-label" for="description">Description</label>
+                        <div class="toolbar-box">
+                          <div id="toolbar3">
+                            <button class="ql-bold">Bold </button>
+                            <button class="ql-italic">Italic </button>
+                            <button class="ql-underline">underline</button>
+                            <button class="ql-strike">Strike </button>
+                            <button class="ql-list" value="ordered">List </button>
+                            <button class="ql-list" value="bullet"> </button>
+                            <button class="ql-indent" value="-1"> </button>
+                            <button class="ql-indent" value="+1"></button>
+                            <button class="ql-link"></button>
+                          </div>
+                          <div id="editor3"></div>
+                        </div>
+                        <!-- Hidden input to store Quill content for form submission -->
+                        <input type="hidden" id="description" name="description" value="{{ company.description if company else '' }}">
+                      </div>
+                      <hr class="my-4">
+                      <div class="col-12 product-buttons">
+                        <button class="btn m-0" type="button" onclick="handleNextButtonClick('company-watchlist-tab')">Next
+                          <svg>
+                            <use href="{{ url_for('static', filename='assets/svg/icon-sprite.svg' )}}#front-arrow"> </use>
+                          </svg>
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                  <small class="form-text text-muted">Enter a value and press Enter or click Add to save</small>
                 </div>
-                
-                <!-- Saved Watchlist Entries (Tags) -->
-                <div id="watchlist_tags_container" class="mb-3">
-                  {% if company and company.watchlist_entries %}
-                    {% for entry in company.watchlist_entries %}
-                    <span class="badge badge-light-{{ 'success' if entry.entry_type == 'domain' else 'info' if entry.entry_type == 'url' else 'warning' if entry.entry_type == 'email' else 'secondary' if entry.entry_type == 'slug' else 'danger' }} me-2 mb-2 watchlist-tag" 
-                          data-entry-id="{{ entry.id }}" 
-                          data-entry-type="{{ entry.entry_type }}" 
-                          data-entry-value="{{ entry.entry_value }}"
-                          style="font-size: 0.9rem; padding: 0.5rem 0.75rem; cursor: pointer;">
-                      <strong>{{ entry.entry_type|title }}:</strong> {{ entry.entry_value }}
-                      {% if entry.description %}
-                        <small>({{ entry.description }})</small>
-                      {% endif %}
-                      <i data-feather="x" class="ms-1" style="width: 14px; height: 14px;" onclick="removeWatchlistTag(event, {{ entry.id }})"></i>
-                    </span>
-                    {% endfor %}
-                  {% endif %}
+                <div class="tab-pane fade" id="company-watchlist" role="tabpanel" aria-labelledby="company-watchlist-tab">
+                  <div class="sidebar-body common-form">
+                    <form class="row g-3 common-form" method="POST" action="{{ url_for('admin.edit_company', company_id=company.id) if company else url_for('admin.add_company') }}" id="company-watchlist-form">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                      <!-- Hidden fields from company details tab (populated by JS) -->
+                      <input type="hidden" id="watchlist_form_name" name="name" value="{{ company.name if company else '' }}"/>
+                      <input type="hidden" id="watchlist_form_domain" name="domain" value="{{ company.domain if company else '' }}"/>
+                      <input type="hidden" id="watchlist_form_company_type" name="company_type" value="{{ company.company_type if company else 'other' }}"/>
+                      <input type="hidden" id="watchlist_form_description" name="description" value="{{ company.description if company else '' }}"/>
+                      
+                      <div class="col-md-12">
+                        <label class="form-label">Entry Type</label>
+                        <div class="d-flex gap-2 align-items-end">
+                          <select class="form-select" id="watchlist_entry_type" style="max-width: 200px;">
+                            <option value="domain">Domain</option>
+                            <option value="url">URL</option>
+                            <option value="email">Email</option>
+                            <option value="slug">Slug</option>
+                            <option value="ip_address">IP Address</option>
+                          </select>
+                          <input type="text" class="form-control" id="watchlist_manual_input" placeholder="Enter value..." style="flex: 1; max-width: 300px;">
+                          <button class="btn btn-primary" type="button" id="watchlist_add_btn">
+                            <i data-feather="plus"></i> Add
+                          </button>
+                        </div>
+                        <small class="form-text text-muted">Select the type and enter a value, then click Add or use the tag input below</small>
+                      </div>
+                      
+                      <div class="col-sm-12 common-tagify">
+                        <label class="form-label">Add Watchlist</label>
+                        <input name="watchlist-tags" id="watchlist-tags-input" class="tagify" value="{% if company and company.watchlist_entries %}{% for entry in company.watchlist_entries %}{{ entry.entry_value }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}">
+                      </div>
+                      
+                      <!-- Hidden inputs for form submission -->
+                      <div id="watchlist_hidden_inputs"></div>
+
+                      <div class="col-12 product-buttons">
+                        <button class="btn" type="button" onclick="handleNextButtonClick('company-details-tab')">
+                          <svg>
+                            <use href="{{ url_for('static', filename='assets/svg/icon-sprite.svg' )}}#back-arrow"></use>
+                          </svg>Previous
+                        </button>
+                        <button class="btn" type="submit">{{ 'Update Company' if company else 'Add Company' }}
+                          <svg>
+                            <use href="{{ url_for('static', filename='assets/svg/icon-sprite.svg' )}}#front-arrow"></use>
+                          </svg>
+                        </button>
+                        <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary ms-2">Cancel</a>
+                      </div>
+                    </form>
+                  </div>
                 </div>
-                
-                <!-- Hidden inputs for form submission -->
-                <div id="watchlist_hidden_inputs"></div>
               </div>
             </div>
-
-            <div class="mt-4">
-              <button class="btn btn-primary btn-sm" type="submit">{{ 'Update Company' if company else 'Add Company' }}</button>
-              <a href="{{ url_for('admin.company_management') }}" class="btn btn-secondary btn-sm">Cancel</a>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </div>
+<!-- Container-fluid Ends-->
+<!-- Container-fluid Ends-->
 
 <script>
 const companyId = {{ company.id if company else 'null' }};
@@ -125,7 +178,7 @@ let watchlistEntries = [];
 {% if company and company.watchlist_entries %}
   watchlistEntries = [
     {% for entry in company.watchlist_entries %}
-    {id: {{ entry.id }}, type: '{{ entry.entry_type }}', value: '{{ entry.entry_value|e }}', description: '{{ entry.description|e if entry.description else '' }}'}{% if not loop.last %},{% endif %}
+    {id: {{ entry.id }}, type: {{ entry.entry_type|tojson }}, value: {{ entry.entry_value|tojson }}, description: {{ (entry.description or '')|tojson }}}{% if not loop.last %},{% endif %}
     {% endfor %}
   ];
 {% endif %}
@@ -149,43 +202,66 @@ function updateHiddenInputs() {
   });
 }
 
-// Add watchlist entry
-function addWatchlistEntry() {
-  const type = document.getElementById('watchlist_entry_type').value;
-  const valueInput = document.getElementById('watchlist_entry_value');
-  const value = valueInput.value.trim();
-  
-  if (!value) {
-    return;
-  }
-  
-  // Check for duplicates
-  if (watchlistEntries.some(e => e.type === type && e.value === value)) {
-    alert('This entry already exists!');
-    valueInput.value = '';
-    return;
-  }
-  
-  const entry = {
-    id: null, // New entry
-    type: type,
-    value: value,
-    description: ''
-  };
-  
-  // Auto-save if editing existing company
-  if (companyId) {
-    saveWatchlistEntry(entry);
-  } else {
-    // Just add to local array for new company
-    watchlistEntries.push(entry);
-    renderWatchlistTags();
-    updateHiddenInputs();
-    valueInput.value = '';
+// Simple tab navigation helper (uses Bootstrap tabs) - matches Cuba pattern
+function handleNextButtonClick(tabId) {
+  var triggerEl = document.getElementById(tabId);
+  if (triggerEl) {
+    var tab = new bootstrap.Tab(triggerEl);
+    tab.show();
   }
 }
 
-// Auto-save watchlist entry
+// Get type for a tag value (from watchlistEntries or use current selected type)
+function getTagType(tagValue) {
+  // First, try to find in existing watchlistEntries
+  const existing = watchlistEntries.find(e => e.value === tagValue);
+  if (existing) {
+    return existing.type;
+  }
+  // Otherwise, use current selected type
+  return document.getElementById('watchlist_entry_type').value;
+}
+
+// Convert watchlistEntries to Tagify format (just values)
+function entriesToTagifyValue() {
+  return watchlistEntries.map(e => e.value).join(', ');
+}
+
+// Update watchlistEntries from Tagify tags
+function syncTagifyToEntries(tagify) {
+  const tags = tagify.value || [];
+  const newEntries = [];
+  
+  // Store original entries for ID lookup
+  const originalEntries = [...watchlistEntries];
+  
+  tags.forEach(tagData => {
+    const tagValue = typeof tagData === 'string' ? tagData : (tagData.value || tagData);
+    const value = tagValue.trim();
+    
+    if (!value) return;
+    
+    // Try to find in original entries to preserve ID and type
+    const original = originalEntries.find(e => e.value === value);
+    if (original) {
+      newEntries.push(original);
+    } else {
+      // New entry - use current selected type
+      const currentType = document.getElementById('watchlist_entry_type').value;
+      newEntries.push({
+        id: null,
+        type: currentType,
+        value: value,
+        description: ''
+      });
+    }
+  });
+  
+  watchlistEntries = newEntries;
+  updateHiddenInputs();
+}
+
+// Auto-save watchlist entry (for existing companies)
 function saveWatchlistEntry(entry) {
   const formData = new FormData();
   formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
@@ -201,10 +277,7 @@ function saveWatchlistEntry(entry) {
   .then(data => {
     if (data.success) {
       entry.id = data.entry_id;
-      watchlistEntries.push(entry);
-      renderWatchlistTags();
       updateHiddenInputs();
-      document.getElementById('watchlist_entry_value').value = '';
     } else {
       alert('Error saving entry: ' + (data.error || 'Unknown error'));
     }
@@ -215,115 +288,411 @@ function saveWatchlistEntry(entry) {
   });
 }
 
-// Remove watchlist tag
-function removeWatchlistTag(event, entryId) {
-  event.stopPropagation();
+// Delete watchlist entry from server
+function deleteWatchlistEntry(entryId) {
+  const formData = new FormData();
+  formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
   
-  if (companyId && entryId) {
-    // Delete from server
-    const formData = new FormData();
-    formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
-    
-    fetch(`/admin/companies/${companyId}/watchlist/${entryId}/delete`, {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        watchlistEntries = watchlistEntries.filter(e => e.id !== entryId);
-        renderWatchlistTags();
-        updateHiddenInputs();
-      } else {
-        alert('Error deleting entry: ' + (data.error || 'Unknown error'));
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('Error deleting entry');
-    });
-  } else {
-    // Remove from local array
-    watchlistEntries = watchlistEntries.filter(e => e.id !== entryId);
-    renderWatchlistTags();
-    updateHiddenInputs();
-  }
+  fetch(`/admin/companies/${companyId}/watchlist/${entryId}/delete`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (!data.success) {
+      alert('Error deleting entry: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('Error deleting entry');
+  });
 }
 
-// Render watchlist tags
-function renderWatchlistTags() {
-  const container = document.getElementById('watchlist_tags_container');
-  container.innerHTML = '';
+// Global Quill instance for description editor
+let quillEditor = null;
+
+// Initialize or get Quill editor instance
+function initializeQuill() {
+  const editor = document.getElementById('editor3');
+  const descriptionInput = document.getElementById('description');
   
-  const typeColors = {
-    'domain': 'success',
-    'url': 'info',
-    'email': 'warning',
-    'slug': 'secondary',
-    'ip_address': 'danger'
-  };
+  if (!editor) return;
   
-  watchlistEntries.forEach(entry => {
-    const tag = document.createElement('span');
-    tag.className = `badge badge-light-${typeColors[entry.type] || 'secondary'} me-2 mb-2 watchlist-tag`;
-    tag.style.cssText = 'font-size: 0.9rem; padding: 0.5rem 0.75rem; cursor: pointer;';
-    tag.setAttribute('data-entry-id', entry.id || 'new');
-    tag.setAttribute('data-entry-type', entry.type);
-    tag.setAttribute('data-entry-value', entry.value);
+  // Wait for custom-add-product.js to initialize Quill, or initialize it ourselves
+  function setupQuill() {
+    // Check if Quill is already initialized (by custom-add-product.js or our code)
+    if (editor.quill) {
+      quillEditor = editor.quill;
+    } else if (typeof Quill !== 'undefined') {
+      // Initialize Quill editor if not already initialized
+      quillEditor = new Quill('#editor3', {
+        modules: {
+          toolbar: '#toolbar3'
+        },
+        theme: 'snow',
+        placeholder: 'Enter company description...'
+      });
+    } else {
+      // Quill not loaded yet, try again after a short delay
+      setTimeout(setupQuill, 100);
+      return;
+    }
     
-    const typeLabel = entry.type.charAt(0).toUpperCase() + entry.type.slice(1).replace('_', ' ');
-    tag.innerHTML = `
-      <strong>${typeLabel}:</strong> ${entry.value}
-      ${entry.description ? `<small>(${entry.description})</small>` : ''}
-      <i data-feather="x" class="ms-1" style="width: 14px; height: 14px;" onclick="removeWatchlistTag(event, ${entry.id || 'null'})"></i>
-    `;
+    // Load existing description from database
+    if (quillEditor && descriptionInput && descriptionInput.value) {
+      try {
+        quillEditor.root.innerHTML = descriptionInput.value;
+      } catch (e) {
+        // If HTML parsing fails, set as plain text
+        quillEditor.setText(descriptionInput.value);
+      }
+    }
     
-    container.appendChild(tag);
+    // Sync Quill content to hidden input on text change
+    if (quillEditor) {
+      quillEditor.on('text-change', function() {
+        if (descriptionInput) {
+          descriptionInput.value = quillEditor.root.innerHTML;
+        }
+      });
+    }
+  }
+  
+  // Try to setup immediately, or wait a bit for custom-add-product.js
+  setupQuill();
+}
+
+// Copy company details to watchlist form before submission
+function syncCompanyDetailsToWatchlistForm() {
+  const nameField = document.getElementById('name');
+  const domainField = document.getElementById('domain');
+  const companyTypeField = document.getElementById('company_type');
+  const descriptionInput = document.getElementById('description');
+  
+  // Sync Quill content to hidden input before reading
+  if (quillEditor && descriptionInput) {
+    descriptionInput.value = quillEditor.root.innerHTML;
+  }
+  
+  if (nameField) document.getElementById('watchlist_form_name').value = nameField.value;
+  if (domainField) document.getElementById('watchlist_form_domain').value = domainField.value;
+  if (companyTypeField) document.getElementById('watchlist_form_company_type').value = companyTypeField.value;
+  if (descriptionInput) document.getElementById('watchlist_form_description').value = descriptionInput.value;
+}
+
+// Global Tagify instance
+let tagifyInstance = null;
+
+// Initialize Tagify
+function initializeTagify() {
+  const tagifyInput = document.getElementById('watchlist-tags-input');
+  
+  if (!tagifyInput) return;
+  
+  // Check if Tagify is already initialized on this input
+  if (tagifyInput.tagify) {
+    tagifyInstance = tagifyInput.tagify;
+    return;
+  }
+  
+  // Check if Tagify library is available
+  if (typeof Tagify === 'undefined') {
+    console.warn('Tagify library not loaded. Watchlist tags will not work properly.');
+    return;
+  }
+  
+  tagifyInstance = new Tagify(tagifyInput, {
+    placeholder: 'Type and press Enter to add',
+    duplicates: false,
+    transformTag: function(tagData) {
+      // Just use the value as-is (no type prefix in display)
+      const tagValue = tagData.value || tagData;
+      tagData.value = tagValue.trim();
+      return tagData;
+    },
+    dropdown: {
+      enabled: 0 // Disable dropdown
+    }
   });
   
-  if (typeof feather !== 'undefined') {
-    feather.replace();
-  }
-}
-
-// Update placeholder based on selected type
-function updatePlaceholder() {
-  const type = document.getElementById('watchlist_entry_type').value;
-  const input = document.getElementById('watchlist_entry_value');
-  const placeholders = {
-    'domain': 'test.com',
-    'url': 'https://example.com',
-    'email': 'user@example.com',
-    'slug': 'company-identifier',
-    'ip_address': '192.168.1.1'
-  };
-  input.placeholder = placeholders[type] || 'Enter value...';
+  // Initial sync: match Tagify tags with existing watchlistEntries to preserve IDs
+  setTimeout(function() {
+    if (!tagifyInstance) return;
+    
+    const tags = tagifyInstance.value || [];
+    const matchedEntries = [];
+    
+    tags.forEach(tagData => {
+      const tagValue = typeof tagData === 'string' ? tagData : (tagData.value || tagData);
+      const value = tagValue.trim();
+      
+      if (!value) return;
+      
+      // Try to find matching entry in original watchlistEntries to preserve ID and type
+      const existing = watchlistEntries.find(e => e.value === value);
+      if (existing) {
+        matchedEntries.push(existing);
+      } else {
+        // New entry - use current selected type
+        const currentType = document.getElementById('watchlist_entry_type').value;
+        matchedEntries.push({
+          id: null,
+          type: currentType,
+          value: value,
+          description: ''
+        });
+      }
+    });
+    
+    watchlistEntries = matchedEntries;
+    updateHiddenInputs();
+  }, 100);
   
-  // Change input type for better validation
-  if (type === 'url') {
-    input.type = 'url';
-  } else if (type === 'email') {
-    input.type = 'email';
-  } else {
-    input.type = 'text';
-  }
+  // Sync Tagify changes to watchlistEntries
+  tagifyInstance.on('add', function(e) {
+    const tagValue = e.detail.data.value || e.detail.data;
+    const value = typeof tagValue === 'string' ? tagValue.trim() : (tagValue.value || '').trim();
+    
+    if (!value) return;
+    
+    // Check for duplicates (by value only, since we're not showing type in UI)
+    const exists = watchlistEntries.some(entry => entry.value === value);
+    if (exists) {
+      tagifyInstance.removeTag(e.detail.tagify.DOM.input);
+      return;
+    }
+    
+    // Get type from current selector
+    const currentType = document.getElementById('watchlist_entry_type').value;
+    const entry = {
+      id: null,
+      type: currentType,
+      value: value,
+      description: ''
+    };
+    
+    // Auto-save if editing existing company
+    if (companyId) {
+      saveWatchlistEntry(entry);
+    }
+    
+    watchlistEntries.push(entry);
+    syncTagifyToEntries(tagifyInstance);
+  });
+  
+  tagifyInstance.on('remove', function(e) {
+    const tagValue = e.detail.data.value || e.detail.data;
+    const value = typeof tagValue === 'string' ? tagValue.trim() : (tagValue.value || '').trim();
+    
+    if (!value) return;
+    
+    // Find and remove from watchlistEntries (by value)
+    const entry = watchlistEntries.find(entry => entry.value === value);
+    if (entry) {
+      // Delete from server if it has an ID
+      if (companyId && entry.id) {
+        deleteWatchlistEntry(entry.id);
+      }
+      
+      watchlistEntries = watchlistEntries.filter(e => e.value !== value);
+      syncTagifyToEntries(tagifyInstance);
+    }
+  });
 }
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
-  renderWatchlistTags();
-  updateHiddenInputs();
-  updatePlaceholder();
+  // Initialize Quill editor (will wait for custom-add-product.js if needed)
+  initializeQuill();
   
-  document.getElementById('watchlist_entry_type').addEventListener('change', updatePlaceholder);
-  document.getElementById('watchlist_add_btn').addEventListener('click', addWatchlistEntry);
-  document.getElementById('watchlist_entry_value').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addWatchlistEntry();
+  // Also try to initialize after scripts load (in case custom-add-product.js initializes later)
+  setTimeout(function() {
+    if (!quillEditor) {
+      initializeQuill();
+    } else {
+      // If Quill is already initialized, make sure database value is loaded
+      const descriptionInput = document.getElementById('description');
+      if (quillEditor && descriptionInput && descriptionInput.value && !quillEditor.root.innerHTML.trim()) {
+        try {
+          quillEditor.root.innerHTML = descriptionInput.value;
+        } catch (e) {
+          quillEditor.setText(descriptionInput.value);
+        }
+      }
     }
-  });
+  }, 500);
+  
+  // Initialize Tagify immediately
+  initializeTagify();
+  
+  // Initialize hidden inputs
+  updateHiddenInputs();
+  
+  // Sync Quill content to hidden input before company details form submission
+  const companyDetailsForm = document.getElementById('company-details-form');
+  if (companyDetailsForm) {
+    companyDetailsForm.addEventListener('submit', function(e) {
+      // Sync Quill content to hidden input
+      if (quillEditor) {
+        const descriptionInput = document.getElementById('description');
+        if (descriptionInput) {
+          descriptionInput.value = quillEditor.root.innerHTML;
+        }
+      }
+    });
+  }
+  
+  // Sync company details to watchlist form before submission
+  const watchlistForm = document.getElementById('company-watchlist-form');
+  if (watchlistForm) {
+    watchlistForm.addEventListener('submit', function(e) {
+      syncCompanyDetailsToWatchlistForm();
+      // Final sync from Tagify to entries
+      if (tagifyInstance) {
+        syncTagifyToEntries(tagifyInstance);
+      }
+      updateHiddenInputs(); // Ensure watchlist hidden inputs are up to date
+    });
+  }
+  
+  // Initialize Tagify when navigating to watchlist tab (in case it wasn't initialized)
+  const watchlistTab = document.getElementById('company-watchlist-tab');
+  if (watchlistTab) {
+    watchlistTab.addEventListener('shown.bs.tab', function() {
+      syncCompanyDetailsToWatchlistForm();
+      // Re-initialize Tagify if not already initialized
+      if (!tagifyInstance) {
+        initializeTagify();
+      }
+    });
+  }
+  
+  // Handle manual "Add" button click
+  const addBtn = document.getElementById('watchlist_add_btn');
+  const manualInput = document.getElementById('watchlist_manual_input');
+  if (addBtn && manualInput) {
+    addBtn.addEventListener('click', function() {
+      const value = manualInput.value.trim();
+      if (!value) {
+        return;
+      }
+      
+      // Add to Tagify if initialized
+      if (tagifyInstance) {
+        // Check for duplicates
+        const exists = watchlistEntries.some(entry => entry.value === value);
+        if (exists) {
+          alert('This entry already exists!');
+          manualInput.value = '';
+          return;
+        }
+        
+        // Add tag to Tagify (this will trigger the 'add' event)
+        tagifyInstance.addTags(value);
+        manualInput.value = '';
+      } else {
+        // Fallback: add directly to watchlistEntries if Tagify not initialized
+        const currentType = document.getElementById('watchlist_entry_type').value;
+        const entry = {
+          id: null,
+          type: currentType,
+          value: value,
+          description: ''
+        };
+        
+        // Check for duplicates
+        const exists = watchlistEntries.some(e => e.value === value);
+        if (exists) {
+          alert('This entry already exists!');
+          manualInput.value = '';
+          return;
+        }
+        
+        // Auto-save if editing existing company
+        if (companyId) {
+          saveWatchlistEntry(entry);
+        }
+        
+        watchlistEntries.push(entry);
+        updateHiddenInputs();
+        manualInput.value = '';
+      }
+    });
+    
+    // Also allow Enter key in manual input
+    manualInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addBtn.click();
+      }
+    });
+  }
 });
 </script>
 {% endblock %}
 
+{% block scriptcontent %}
+<script src="{{ url_for('static', filename='assets/js/flat-pickr/flatpickr.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/flat-pickr/custom-flatpickr.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/dropzone/dropzone.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/dropzone/dropzone-script.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/sweet-alert/sweetalert.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select2/tagify.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select2/tagify.polyfills.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select2/intltelinput.min.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/add-product/select4-custom.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/editors/quill.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/custom-add-product.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/tooltip-init.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/modalpage/validation-modal.js' )}}"></script>
+<script src="{{ url_for('static', filename='assets/js/select/bootstrap-select.min.js' )}}"></script>
+<script>
+// Initialize Quill with database value after all scripts are loaded
+(function() {
+  // Wait for Quill to be initialized by custom-add-product.js
+  setTimeout(function() {
+    const editor = document.getElementById('editor3');
+    const descriptionInput = document.getElementById('description');
+    
+    if (editor && descriptionInput && descriptionInput.value) {
+      // Get the Quill instance (either from custom-add-product.js or initialize it)
+      let quill = editor.quill;
+      
+      if (!quill && typeof Quill !== 'undefined') {
+        // If not initialized, initialize it now
+        quill = new Quill('#editor3', {
+          modules: { toolbar: '#toolbar3' },
+          theme: 'snow',
+          placeholder: 'Enter company description...'
+        });
+      }
+      
+      if (quill) {
+        // Set the global quillEditor reference
+        if (typeof window.quillEditor === 'undefined') {
+          window.quillEditor = quill;
+        }
+        
+        // Load database value if editor is empty
+        if (!quill.root.innerHTML.trim() || quill.root.innerHTML === '<p><br></p>') {
+          try {
+            quill.root.innerHTML = descriptionInput.value;
+          } catch (e) {
+            quill.setText(descriptionInput.value);
+          }
+        }
+        
+        // Sync Quill content to hidden input on text change
+        quill.on('text-change', function() {
+          if (descriptionInput) {
+            descriptionInput.value = quill.root.innerHTML;
+          }
+        });
+      }
+    }
+  }, 200);
+})();
+</script>
+
+{% endblock %}

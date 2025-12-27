@@ -9,6 +9,7 @@ from . import db
 from .models import User, Company, BreachedCredential, WatchlistEntry, AuditLog, UserActivity
 from .auth import validate_password, validate_email
 from .audit_helpers import log_audit
+from .security import admin_required
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -58,21 +59,6 @@ def build_domain_match_query(domains):
     if not conditions:
         return None
     return or_(*conditions)
-
-
-def admin_required(f):
-    """Decorator to require admin role"""
-    from functools import wraps
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Please login to access this page.", "warning")
-            return redirect(url_for('auth.login'))
-        if current_user.role != 'admin' and not current_user.isAdmin:
-            flash("Access denied. Admin privileges required.", "danger")
-            return redirect(url_for('main.indexPage'))
-        return f(*args, **kwargs)
-    return decorated_function
 
 
 @admin_bp.route('/admin/users')
@@ -469,6 +455,30 @@ def add_company():
     
     breadcrumb = {"parent": "Add Company", "child": "Admin"}
     return render_template('admin/company_form.html', breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/companies/<int:company_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def delete_company(company_id):
+    """Delete a company and its watchlist entries."""
+    company = Company.query.get_or_404(company_id)
+
+    # Optional safety: prevent deleting if users still assigned
+    if company.users:
+        flash("Cannot delete a company that still has users assigned.", "warning")
+        return redirect(url_for('admin.company_management'))
+
+    try:
+        WatchlistEntry.query.filter_by(company_id=company.id).delete()
+        db.session.delete(company)
+        db.session.commit()
+        flash(f'Company "{company.name}" deleted successfully.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error deleting company: {str(e)}', 'danger')
+
+    return redirect(url_for('admin.company_management'))
 
 
 @admin_bp.route('/admin/companies/<int:company_id>/edit', methods=['GET', 'POST'])

@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from . import db
 from .models import Notification
+from .api_utils import json_error, json_success
 
 notification_bp = Blueprint('notifications', __name__)
 
@@ -44,7 +45,7 @@ def get_notifications():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({'error': str(e), 'notifications': [], 'unread_count': 0}), 500
+        return json_error(str(e), status_code=500, notifications=[], unread_count=0)
 
 
 @notification_bp.route('/api/notifications/<int:id>/read', methods=['POST'])
@@ -55,15 +56,15 @@ def mark_read(id):
         notification = Notification.query.get_or_404(id)
         
         if notification.user_id != current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
+            return json_error('Unauthorized', status_code=403)
         
         notification.is_read = True
         notification.read_at = datetime.utcnow()
         db.session.commit()
         
-        return jsonify({'success': True})
+        return json_success()
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return json_error(str(e), status_code=500)
 
 
 @notification_bp.route('/api/notifications/mark-all-read', methods=['POST'])
@@ -76,7 +77,7 @@ def mark_all_read():
     ).update({'is_read': True, 'read_at': datetime.utcnow()})
     db.session.commit()
     
-    return jsonify({'success': True})
+    return json_success()
 
 
 def _time_ago(dt):

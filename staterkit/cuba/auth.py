@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 import re
 from datetime import datetime
 import os
@@ -64,6 +65,51 @@ def login():
         return redirect(next_url or url_for("main.indexPage"))
 
     return render_template("auth/login.html")
+
+
+@auth.route("/api/auth/login", methods=["POST"])
+def api_login():
+    """
+    JSON-based login that returns a short-lived JWT access token.
+
+    Request JSON:
+        { "email": "...", "password": "..." }
+    """
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return jsonify({"success": False, "error": "Email and password are required."}), 400
+
+    user = User.query.filter_by(email=email).first()
+    if not user or not user.check_password(password):
+        if user:
+            log_user_activity("api_login_failed", user.id, status="failed", failure_reason="invalid_password")
+        else:
+            log_user_activity("api_login_failed", None, status="failed", failure_reason="user_not_found")
+        return jsonify({"success": False, "error": "Invalid credentials."}), 401
+
+    if not user.is_active:
+        log_user_activity("api_login_failed", user.id, status="failed", failure_reason="user_inactive")
+        return jsonify({"success": False, "error": "Account is inactive."}), 403
+
+    access_token = create_access_token(identity=user.id)
+
+    log_user_activity("api_login", user.id, status="success")
+    log_audit("api_login", "user", user.id, f"User {user.username} obtained API token")
+
+    return jsonify({
+        "success": True,
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": user.role,
+        },
+    })
 
 
 def validate_password(password):

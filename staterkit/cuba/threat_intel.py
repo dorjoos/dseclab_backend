@@ -24,95 +24,24 @@ except ImportError:
 from . import db, cache
 from .models import BreachedCredential, Company, Notification, User
 from .audit_helpers import log_audit
+from .security import (
+    get_user_company_domain,
+    get_user_watchlist_domains,
+    can_user_access_breached_cred,
+    requires_breached_cred_access,
+)
+from .services.filters import build_date_filter
+from .services.breached_creds_service import (
+    build_analysis_stats,
+    apply_breached_domain_filter,
+)
+from .security import (
+    get_user_company_domain,
+    get_user_watchlist_domains,
+    can_user_access_breached_cred,
+)
 
 threat_intel = Blueprint('threat_intel', __name__)
-
-
-def get_user_company_domain():
-    """Get company domain for current user"""
-    if current_user.is_authenticated:
-        if current_user.role == 'admin' or current_user.isAdmin:
-            return None  # Admins see all data
-        return current_user.company_domain
-    return None
-
-
-def _get_user_domains_to_match():
-    """Get list of domains/IPs/values to match for current user (company domain + all watchlist entries)"""
-    user_domain = get_user_company_domain()
-    if not user_domain:
-        return []
-    
-    domains_to_match = [user_domain]
-    user_company = current_user.company if current_user.company else None
-    if user_company:
-        # Include ALL watchlist entry types (domain, url, email, slug, ip_address)
-        # All of them can be used to match against Application field
-        for entry in user_company.watchlist_entries:
-            if entry.entry_value:
-                entry_value = entry.entry_value.strip().lower()
-                if entry_value:
-                    domains_to_match.append(entry_value)
-    
-    return list(set([d for d in domains_to_match if d]))
-
-
-def _can_user_access_breached_cred(breached_cred):
-    """
-    Check if current user can access a specific breached credential.
-    Uses the same watchlist matching logic as the list view.
-    
-    Returns:
-        bool: True if user can access, False otherwise
-    """
-    # Admins can access everything
-    if current_user.role == 'admin' or current_user.isAdmin:
-        return True
-    
-    # Get user's company domain
-    user_domain = get_user_company_domain()
-    if not user_domain:
-        # If user has no domain, they can't access anything
-        return False
-    
-    # Get domains to match (company domain + watchlist entries)
-    domains_to_match = _get_user_domains_to_match()
-    if not domains_to_match:
-        # Fallback to domain check if no watchlist
-        return breached_cred.domain and breached_cred.domain.lower() == user_domain.lower()
-    
-    # Check if breached credential matches any watchlist entry
-    # This mirrors the logic in _build_domain_match_query
-    for domain in domains_to_match:
-        if not domain:
-            continue
-        domain = domain.lower().strip()
-        
-        # Match domain field - exact match or contains
-        if breached_cred.domain:
-            domain_lower = breached_cred.domain.lower()
-            if domain in domain_lower or domain_lower == domain:
-                return True
-        
-        # Match username field - check if username contains domain or equals domain
-        if breached_cred.username:
-            username_lower = breached_cred.username.lower()
-            if domain in username_lower or username_lower == domain:
-                return True
-            # Check if username is an email format
-            if '@' in username_lower:
-                if f'@{domain}' in username_lower:
-                    return True
-                if f'@.{domain}' in username_lower:
-                    return True
-        
-        # Match URL field - check if URL contains domain
-        if breached_cred.url:
-            url_lower = breached_cred.url.lower()
-            if domain in url_lower:
-                return True
-    
-    return False
 
 
 def _build_domain_match_query(domains):
@@ -231,50 +160,29 @@ def _notify_new_breach(credential_id, company_domain, company_name, email):
 @login_required
 def breached_creds_list():
     """List all breached credentials - filtered by company for members"""
-    page = request.args.get('page', 1, type=int)
+    page = request.args.get("page", 1, type=int)
     per_page = 10
-    
+
     # Security: Sanitize input
-    type_filter = sanitize_input(request.args.get('type', ''))  # combolist, stealer, malware, etc.
-    source_filter = sanitize_input(request.args.get('source', ''))
-    domain_filter_param = sanitize_input(request.args.get('domain', ''))
-    search_query = sanitize_input(request.args.get('search', ''))
-    date_filter = sanitize_input(request.args.get('date_filter', 'all'))  # today, week, month, all (default: all)
-    
+    type_filter = sanitize_input(request.args.get("type", ""))  # combolist, stealer, malware, etc.
+    source_filter = sanitize_input(request.args.get("source", ""))
+    domain_filter_param = sanitize_input(request.args.get("domain", ""))
+    search_query = sanitize_input(request.args.get("search", ""))
+    raw_date_filter = sanitize_input(request.args.get("date_filter", "all"))  # today, week, month, all (default: all)
+
     # Get user's company domain for filtering
     user_domain = get_user_company_domain()
-    
+
     query = BreachedCredential.query
-    
+
     # Security: Filter by company domain and watchlist for members (data isolation)
     if user_domain:
-        # Get domains to match (company domain + watchlist domains)
-        domains_to_match = _get_user_domains_to_match()
-        
-        # Use the same matching logic as admin
-        domain_filter = _build_domain_match_query(domains_to_match)
-        if domain_filter is not None:
-            query = query.filter(domain_filter)
-        else:
-            # Fallback to original behavior if no watchlist
-            query = query.filter(BreachedCredential.domain == user_domain)
-    
-    # Quick date filters (default to 'all' if not specified)
-    today = date.today()
-    if date_filter == 'all' or not date_filter or date_filter == '':
-        # Default to 'all' - show all records regardless of date
-        if not date_filter or date_filter == '':
-            date_filter = 'all'
-        # Don't filter by date
-        pass
-    elif date_filter == 'today':
-        query = query.filter(BreachedCredential.created_at >= datetime.combine(today, datetime.min.time()))
-    elif date_filter == 'week':
-        week_ago = today - timedelta(days=7)
-        query = query.filter(BreachedCredential.created_at >= datetime.combine(week_ago, datetime.min.time()))
-    elif date_filter == 'month':
-        month_ago = today - timedelta(days=30)
-        query = query.filter(BreachedCredential.created_at >= datetime.combine(month_ago, datetime.min.time()))
+        query = apply_breached_domain_filter(query, user_domain)
+
+    # Quick date filters via reusable helper
+    query, date_filter = build_date_filter(
+        query, BreachedCredential.created_at, raw_date_filter
+    )
     
     # Additional filters
     if type_filter:
@@ -303,7 +211,7 @@ def breached_creds_list():
     # Get statistics (filtered by user domain and watchlist)
     stats_query = BreachedCredential.query
     if user_domain:
-        domains_to_match = _get_user_domains_to_match()
+        domains_to_match = get_user_watchlist_domains()
         stats_domain_filter = _build_domain_match_query(domains_to_match)
         if stats_domain_filter is not None:
             stats_query = stats_query.filter(stats_domain_filter)
@@ -316,7 +224,7 @@ def breached_creds_list():
         func.count(BreachedCredential.id)
     )
     if user_domain:
-        domains_to_match = _get_user_domains_to_match()
+        domains_to_match = get_user_watchlist_domains()
         stats_domain_filter = _build_domain_match_query(domains_to_match)
         if stats_domain_filter is not None:
             by_type_query = by_type_query.filter(stats_domain_filter)
@@ -427,15 +335,9 @@ def breached_creds_add():
 
 @threat_intel.route('/threat-intelligence/breached-creds/<int:id>/mark', methods=['POST'])
 @login_required
-def breached_creds_mark(id):
+@requires_breached_cred_access
+def breached_creds_mark(id, breached_cred):
     """Mark breached credential for review - Members can mark"""
-    breached_cred = BreachedCredential.query.get_or_404(id)
-    
-    # Security: Fix IDOR - Check if user can access this record using watchlist matching
-    if not _can_user_access_breached_cred(breached_cred):
-        flash('Access denied. You can only mark records for your company.', 'danger')
-        return redirect(url_for('threat_intel.breached_creds_list'))
-    
     # Toggle mark status
     breached_cred.is_marked = not breached_cred.is_marked
     if breached_cred.is_marked:
@@ -457,10 +359,9 @@ def breached_creds_mark(id):
 
 @threat_intel.route('/threat-intelligence/breached-creds/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
-def breached_creds_edit(id):
+@requires_breached_cred_access
+def breached_creds_edit(id, breached_cred):
     """Edit breached credential - Admin only"""
-    breached_cred = BreachedCredential.query.get_or_404(id)
-    
     # Security: Only admins can edit
     if not current_user.can_edit():
         flash('Only administrators can edit breached credentials.', 'danger')
@@ -503,7 +404,7 @@ def breached_creds_edit(id):
         
         breached_cred.company_id = company.id if company else None
         breached_cred.updated_at = datetime.utcnow()
-
+                
         try:
             db.session.commit()
             flash('Breached credential updated successfully.', 'success')
@@ -514,7 +415,7 @@ def breached_creds_edit(id):
                 flash('Updates are disabled in read-only mode.', 'warning')
             else:
                 raise
-                return redirect(url_for('threat_intel.breached_creds_list'))
+        return redirect(url_for('threat_intel.breached_creds_list'))
     
     breadcrumb = {"parent": "Edit Breached Credential", "child": "Threat Intelligence"}
     return render_template('threat_intel/breached_creds_form.html',
@@ -524,10 +425,9 @@ def breached_creds_edit(id):
 
 @threat_intel.route('/threat-intelligence/breached-creds/<int:id>/delete', methods=['POST'])
 @login_required
-def breached_creds_delete(id):
+@requires_breached_cred_access
+def breached_creds_delete(id, breached_cred):
     """Delete breached credential - Admin only"""
-    breached_cred = BreachedCredential.query.get_or_404(id)
-    
     # Security: Only admins can delete
     if not current_user.can_delete():
         flash('Only administrators can delete breached credentials.', 'danger')
@@ -560,7 +460,7 @@ def breached_creds_export():
     
     # Security: Filter by company domain for members (data isolation)
     if user_domain:
-        domains_to_match = _get_user_domains_to_match()
+        domains_to_match = get_user_watchlist_domains()
         domain_filter = _build_domain_match_query(domains_to_match)
         if domain_filter is not None:
             query = query.filter(domain_filter)
@@ -748,16 +648,16 @@ def breached_creds_export():
     for cred in breached_creds:
         writer.writerow([
             cred.id,
-                cred._id or '',
-                cred._index or '',
-                cred._score if cred._score is not none else '',
-                'Yes' if cred._ignored else 'No',
+            cred._id or '',
+            cred._index or '',
+            cred._score if cred._score is not None else '',
+            'Yes' if cred._ignored else 'No',
             cred.username or '',
-                cred.domain or '',
-                cred.password or '',
-                cred.source or '',
-                cred.type or '',
-                cred.url or '',
+            cred.domain or '',
+            cred.password or '',
+            cred.source or '',
+            cred.type or '',
+            cred.url or '',
             'Yes' if cred.is_marked else 'No',
             cred.creator.username if cred.creator else '',
             cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if cred.created_at else ''
@@ -775,15 +675,9 @@ def breached_creds_export():
 
 @threat_intel.route('/threat-intelligence/breached-creds/<int:id>')
 @login_required
-def breached_creds_view(id):
+@requires_breached_cred_access
+def breached_creds_view(id, breached_cred):
     """View breached credential details"""
-    breached_cred = BreachedCredential.query.get_or_404(id)
-    
-    # Security: Fix IDOR - Check if user can access this record using watchlist matching
-    if not _can_user_access_breached_cred(breached_cred):
-        flash('Access denied. You can only view records for your company.', 'danger')
-        return redirect(url_for('threat_intel.breached_creds_list'))
-    
     # No is_new field in new structure, so this check is removed
     
     breadcrumb = {"parent": "Breached Credential Details", "child": "Threat Intelligence"}
@@ -796,92 +690,17 @@ def breached_creds_view(id):
 @login_required
 def analysis():
     """Threat Intelligence Analysis Dashboard"""
-    user_domain = get_user_company_domain()
-    
-    # Performance: Use caching for statistics (5 minute cache)
-    cache_key = f'analysis_stats_{user_domain or "all"}'
-    stats = cache.get(cache_key)
-    
-    if not stats:
-        # Base query
-        query = BreachedCredential.query
-        if user_domain:
-            domains_to_match = _get_user_domains_to_match()
-            domain_filter = _build_domain_match_query(domains_to_match)
-            if domain_filter is not None:
-                query = query.filter(domain_filter)
-            else:
-                query = query.filter(BreachedCredential.domain == user_domain)
-        
-        # Statistics
-        total = query.count()
-        by_type = db.session.query(
-            BreachedCredential.type,
-            func.count(BreachedCredential.id).label('count')
-        )
-        if user_domain:
-            domains_to_match = _get_user_domains_to_match()
-            domain_filter = _build_domain_match_query(domains_to_match)
-            if domain_filter is not None:
-                by_type = by_type.filter(domain_filter)
-            else:
-                by_type = by_type.filter(BreachedCredential.domain == user_domain)
-        by_type = by_type.group_by(BreachedCredential.type).all()
-        
-        # Statistics by source
-        by_source = db.session.query(
-            BreachedCredential.source,
-            func.count(BreachedCredential.id).label('count')
-        )
-        if user_domain:
-            domains_to_match = _get_user_domains_to_match()
-            domain_filter = _build_domain_match_query(domains_to_match)
-            if domain_filter is not None:
-                by_source = by_source.filter(domain_filter)
-            else:
-                by_source = by_source.filter(BreachedCredential.domain == user_domain)
-        by_source = by_source.group_by(BreachedCredential.source).all()
-        
-        # Statistics by domain (top 10)
-        by_domain = db.session.query(
-            BreachedCredential.domain,
-            func.count(BreachedCredential.id).label('count')
-        )
-        if user_domain:
-            domains_to_match = _get_user_domains_to_match()
-            domain_filter = _build_domain_match_query(domains_to_match)
-            if domain_filter is not None:
-                by_domain = by_domain.filter(domain_filter)
-            else:
-                by_domain = by_domain.filter(BreachedCredential.domain == user_domain)
-        by_domain = by_domain.group_by(BreachedCredential.domain).order_by(func.count(BreachedCredential.id).desc()).limit(10).all()
-        
-        # Recent breaches (for analysis page - no pagination needed, just top 10)
-        recent = query.order_by(BreachedCredential.created_at.desc()).limit(10).all()
-        
-        # Marked items
-        marked_count = query.filter(BreachedCredential.is_marked == True).count()
-        
-        stats = {
-            'total': total,
-            'by_type': dict(by_type),
-            'by_source': dict(by_source),
-            'by_domain': dict(by_domain),
-            'recent': recent,
-            'marked_count': marked_count
-        }
-        
-        # Cache for 5 minutes
-        cache.set(cache_key, stats, timeout=300)
-    
+    stats = build_analysis_stats()
+    user_domain = stats["user_domain"]
+
     breadcrumb = {"parent": "Threat Analysis", "child": "Threat Intelligence", "description": "Comprehensive threat intelligence analysis and statistics"}
     return render_template('threat_intel/analysis.html',
-                         total=stats['total'],
-                         by_type=stats['by_type'],
-                         by_source=stats['by_source'],
-                         by_domain=stats['by_domain'],
-                         recent=stats['recent'],
-                         marked_count=stats['marked_count'],
+                         total=stats["total"],
+                         by_type=stats["by_type"],
+                         by_source=stats["by_source"],
+                         by_domain=stats["by_domain"],
+                         recent=stats["recent"],
+                         marked_count=stats["marked_count"],
                          user_domain=user_domain,
                          breadcrumb=breadcrumb)
 
@@ -897,7 +716,7 @@ def reports():
     
     query = BreachedCredential.query
     if user_domain:
-        domains_to_match = _get_user_domains_to_match()
+        domains_to_match = get_user_watchlist_domains()
         domain_filter = _build_domain_match_query(domains_to_match)
         if domain_filter is not None:
             query = query.filter(domain_filter)

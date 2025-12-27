@@ -7,6 +7,9 @@ from flask_login import LoginManager, current_user
 from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect
 from flask_caching import Cache
+from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
+from datetime import timedelta
 import os
 
 app = Flask(__name__)
@@ -25,6 +28,13 @@ app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HT
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
+# JWT configuration (for API authentication)
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', app.config['SECRET_KEY'])
+app.config['JWT_TOKEN_LOCATION'] = ['headers']
+app.config['JWT_HEADER_NAME'] = 'Authorization'
+app.config['JWT_HEADER_TYPE'] = 'Bearer'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
 
 # Performance: Caching configuration
 app.config['CACHE_TYPE'] = 'simple'  # Use 'redis' or 'memcached' in production
@@ -55,9 +65,33 @@ def format_number_filter(value):
 
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+jwt = JWTManager(app)
 
 # Initialize caching for performance
 cache = Cache(app)
+
+
+@app.after_request
+def add_security_headers(response):
+    """
+    Add common security headers to all responses.
+
+    Note: For local HTTP development, HSTS is omitted; enable in production.
+    """
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self' data:; "
+        "connect-src 'self';",
+    )
+    return response
 
 # Optional: SassMiddleware for on-the-fly SCSS compilation
 # Note: CSS files are already compiled and available in static/assets/css
