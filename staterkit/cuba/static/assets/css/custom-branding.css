@@ -1,0 +1,649 @@
+/* ============================================
+   D-SECLAB Modern Branding Override
+   Design: Modern/Minimal with Deep Blue
+   ============================================ */
+
+/* --- Font --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --dsec-primary: #1a56db;
+  --dsec-primary-light: #e8eefb;
+  --dsec-primary-dark: #1347b8;
+  --dsec-text: #1e293b;
+  --dsec-text-secondary: #64748b;
+  --dsec-text-muted: #94a3b8;
+  --dsec-bg: #f8fafc;
+  --dsec-white: #ffffff;
+  --dsec-border: #e2e8f0;
+  --dsec-border-light: #f1f5f9;
+  --dsec-success: #059669;
+  --dsec-danger: #dc2626;
+  --dsec-warning: #d97706;
+  --dsec-info: #0891b2;
+  --dsec-sidebar-width: 260px;
+  --dsec-header-height: 64px;
+  --dsec-radius: 10px;
+  --dsec-radius-sm: 6px;
+}
+
+/* --- Global --- */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  background-color: var(--dsec-bg) !important;
+  color: var(--dsec-text) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  font-weight: 600 !important;
+  color: var(--dsec-text) !important;
+  letter-spacing: -0.02em;
+}
+
+p, span, a, td, th, label, li, div {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* --- Theme color overrides --- */
+.btn-primary,
+.btn-primary:focus {
+  background-color: var(--dsec-primary) !important;
+  border-color: var(--dsec-primary) !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  letter-spacing: 0;
+  box-shadow: none !important;
+}
+
+.btn-primary:hover {
+  background-color: var(--dsec-primary-dark) !important;
+  border-color: var(--dsec-primary-dark) !important;
+}
+
+.btn-outline-primary {
+  color: var(--dsec-primary) !important;
+  border-color: var(--dsec-primary) !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+  background: transparent !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--dsec-primary) !important;
+  color: #fff !important;
+}
+
+.btn-sm {
+  padding: 6px 14px !important;
+  font-size: 12.5px !important;
+  border-radius: var(--dsec-radius-sm) !important;
+}
+
+.btn-info {
+  background-color: var(--dsec-info) !important;
+  border-color: var(--dsec-info) !important;
+}
+
+.btn-success {
+  background-color: var(--dsec-success) !important;
+  border-color: var(--dsec-success) !important;
+}
+
+.btn-danger {
+  background-color: var(--dsec-danger) !important;
+  border-color: var(--dsec-danger) !important;
+}
+
+.btn-secondary {
+  background-color: #475569 !important;
+  border-color: #475569 !important;
+}
+
+/* --- Header --- */
+.page-header {
+  background: var(--dsec-white) !important;
+  border-bottom: 1px solid var(--dsec-border) !important;
+  box-shadow: none !important;
+  height: var(--dsec-header-height) !important;
+  padding: 0 24px !important;
+}
+
+.page-header .header-wrapper {
+  height: var(--dsec-header-height) !important;
+  align-items: center !important;
+}
+
+/* Hide the notification slider banner */
+.page-header .left-header .notification-slider {
+  display: none !important;
+}
+
+.page-header .left-header {
+  display: none !important;
+}
+
+/* Profile section in header */
+.page-header .profile-media {
+  align-items: center !important;
+}
+
+.page-header .profile-media img {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+}
+
+.page-header .profile-media span {
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  color: var(--dsec-text) !important;
+}
+
+.page-header .profile-media p {
+  font-size: 11px !important;
+  color: var(--dsec-text-secondary) !important;
+}
+
+/* Nav menu icons in header */
+.page-header .nav-menus > li {
+  padding: 0 6px !important;
+}
+
+.page-header .nav-menus > li svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: var(--dsec-text-secondary) !important;
+}
+
+/* --- Sidebar --- */
+.sidebar-wrapper {
+  background: var(--dsec-white) !important;
+  border-right: 1px solid var(--dsec-border) !important;
+  box-shadow: none !important;
+  width: var(--dsec-sidebar-width) !important;
+}
+
+.sidebar-wrapper .logo-wrapper {
+  padding: 16px 20px !important;
+  border-bottom: 1px solid var(--dsec-border) !important;
+}
+
+.sidebar-wrapper .logo-wrapper img {
+  max-height: 32px !important;
+}
+
+/* Sidebar menu items */
+.sidebar-wrapper .sidebar-main .sidebar-links > li > a {
+  color: var(--dsec-text-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+  border-radius: 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links > li > a:hover {
+  color: var(--dsec-primary) !important;
+  background: var(--dsec-primary-light) !important;
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links > li > a.active,
+.sidebar-wrapper .sidebar-main .sidebar-links > li.active > a {
+  color: var(--dsec-primary) !important;
+  background: var(--dsec-primary-light) !important;
+  font-weight: 600 !important;
+}
+
+.sidebar-wrapper .sidebar-main .sidebar-links > li > a svg {
+  width: 18px !important;
+  height: 18px !important;
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+/* Sidebar submenu */
+.sidebar-wrapper .sidebar-submenu li a {
+  font-size: 13px !important;
+  color: var(--dsec-text-secondary) !important;
+  padding: 6px 20px 6px 48px !important;
+  font-weight: 400 !important;
+}
+
+.sidebar-wrapper .sidebar-submenu li a:hover,
+.sidebar-wrapper .sidebar-submenu li a.active {
+  color: var(--dsec-primary) !important;
+}
+
+/* Pin icon */
+.sidebar-wrapper .pin-icon {
+  display: none !important;
+}
+
+/* Sidebar section titles */
+.sidebar-wrapper .sidebar-list .pinned-title {
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.08em !important;
+  color: var(--dsec-text-muted) !important;
+  font-weight: 600 !important;
+  padding: 16px 20px 4px !important;
+}
+
+/* --- Page Body --- */
+.page-wrapper .page-body-wrapper .page-body {
+  padding: 24px !important;
+  min-height: calc(100vh - var(--dsec-header-height)) !important;
+  background: var(--dsec-bg) !important;
+}
+
+/* --- Breadcrumb --- */
+.page-title {
+  padding: 0 0 20px !important;
+}
+
+.page-title h3 {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  color: var(--dsec-text) !important;
+}
+
+.page-title .breadcrumb {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.page-title .breadcrumb-item,
+.page-title .breadcrumb-item a {
+  font-size: 13px !important;
+  color: var(--dsec-text-secondary) !important;
+}
+
+.page-title .breadcrumb-item.active {
+  color: var(--dsec-primary) !important;
+}
+
+/* --- Cards --- */
+.card {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius) !important;
+  box-shadow: none !important;
+  background: var(--dsec-white) !important;
+  margin-bottom: 20px !important;
+}
+
+.card-header {
+  background: transparent !important;
+  border-bottom: 1px solid var(--dsec-border-light) !important;
+  padding: 16px 20px !important;
+}
+
+.card-header h5 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+}
+
+.card-body {
+  padding: 20px !important;
+}
+
+/* --- Tables --- */
+.table {
+  font-size: 13px !important;
+}
+
+.table thead th {
+  background: var(--dsec-bg) !important;
+  border-bottom: 1px solid var(--dsec-border) !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  color: var(--dsec-text-secondary) !important;
+  padding: 10px 16px !important;
+  white-space: nowrap !important;
+}
+
+.table-light th {
+  background: var(--dsec-bg) !important;
+}
+
+.table tbody td {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid var(--dsec-border-light) !important;
+  vertical-align: middle !important;
+  color: var(--dsec-text) !important;
+}
+
+.table-hover tbody tr:hover {
+  background-color: var(--dsec-primary-light) !important;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: rgba(248, 250, 252, 0.5) !important;
+}
+
+/* --- Badges --- */
+.badge {
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-radius: 20px !important;
+  letter-spacing: 0.02em !important;
+}
+
+.badge-light-info {
+  background-color: #ecfeff !important;
+  color: #0e7490 !important;
+}
+
+.badge-light-primary {
+  background-color: var(--dsec-primary-light) !important;
+  color: var(--dsec-primary) !important;
+}
+
+.badge-light-danger {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+}
+
+.badge-light-warning {
+  background-color: #fffbeb !important;
+  color: #d97706 !important;
+}
+
+.badge-light-success {
+  background-color: #ecfdf5 !important;
+  color: #059669 !important;
+}
+
+.badge-light-secondary {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+/* --- Forms --- */
+.form-control,
+.form-select {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+  color: var(--dsec-text) !important;
+  background-color: var(--dsec-white) !important;
+  box-shadow: none !important;
+  transition: border-color 0.15s ease !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--dsec-primary) !important;
+  box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1) !important;
+}
+
+.form-label {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--dsec-text-secondary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  margin-bottom: 4px !important;
+}
+
+/* --- Widgets (dashboard stat cards) --- */
+.widget-1 {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius) !important;
+  box-shadow: none !important;
+}
+
+.widget-1 .card-body {
+  padding: 16px 20px !important;
+}
+
+.widget-1 h4 {
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.widget-1 .f-light {
+  font-size: 12px !important;
+  color: var(--dsec-text-secondary) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  font-weight: 500 !important;
+}
+
+/* Widget round icons */
+.widget-round {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.widget-round .bg-round {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+.widget-round.primary .bg-round {
+  background: var(--dsec-primary-light) !important;
+}
+
+/* --- Profile box (welcome card) --- */
+.profile-box {
+  background: linear-gradient(135deg, var(--dsec-primary), var(--dsec-primary-dark)) !important;
+  border: none !important;
+  border-radius: var(--dsec-radius) !important;
+}
+
+.profile-box .greeting-user h2 {
+  color: #fff !important;
+  font-size: 20px !important;
+}
+
+.profile-box .greeting-user p {
+  color: rgba(255,255,255,0.8) !important;
+  font-size: 13px !important;
+}
+
+.profile-box .whatsnew-btn .btn {
+  background: rgba(255,255,255,0.15) !important;
+  border: 1px solid rgba(255,255,255,0.3) !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  border-radius: var(--dsec-radius-sm) !important;
+}
+
+/* --- Compare order cards --- */
+.compare-order {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius) !important;
+  box-shadow: none !important;
+}
+
+/* --- Alerts --- */
+.alert {
+  border-radius: var(--dsec-radius-sm) !important;
+  font-size: 13px !important;
+  border: none !important;
+  font-weight: 500 !important;
+}
+
+/* --- Pagination --- */
+.pagination .page-item .page-link {
+  border: 1px solid var(--dsec-border) !important;
+  color: var(--dsec-text-secondary) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  margin: 0 2px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination .page-item.active .page-link,
+.pagination-primary .page-item.active .page-link {
+  background-color: var(--dsec-primary) !important;
+  border-color: var(--dsec-primary) !important;
+  color: #fff !important;
+}
+
+.pagination .page-item .page-link:hover {
+  background-color: var(--dsec-primary-light) !important;
+  color: var(--dsec-primary) !important;
+}
+
+/* --- Footer --- */
+.footer {
+  background: var(--dsec-white) !important;
+  border-top: 1px solid var(--dsec-border) !important;
+  padding: 16px 24px !important;
+}
+
+.footer p {
+  font-size: 12px !important;
+  color: var(--dsec-text-muted) !important;
+}
+
+/* --- Loader --- */
+.loader-wrapper {
+  background: var(--dsec-white) !important;
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--dsec-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--dsec-text-muted);
+}
+
+/* --- Action list icons --- */
+.action li a {
+  color: var(--dsec-text-secondary) !important;
+  transition: color 0.15s ease !important;
+}
+
+.action li a:hover {
+  color: var(--dsec-primary) !important;
+}
+
+.action li.delete a:hover {
+  color: var(--dsec-danger) !important;
+}
+
+/* --- Date filter buttons --- */
+.btn-group .btn {
+  border-radius: 0 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 6px 16px !important;
+}
+
+.btn-group .btn:first-child {
+  border-radius: var(--dsec-radius-sm) 0 0 var(--dsec-radius-sm) !important;
+}
+
+.btn-group .btn:last-child {
+  border-radius: 0 var(--dsec-radius-sm) var(--dsec-radius-sm) 0 !important;
+}
+
+/* --- Dropdown --- */
+.dropdown-menu {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+  padding: 4px !important;
+}
+
+.dropdown-item {
+  border-radius: 4px !important;
+  font-size: 13px !important;
+  padding: 8px 12px !important;
+}
+
+.dropdown-item:hover {
+  background-color: var(--dsec-primary-light) !important;
+  color: var(--dsec-primary) !important;
+}
+
+/* --- Notification dropdown --- */
+.notification-dropdown {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1) !important;
+}
+
+/* --- Profile dropdown --- */
+.profile-dropdown {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
+}
+
+/* --- Tap top button --- */
+.tap-top {
+  background-color: var(--dsec-primary) !important;
+  border-radius: 50% !important;
+}
+
+/* --- Toggle sidebar button --- */
+.toggle-sidebar i {
+  color: var(--dsec-text-secondary) !important;
+}
+
+/* --- Customizer panel - hide it --- */
+.customizer-links,
+.customizer-contain {
+  display: none !important;
+}
+
+/* --- Chart text --- */
+.apexcharts-text {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* --- Card header right actions --- */
+.card-header-right {
+  display: flex !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+/* --- Light card (sidebar stats in distribution) --- */
+.light-card {
+  border: 1px solid var(--dsec-border) !important;
+  border-radius: var(--dsec-radius-sm) !important;
+  background: var(--dsec-bg) !important;
+}
+
+/* --- Empty state --- */
+.empty-state {
+  padding: 48px 24px !important;
+}
+
+.empty-state i {
+  color: var(--dsec-text-muted) !important;
+}
+
+/* --- Mode toggle (dark/light) --- */
+.mode svg {
+  color: var(--dsec-text-secondary) !important;
+}
