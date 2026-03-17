@@ -33,7 +33,7 @@
                     </div>
                     <div class="flex-grow-1 ms-3">
                       <h6 class="f-w-400 mb-1">Total Breaches</h6>
-                      <h4 class="mb-0">{{ total }}</h4>
+                      <h4 class="mb-0">{{ total|format_number }}</h4>
                     </div>
                   </div>
                 </div>
@@ -201,7 +201,7 @@
                             </td>
                             <td>{{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}</td>
                             <td>
-                              <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" class="btn btn-primary btn-sm">
+                              <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="btn btn-primary btn-sm">
                                 <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                               </a>
                             </td>

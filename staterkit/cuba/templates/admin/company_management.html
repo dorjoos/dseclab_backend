@@ -68,8 +68,8 @@
                       </td>
                       <td>
                         <!-- Status column → breached creds count badge -->
-                        <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" 
-                           class="badge badge-light-danger">
+                        <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}"
+                           class="badge badge-light-{% if company_stats.get(company.id, 0) > 0 %}danger{% else %}secondary{% endif %}">
                           {{ company_stats.get(company.id, 0) }} breaches
                         </a>
                       </td>

@@ -146,7 +146,7 @@
                   </div>
                 </div>
                 <div>
-                  <h4><span class="counter">{{ consumer_leaks|int|format_number }}</span></h4><span class="f-light">Consumer Leaks</span>
+                  <h4><span class="counter">{{ consumer_leaks|int|format_number }}</span></h4><span class="f-light">{{ consumer_change_text }} Leaks</span>
                 </div>
               </div>
               <div class="font-{% if consumer_change >= 0 %}success{% else %}danger{% endif %} f-w-500">
@@ -176,7 +176,7 @@
                   </div>
                 </div>
                 <div>
-                  <h4><span class="counter">{{ corporate_leaks|int|format_number }}</span></h4><span class="f-light">Corporate Leaks</span>
+                  <h4><span class="counter">{{ corporate_leaks|int|format_number }}</span></h4><span class="f-light">{{ corporate_change_text }} Leaks</span>
                 </div>
               </div>
               {% if corporate_change == 0 %}
@@ -617,14 +617,18 @@
   }
   
   // Category Distribution Chart - ApexCharts Donut Chart
+  const categoryData = {{ category_distribution|tojson }};
+  const categoryLabels = Object.keys(categoryData);
+  const categorySeries = Object.values(categoryData);
+  const categoryColorPalette = [CubaAdminConfig.info, CubaAdminConfig.warning, CubaAdminConfig.primary, CubaAdminConfig.danger, CubaAdminConfig.success, CubaAdminConfig.secondary];
   const categoryOptions = {
-    series: [{{ category_distribution.consumer }}, {{ category_distribution.corporate }}],
+    series: categorySeries,
     chart: {
       type: 'donut',
       height: 350
     },
-    labels: ['Consumer', 'Corporate'],
-    colors: [CubaAdminConfig.info, CubaAdminConfig.warning],
+    labels: categoryLabels,
+    colors: categoryColorPalette.slice(0, categoryLabels.length),
     plotOptions: {
       pie: {
         donut: {
