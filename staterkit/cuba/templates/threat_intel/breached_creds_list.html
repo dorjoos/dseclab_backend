@@ -32,7 +32,7 @@
   }
   .av-segmented a {
     padding: 4px 14px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-secondary);
     text-decoration: none;
@@ -57,7 +57,7 @@
     border: none;
     border-radius: 6px;
     padding: 6px 10px 6px 28px;
-    font-size: 12px;
+    font-size: 13px;
     width: 180px;
     outline: none;
     color: var(--text);
@@ -81,7 +81,7 @@
 
   /* Toolbar button */
   .av-btn {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--primary);
     background: none;
@@ -110,7 +110,7 @@
 
   /* Record count */
   .av-count {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
     font-weight: 400;
   }
@@ -119,11 +119,12 @@
   .av-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: 14px;
+    table-layout: fixed;
   }
   .av-table thead th {
-    padding: 8px 14px;
-    font-size: 11px;
+    padding: 10px 14px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-muted);
     text-align: left;
@@ -149,7 +150,7 @@
     background: var(--primary-50);
   }
   .av-table tbody td {
-    padding: 7px 14px;
+    padding: 10px 14px;
     color: var(--text);
     white-space: nowrap;
     overflow: hidden;
@@ -159,11 +160,11 @@
   }
   .av-table tbody td.mono {
     font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 12px;
+    font-size: 13px;
   }
   .av-table tbody td.muted {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 13px;
   }
   .av-table tbody td.right { text-align: right; }
   .av-table tbody td.center { text-align: center; }
@@ -173,7 +174,7 @@
     display: inline-block;
     padding: 1px 6px;
     border-radius: 4px;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 500;
     background: var(--bg);
     color: var(--text-secondary);
@@ -181,7 +182,7 @@
 
   /* View link */
   .av-view-link {
-    font-size: 12px;
+    font-size: 13px;
     color: var(--primary);
     text-decoration: none;
     font-weight: 400;
@@ -193,7 +194,7 @@
   /* Password */
   .av-pass {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: 13px;
     cursor: default;
     letter-spacing: 1px;
   }
@@ -212,7 +213,7 @@
     justify-content: space-between;
     padding: 8px 14px;
     border-top: 1px solid var(--border-light);
-    font-size: 12px;
+    font-size: 13px;
     color: var(--text-muted);
   }
   .av-pagination-nav {
@@ -228,7 +229,7 @@
     height: 26px;
     padding: 0 6px;
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-secondary);
     text-decoration: none;
@@ -255,7 +256,7 @@
     flex-wrap: wrap;
   }
   .av-filter-select {
-    font-size: 12px;
+    font-size: 13px;
     padding: 4px 24px 4px 8px;
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -268,7 +269,7 @@
     border-color: var(--primary);
   }
   .av-filter-input {
-    font-size: 12px;
+    font-size: 13px;
     padding: 4px 8px;
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -288,7 +289,7 @@
     padding: 60px 20px;
     color: var(--text-muted);
   }
-  .av-empty p { margin: 8px 0 0; font-size: 13px; }
+  .av-empty p { margin: 8px 0 0; font-size: 14px; }
 </style>
 {% endblock %}
 
@@ -346,13 +347,13 @@
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:30px;padding-left:16px;">#</th>
-            <th>Username</th>
-            <th>Domain</th>
-            <th>Password</th>
-            <th>Source</th>
-            <th class="center">Type</th>
-            <th class="right" style="padding-right:16px;">Date</th>
+            <th style="width:40px;padding-left:16px;">#</th>
+            <th style="width:28%;">Username</th>
+            <th style="width:15%;">Domain</th>
+            <th style="width:10%;">Password</th>
+            <th style="width:18%;">Source</th>
+            <th style="width:8%;" class="center">Type</th>
+            <th style="width:8%;" class="right" style="padding-right:16px;">Date</th>
             <th style="width:50px;"></th>
           </tr>
         </thead>
