@@ -85,85 +85,55 @@
     <div class="card-body p-0">
       {% if breached_creds %}
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0" style="font-size:13px;">
           <thead>
             <tr>
-              <th>Username</th>
+              <th style="min-width:200px;">Username</th>
               <th>Domain</th>
               <th>Password</th>
               <th>Source</th>
               <th>Type</th>
               <th>Date</th>
-              <th>Status</th>
-              <th class="text-end">Actions</th>
+              <th style="width:80px;text-align:center;">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for cred in breached_creds %}
-            <tr>
-              <td>
-                <span style="font-weight:500;">{{ cred.username or '-' }}</span>
+            <tr{% if cred.is_marked %} style="border-left:3px solid var(--warning);"{% endif %}>
+              <td style="padding:8px 14px;">
+                <div style="font-weight:500;font-size:13px;">{{ cred.username or '-' }}</div>
               </td>
-              <td>
+              <td style="padding:8px 14px;">
                 {% if cred.domain %}
-                <span class="badge badge-light-info">{{ cred.domain }}</span>
-                {% else %}
-                <span style="color:var(--text-muted);">-</span>
-                {% endif %}
+                <span class="badge badge-light-info" style="font-size:11px;">{{ cred.domain }}</span>
+                {% else %}-{% endif %}
               </td>
-              <td>
+              <td style="padding:8px 14px;">
                 {% if cred.password %}
                 <span class="password-mask" style="cursor:pointer;" title="Hover to reveal">
-                  <span class="masked-password" style="color:var(--text-muted);letter-spacing:2px;">••••••••</span>
-                  <span class="revealed-password" style="font-family:monospace;font-size:12px;">{{ cred.password }}</span>
+                  <span class="masked-password" style="color:var(--text-muted);font-size:12px;">********</span>
+                  <span class="revealed-password" style="font-family:'SF Mono',monospace;font-size:11px;">{{ cred.password }}</span>
                 </span>
-                {% else %}
-                <span style="color:var(--text-muted);">-</span>
-                {% endif %}
+                {% else %}<span style="color:var(--text-muted);">-</span>{% endif %}
               </td>
-              <td style="color:var(--text-secondary);font-size:12px;">{{ cred.source or '-' }}</td>
-              <td>
-                {% if cred.type %}
-                <span class="badge badge-light-{{ cred.type_color }}">{{ cred.type|title }}</span>
-                {% else %}
-                <span style="color:var(--text-muted);">-</span>
-                {% endif %}
+              <td style="padding:8px 14px;color:var(--text-secondary);font-size:12px;">{{ cred.source or '-' }}</td>
+              <td style="padding:8px 14px;">
+                {% if cred.type %}<span class="badge badge-light-{{ cred.type_color }}" style="font-size:10px;">{{ cred.type|title }}</span>{% else %}-{% endif %}
               </td>
-              <td style="color:var(--text-muted);font-size:12px;white-space:nowrap;">
-                {{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}
+              <td style="padding:8px 14px;color:var(--text-muted);font-size:12px;white-space:nowrap;">
+                {{ cred.created_at.strftime('%b %d') if cred.created_at else '-' }}
               </td>
-              <td>
-                {% if cred.is_marked %}
-                <span class="badge badge-light-warning">Marked</span>
-                {% else %}
-                <span style="color:var(--text-muted);font-size:12px;">—</span>
-                {% endif %}
-              </td>
-              <td class="text-end">
-                <ul class="action">
-                  <li>
-                    <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" title="View">
-                      <i class="fa-regular fa-eye"></i>
-                    </a>
-                  </li>
+              <td style="padding:8px 14px;text-align:center;">
+                <div style="display:flex;gap:2px;justify-content:center;">
+                  <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" title="View" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;color:var(--text-muted);transition:all 0.15s;text-decoration:none;">
+                    <i class="fa-regular fa-eye" style="font-size:12px;"></i>
+                  </a>
                   {% if current_user.can_edit() %}
-                  <li>
-                    <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=cred.es_id) }}" title="Edit">
-                      <i class="fa-regular fa-pen-to-square"></i>
-                    </a>
-                  </li>
+                  <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=cred.es_id) }}" title="Edit" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;color:var(--text-muted);transition:all 0.15s;text-decoration:none;">
+                    <i class="fa-regular fa-pen-to-square" style="font-size:11px;"></i>
+                  </a>
                   {% endif %}
-                  {% if current_user.can_delete() %}
-                  <li class="delete">
-                    <form method="POST" action="{{ url_for('threat_intel.breached_creds_delete', doc_id=cred.es_id) }}" style="display:inline;" data-confirm="Are you sure you want to delete this record?">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                      <button type="submit" style="border:0;background:transparent;padding:0;cursor:pointer;color:inherit;" title="Delete">
-                        <i class="fa-regular fa-trash-can"></i>
-                      </button>
-                    </form>
-                  </li>
-                  {% endif %}
-                </ul>
+                </div>
               </td>
             </tr>
             {% endfor %}

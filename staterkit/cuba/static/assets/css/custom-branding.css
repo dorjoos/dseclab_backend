@@ -32,6 +32,65 @@
   --transition: all 0.15s ease;
 }
 
+/* --- Dark Theme --- */
+[data-theme="dark"] {
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-light: rgba(59, 130, 246, 0.12);
+  --primary-50: rgba(59, 130, 246, 0.08);
+  --text: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --bg: #0f172a;
+  --bg-white: #1e293b;
+  --border: #334155;
+  --border-light: #1e293b;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .badge-light-info { background: rgba(14, 116, 144, 0.2); color: #67e8f9; }
+[data-theme="dark"] .badge-light-primary { background: rgba(59, 130, 246, 0.15); color: #93bbfd; }
+[data-theme="dark"] .badge-light-danger { background: rgba(220, 38, 38, 0.15); color: #fca5a5; }
+[data-theme="dark"] .badge-light-warning { background: rgba(217, 119, 6, 0.15); color: #fcd34d; }
+[data-theme="dark"] .badge-light-success { background: rgba(5, 150, 105, 0.15); color: #6ee7b7; }
+[data-theme="dark"] .badge-light-secondary { background: rgba(71, 85, 105, 0.3); color: #cbd5e1; }
+
+[data-theme="dark"] .dsec-welcome-banner {
+  background: linear-gradient(135deg, #1e40af, #1e3a5f);
+}
+
+[data-theme="dark"] .dsec-stat-icon {
+  opacity: 0.85;
+}
+
+[data-theme="dark"] .table thead th {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .btn-outline-primary {
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+[data-theme="dark"] .dsec-header-search input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .alert-success { background: rgba(5, 150, 105, 0.15); color: #6ee7b7; }
+[data-theme="dark"] .alert-danger { background: rgba(220, 38, 38, 0.15); color: #fca5a5; }
+[data-theme="dark"] .alert-warning { background: rgba(217, 119, 6, 0.15); color: #fcd34d; }
+
 /* --- Reset & Base --- */
 *, *::before, *::after { box-sizing: border-box; }
 

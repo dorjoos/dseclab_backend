@@ -13,6 +13,9 @@
   {% block css %}{% endblock %}
 </head>
 <body>
+  <script>
+    (function(){var t=localStorage.getItem('dsec-theme');if(t==='dark')document.documentElement.setAttribute('data-theme','dark');})();
+  </script>
   <!-- Loader -->
   <div class="dsec-loader" id="dsec-loader">
     <div class="dsec-loader-spinner"></div>

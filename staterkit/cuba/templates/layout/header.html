@@ -11,6 +11,12 @@
     </div>
   </div>
   <div class="dsec-header-right">
+    <!-- Theme toggle -->
+    <button class="dsec-header-btn" id="theme-toggle" title="Toggle dark/light mode">
+      <i data-feather="moon" id="theme-icon-dark" style="display:inline;"></i>
+      <i data-feather="sun" id="theme-icon-light" style="display:none;"></i>
+    </button>
+
     {% if current_user.is_authenticated %}
     <div style="position:relative;">
       <button class="dsec-header-btn" id="notif-toggle" title="Notifications">
@@ -48,6 +54,34 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Theme toggle
+  var themeBtn = document.getElementById('theme-toggle');
+  var iconDark = document.getElementById('theme-icon-dark');
+  var iconLight = document.getElementById('theme-icon-light');
+  var saved = localStorage.getItem('dsec-theme');
+  if (saved === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    if (iconDark) iconDark.style.display = 'none';
+    if (iconLight) iconLight.style.display = 'inline';
+  }
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function() {
+      var current = document.documentElement.getAttribute('data-theme');
+      if (current === 'dark') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('dsec-theme', 'light');
+        if (iconDark) iconDark.style.display = 'inline';
+        if (iconLight) iconLight.style.display = 'none';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('dsec-theme', 'dark');
+        if (iconDark) iconDark.style.display = 'none';
+        if (iconLight) iconLight.style.display = 'inline';
+      }
+      if (typeof feather !== 'undefined') feather.replace();
+    });
+  }
+
   // Profile dropdown toggle
   var pt = document.getElementById('profile-toggle');
   var pd = document.getElementById('profile-dropdown');
