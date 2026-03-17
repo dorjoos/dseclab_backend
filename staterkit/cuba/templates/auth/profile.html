@@ -1,61 +1,98 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container-fluid p-0" style="max-width:640px;">
-  <div class="card" style="padding:28px;">
-    <h5 style="font-size:18px;font-weight:700;margin-bottom:20px;">Profile Settings</h5>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="alert alert-{{ category }} mb-3" style="font-size:13px;">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
-
-    <form method="POST" action="{{ url_for('auth.profile') }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Username</label>
-          <input type="text" name="username" value="{{ user.username }}" class="form-control" style="font-size:14px;">
+<div class="container-fluid p-0">
+  <div class="row g-4">
+    <!-- Left: Profile Info -->
+    <div class="col-lg-4">
+      <div class="card" style="padding:28px;text-align:center;">
+        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#7c3aed);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;font-weight:700;color:#fff;">
+          {{ user.username[0]|upper }}
         </div>
-        <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Email</label>
-          <input type="email" name="email" value="{{ user.email }}" class="form-control" style="font-size:14px;">
+        <div style="font-size:18px;font-weight:700;">{{ user.username }}</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">{{ user.email }}</div>
+        <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+          <span class="av-tag{% if user.role == 'admin' %} av-tag-warning{% endif %}">{{ user.role|title }}</span>
+          {% if user.is_active %}<span class="av-tag av-tag-success">Active</span>{% else %}<span class="av-tag av-tag-danger">Inactive</span>{% endif %}
         </div>
       </div>
 
-      <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px;">
-        <h6 style="font-size:14px;font-weight:600;margin-bottom:14px;">Change Password</h6>
+      <div class="card" style="padding:20px;margin-top:16px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">Account Details</div>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <div>
-            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Current Password</label>
-            <input type="password" name="current_password" class="form-control" style="font-size:14px;" placeholder="Leave blank to keep current">
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:13px;color:var(--text-muted);">Company</span>
+            <span style="font-size:13px;font-weight:500;">{{ user.company.name if user.company else '—' }}</span>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-            <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">New Password</label>
-              <input type="password" name="new_password" class="form-control" style="font-size:14px;">
-            </div>
-            <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Confirm New Password</label>
-              <input type="password" name="confirm_password" class="form-control" style="font-size:14px;">
-            </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:13px;color:var(--text-muted);">Domain</span>
+            <span style="font-size:13px;font-weight:500;" class="av-domain">{{ user.company_domain or '—' }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:13px;color:var(--text-muted);">Last Login</span>
+            <span style="font-size:13px;font-weight:500;">{{ user.last_login.strftime('%b %d, %Y %H:%M') if user.last_login else 'Never' }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="font-size:13px;color:var(--text-muted);">Created</span>
+            <span style="font-size:13px;font-weight:500;">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else '—' }}</span>
           </div>
         </div>
       </div>
+    </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:8px;">
-        <a href="{{ url_for('main.indexPage') }}" class="btn btn-outline-primary btn-sm">Cancel</a>
-        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+    <!-- Right: Edit Form -->
+    <div class="col-lg-8">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} mb-3" style="font-size:13px;">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <!-- Personal Info -->
+      <div class="card" style="padding:28px;margin-bottom:16px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">Personal Information</div>
+        <form method="POST" action="{{ url_for('auth.profile') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Username</label>
+              <input type="text" name="username" value="{{ user.username }}" class="form-control" style="font-size:14px;padding:10px 14px;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Email Address</label>
+              <input type="email" name="email" value="{{ user.email }}" class="form-control" style="font-size:14px;padding:10px 14px;">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 20px;">Update Profile</button>
+          </div>
+        </form>
       </div>
-    </form>
-  </div>
 
-  <div class="card" style="padding:20px;margin-top:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <div>
-        <div style="font-size:14px;font-weight:600;">Account Info</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Role: <span class="av-tag">{{ user.role }}</span> &middot; Company: {{ user.company.name if user.company else '—' }} &middot; Last login: {{ user.last_login.strftime('%b %d, %Y') if user.last_login else 'Never' }}</div>
+      <!-- Change Password -->
+      <div class="card" style="padding:28px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">Change Password</div>
+        <form method="POST" action="{{ url_for('auth.profile') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="username" value="{{ user.username }}">
+          <input type="hidden" name="email" value="{{ user.email }}">
+          <div style="margin-bottom:16px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Current Password</label>
+            <input type="password" name="current_password" class="form-control" style="font-size:14px;padding:10px 14px;" placeholder="Enter current password">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">New Password</label>
+              <input type="password" name="new_password" class="form-control" style="font-size:14px;padding:10px 14px;" placeholder="Min 8 chars">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Confirm New Password</label>
+              <input type="password" name="confirm_password" class="form-control" style="font-size:14px;padding:10px 14px;" placeholder="Repeat new password">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 20px;">Change Password</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
