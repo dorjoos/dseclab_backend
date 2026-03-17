@@ -1,86 +1,88 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container-fluid p-0">
-  <div class="card">
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border-light);flex-wrap:wrap;gap:8px;">
-      <div style="font-size:15px;font-weight:600;">Credential Details</div>
+<div class="container-fluid p-0" style="max-width:720px;">
+  <div class="card" style="padding:28px;">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:20px;">
+      <div>
+        <div style="font-size:18px;font-weight:700;">{{ breached_cred.username or 'Unknown' }}</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">{{ breached_cred.es_id }}</div>
+      </div>
       <div style="display:flex;gap:6px;">
         {% if current_user.can_mark() %}
-        <form method="POST" action="{{ url_for('threat_intel.breached_creds_mark', doc_id=breached_cred.es_id) }}" style="margin:0;">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <form method="POST" action="{{ url_for('threat_intel.breached_creds_mark', doc_id=breached_cred.es_id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-sm {% if breached_cred.is_marked %}btn-warning{% else %}btn-outline-primary{% endif %}" style="font-size:12px;">
             {% if breached_cred.is_marked %}Unmark{% else %}Mark{% endif %}
           </button>
         </form>
         {% endif %}
         {% if current_user.can_edit() %}
-        <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=breached_cred.es_id) }}" class="btn btn-primary btn-sm" style="font-size:12px;">Edit</a>
+        <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=breached_cred.es_id) }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">Edit</a>
         {% endif %}
         <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">Back</a>
       </div>
     </div>
 
-    <!-- Detail table -->
-    <div style="padding:0;">
-      <table class="av-table">
-        <tbody>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;width:160px;color:var(--text-muted);">Username</td>
-            <td style="font-weight:600;">{{ breached_cred.username or '—' }}</td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Domain</td>
-            <td><span class="av-domain">{{ breached_cred.domain or '—' }}</span></td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Password</td>
-            <td>
-              {% if breached_cred.password %}
-              <span class="password-mask" style="cursor:pointer;" title="Hover to reveal">
-                <span class="masked-password" style="color:var(--text-muted);">••••••••</span>
-                <span class="revealed-password" style="font-family:'SF Mono',monospace;font-size:13px;">{{ breached_cred.password }}</span>
-              </span>
-              {% else %}—{% endif %}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Source</td>
-            <td>{{ breached_cred.source or '—' }}</td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Type</td>
-            <td>{% if breached_cred.type %}<span class="av-tag">{{ breached_cred.type }}</span>{% else %}—{% endif %}</td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">URL</td>
-            <td>{% if breached_cred.url %}<a href="{{ breached_cred.url }}" target="_blank" rel="noopener noreferrer" class="av-view-link">{{ breached_cred.url }}</a>{% else %}—{% endif %}</td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Date</td>
-            <td>{{ breached_cred.created_at.strftime('%Y-%m-%d %H:%M') if breached_cred.created_at else '—' }}</td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Status</td>
-            <td>
-              {% if breached_cred.is_marked %}
-              <span class="av-tag av-tag-warning">Marked{% if breached_cred.marker %} by {{ breached_cred.marker.username }}{% endif %}</span>
-              {% else %}
-              <span class="m">Not marked</span>
-              {% endif %}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">File Hash</td>
-            <td style="font-family:'SF Mono',monospace;font-size:12px;">{{ breached_cred.file_hash or '—' }}</td>
-          </tr>
-          <tr>
-            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">File Name</td>
-            <td>{{ breached_cred.file_name or '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Domain</div>
+        {% if breached_cred.domain %}
+        <span class="av-domain" style="font-size:14px;">{{ breached_cred.domain }}</span>
+        {% else %}
+        <div style="font-size:14px;font-weight:500;">—</div>
+        {% endif %}
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Password</div>
+        {% if breached_cred.password %}
+        <span class="password-mask" style="cursor:pointer;font-size:14px;">
+          <span class="masked-password" style="color:var(--text-muted);">••••••••</span>
+          <span class="revealed-password" style="font-family:'SF Mono',monospace;">{{ breached_cred.password }}</span>
+        </span>
+        {% else %}
+        <div style="font-size:14px;font-weight:500;">—</div>
+        {% endif %}
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Source</div>
+        <div style="font-size:14px;font-weight:500;">{{ breached_cred.source or '—' }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Type</div>
+        {% if breached_cred.type %}
+        <span class="av-tag">{{ breached_cred.type }}</span>
+        {% else %}
+        <div style="font-size:14px;font-weight:500;">—</div>
+        {% endif %}
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">URL</div>
+        {% if breached_cred.url %}
+        <a href="{{ breached_cred.url }}" target="_blank" rel="noopener noreferrer" class="av-view-link" style="font-size:14px;">{{ breached_cred.url }}</a>
+        {% else %}
+        <div style="font-size:14px;font-weight:500;">—</div>
+        {% endif %}
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Date</div>
+        <div style="font-size:14px;font-weight:500;">{{ breached_cred.created_at.strftime('%b %d, %Y %H:%M') if breached_cred.created_at else '—' }}</div>
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Status</div>
+        {% if breached_cred.is_marked %}
+        <span class="av-tag av-tag-warning">Marked{% if breached_cred.marker %} by {{ breached_cred.marker.username }}{% endif %}</span>
+        {% else %}
+        <span style="font-size:14px;color:var(--text-muted);">Not marked</span>
+        {% endif %}
+      </div>
+      <div style="padding:14px 0;border-bottom:1px solid var(--border-light);">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">File Hash</div>
+        <div style="font-size:12px;font-weight:500;font-family:'SF Mono',monospace;">{{ breached_cred.file_hash or '—' }}</div>
+      </div>
+      <div style="padding:14px 0;">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">File Name</div>
+        <div style="font-size:14px;font-weight:500;">{{ breached_cred.file_name or '—' }}</div>
+      </div>
     </div>
   </div>
 </div>

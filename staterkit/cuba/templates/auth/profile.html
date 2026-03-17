@@ -1,77 +1,63 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5>User Profile</h5>
+<div class="container-fluid p-0" style="max-width:640px;">
+  <div class="card" style="padding:28px;">
+    <h5 style="font-size:18px;font-weight:700;margin-bottom:20px;">Profile Settings</h5>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }} mb-3" style="font-size:13px;">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.profile') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Username</label>
+          <input type="text" name="username" value="{{ user.username }}" class="form-control" style="font-size:14px;">
         </div>
-        <div class="card-body">
-
-          <form method="POST" action="{{ url_for('auth.profile') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="username">Username</label>
-                  <input class="form-control" id="username" name="username" type="text" value="{{ user.username }}" required />
-                  <small class="form-text text-muted">Username must be between 3 and 20 characters.</small>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="email">Email</label>
-                  <input class="form-control" id="email" name="email" type="email" value="{{ user.email }}" required />
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-12">
-                <div class="mb-3">
-                  <label class="form-label">Account Type</label>
-                  <input class="form-control" type="text" value="{% if user.isAdmin %}Administrator{% else %}Regular User{% endif %}" disabled />
-                </div>
-              </div>
-            </div>
-
-            <hr class="my-4">
-            <h6 class="mb-3">Change Password (Optional)</h6>
-            <div class="row">
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label class="form-label" for="current_password">Current Password</label>
-                  <input class="form-control" id="current_password" name="current_password" type="password" />
-                  <small class="form-text text-muted">Required only if changing password.</small>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label class="form-label" for="new_password">New Password</label>
-                  <input class="form-control" id="new_password" name="new_password" type="password" />
-                  <small class="form-text text-muted">At least 8 characters with uppercase, lowercase, and number.</small>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label class="form-label" for="confirm_password">Confirm New Password</label>
-                  <input class="form-control" id="confirm_password" name="confirm_password" type="password" />
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4">
-              <button class="btn btn-primary" type="submit">Update Profile</button>
-              <a href="{{ url_for('main.indexPage') }}" class="btn btn-secondary">Cancel</a>
-            </div>
-          </form>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Email</label>
+          <input type="email" name="email" value="{{ user.email }}" class="form-control" style="font-size:14px;">
         </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);padding-top:20px;margin-bottom:20px;">
+        <h6 style="font-size:14px;font-weight:600;margin-bottom:14px;">Change Password</h6>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Current Password</label>
+            <input type="password" name="current_password" class="form-control" style="font-size:14px;" placeholder="Leave blank to keep current">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">New Password</label>
+              <input type="password" name="new_password" class="form-control" style="font-size:14px;">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Confirm New Password</label>
+              <input type="password" name="confirm_password" class="form-control" style="font-size:14px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <a href="{{ url_for('main.indexPage') }}" class="btn btn-outline-primary btn-sm">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="padding:20px;margin-top:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div>
+        <div style="font-size:14px;font-weight:600;">Account Info</div>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Role: <span class="av-tag">{{ user.role }}</span> &middot; Company: {{ user.company.name if user.company else '—' }} &middot; Last login: {{ user.last_login.strftime('%b %d, %Y') if user.last_login else 'Never' }}</div>
       </div>
     </div>
   </div>
 </div>
 {% endblock %}
-

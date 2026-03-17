@@ -1,114 +1,72 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5>{% if user %}Edit{% else %}Add{% endif %} User</h5>
-          <div class="card-header-right">
-            <a href="{{ url_for('admin.user_management') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="arrow-left"></i> Back
-            </a>
-          </div>
+<div class="container-fluid p-0" style="max-width:640px;">
+  <div class="card" style="padding:28px;">
+    <h5 style="font-size:18px;font-weight:700;margin-bottom:20px;">
+      {% if user %}Edit User{% else %}Add User{% endif %}
+    </h5>
+
+    <form method="POST" action="{% if user %}{{ url_for('admin.edit_user', user_id=user.id) }}{% else %}{{ url_for('admin.add_user') }}{% endif %}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Username</label>
+          <input type="text" name="username" value="{{ user.username if user else '' }}" class="form-control" style="font-size:14px;" required>
         </div>
-        <div class="card-body">
-          <form method="POST" action="{% if user %}{{ url_for('admin.edit_user', user_id=user.id) }}{% else %}{{ url_for('admin.add_user') }}{% endif %}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="username">Username <span class="text-danger">*</span></label>
-                  <input class="form-control" id="username" name="username" type="text" 
-                         value="{{ user.username if user else '' }}" required 
-                         pattern="[a-zA-Z0-9_-]+" title="Only letters, numbers, underscores, and hyphens allowed" />
-                  <small class="form-text text-muted">3-50 characters, letters, numbers, underscores, hyphens only</small>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
-                  <input class="form-control" id="email" name="email" type="email" 
-                         value="{{ user.email if user else '' }}" required />
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label class="form-label" for="role">Role <span class="text-danger">*</span></label>
-                  <select class="form-control" id="role" name="role" required>
-                    <option value="member" {% if user and user.role == 'member' %}selected{% elif not user %}selected{% endif %}>Member</option>
-                    <option value="admin" {% if user and (user.role == 'admin' or user.isAdmin) %}selected{% endif %}>Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label class="form-label" for="company_id">Company</label>
-                  <select class="form-control" id="company_id" name="company_id">
-                    <option value="">Select Company (Optional)</option>
-                    {% for company in companies %}
-                    <option value="{{ company.id }}" {% if user and user.company_id == company.id %}selected{% endif %}>
-                      {{ company.name }} ({{ company.domain }})
-                    </option>
-                    {% endfor %}
-                  </select>
-                  <small class="form-text text-muted">For members, company will be auto-detected from email domain if not selected</small>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  <label class="form-label">Status</label>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
-                           {% if not user or user.is_active %}checked{% endif %}>
-                    <label class="form-check-label" for="is_active">Active</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {% if not user %}
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="password">Password <span class="text-danger">*</span></label>
-                  <input class="form-control" id="password" name="password" type="password" required />
-                  <small class="form-text text-muted">Min 8 chars, uppercase, lowercase, number</small>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="confirm_password">Confirm Password <span class="text-danger">*</span></label>
-                  <input class="form-control" id="confirm_password" name="confirm_password" type="password" required />
-                </div>
-              </div>
-            </div>
-            {% else %}
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label" for="password">New Password</label>
-                  <input class="form-control" id="password" name="password" type="password" />
-                  <small class="form-text text-muted">Leave blank to keep current password</small>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-
-            <div class="mt-4">
-              <button class="btn btn-primary btn-sm" type="submit">{% if user %}Update{% else %}Add{% endif %} User</button>
-              <a href="{{ url_for('admin.user_management') }}" class="btn btn-secondary btn-sm">Cancel</a>
-            </div>
-          </form>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Email</label>
+          <input type="email" name="email" value="{{ user.email if user else '' }}" class="form-control" style="font-size:14px;" required>
         </div>
       </div>
-    </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Role</label>
+          <select name="role" class="form-select" style="font-size:14px;" required>
+            <option value="member" {% if user and user.role == 'member' %}selected{% elif not user %}selected{% endif %}>Member</option>
+            <option value="admin" {% if user and (user.role == 'admin' or user.isAdmin) %}selected{% endif %}>Admin</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Company</label>
+          <select name="company_id" class="form-select" style="font-size:14px;">
+            <option value="">No company</option>
+            {% for company in companies %}
+            <option value="{{ company.id }}" {% if user and user.company_id == company.id %}selected{% endif %}>{{ company.name }} ({{ company.domain }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      {% if not user %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Password</label>
+          <input type="password" name="password" class="form-control" style="font-size:14px;" required>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Confirm Password</label>
+          <input type="password" name="confirm_password" class="form-control" style="font-size:14px;" required>
+        </div>
+      </div>
+      {% else %}
+      <div style="margin-bottom:14px;">
+        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">New Password</label>
+        <input type="password" name="password" class="form-control" style="font-size:14px;max-width:300px;" placeholder="Leave blank to keep current">
+      </div>
+      {% endif %}
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <input type="checkbox" name="is_active" id="is_active" {% if not user or user.is_active %}checked{% endif %} style="accent-color:#1a56db;width:16px;height:16px;">
+        <label for="is_active" style="font-size:13px;margin:0;">Active account</label>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;">
+        <a href="{{ url_for('admin.user_management') }}" class="btn btn-outline-primary btn-sm">Cancel</a>
+        <button type="submit" class="btn btn-primary btn-sm">{% if user %}Update{% else %}Create{% endif %}</button>
+      </div>
+    </form>
   </div>
 </div>
 {% endblock %}
-
