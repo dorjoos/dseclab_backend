@@ -2,347 +2,102 @@
 
 {% block css %}
 <style>
-  /* Apple-style data view */
-  .av-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .av-toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .av-toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  /* Segmented control */
-  .av-segmented {
-    display: inline-flex;
-    background: var(--bg);
-    border-radius: 6px;
-    padding: 2px;
-    gap: 1px;
-  }
-  .av-segmented a {
-    padding: 4px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    border-radius: 5px;
-    transition: all 0.15s;
-  }
-  .av-segmented a.active {
-    background: var(--bg-white);
-    color: var(--text);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  }
-  .av-segmented a:hover:not(.active) {
-    color: var(--text);
-  }
-
-  /* Search field */
-  .av-search {
-    position: relative;
-  }
-  .av-search input {
-    background: var(--bg);
-    border: none;
-    border-radius: 6px;
-    padding: 6px 10px 6px 28px;
-    font-size: 13px;
-    width: 180px;
-    outline: none;
-    color: var(--text);
-    transition: all 0.2s;
-  }
-  .av-search input:focus {
-    background: var(--bg-white);
-    box-shadow: 0 0 0 2px var(--primary);
-    width: 220px;
-  }
-  .av-search input::placeholder { color: var(--text-muted); }
-  .av-search svg {
-    position: absolute;
-    left: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 14px;
-    height: 14px;
-    color: var(--text-muted);
-  }
-
-  /* Toolbar button */
-  .av-btn {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--primary);
-    background: none;
-    border: none;
-    padding: 4px 8px;
-    cursor: pointer;
-    text-decoration: none;
-    border-radius: 4px;
-    transition: all 0.15s;
-  }
-  .av-btn:hover {
-    background: var(--primary-50);
-    color: var(--primary);
-    text-decoration: none;
-  }
-  .av-btn-filled {
-    background: var(--primary);
-    color: #fff;
-    padding: 5px 12px;
-    border-radius: 6px;
-  }
-  .av-btn-filled:hover {
-    background: var(--primary-hover);
-    color: #fff;
-  }
-
-  /* Record count */
-  .av-count {
-    font-size: 13px;
-    color: var(--text-muted);
-    font-weight: 400;
-  }
+  .av-toolbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; gap:12px; flex-wrap:wrap; }
+  .av-toolbar-left { display:flex; align-items:center; gap:12px; }
+  .av-toolbar-right { display:flex; align-items:center; gap:8px; }
+  .av-segmented { display:inline-flex; background:var(--bg); border-radius:6px; padding:2px; gap:1px; }
+  .av-segmented a { padding:5px 14px; font-size:13px; font-weight:500; color:var(--text-secondary); text-decoration:none; border-radius:5px; transition:all 0.15s; cursor:pointer; }
+  .av-segmented a.active { background:var(--bg-white); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+  .av-segmented a:hover:not(.active) { color:var(--text); }
+  .av-count { font-size:13px; color:var(--text-muted); }
+  .av-search { position:relative; }
+  .av-search input { background:var(--bg); border:none; border-radius:6px; padding:7px 10px 7px 30px; font-size:13px; width:200px; outline:none; color:var(--text); transition:all 0.2s; }
+  .av-search input:focus { background:var(--bg-white); box-shadow:0 0 0 2px var(--primary); width:240px; }
+  .av-search input::placeholder { color:var(--text-muted); }
+  .av-search svg { position:absolute; left:8px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); }
+  .av-btn { font-size:13px; font-weight:500; color:var(--primary); background:none; border:none; padding:5px 10px; cursor:pointer; text-decoration:none; border-radius:4px; transition:all 0.15s; }
+  .av-btn:hover { background:var(--primary-50); text-decoration:none; }
+  .av-btn-filled { background:var(--primary); color:#fff; padding:6px 14px; border-radius:6px; }
+  .av-btn-filled:hover { background:var(--primary-hover); color:#fff; }
+  .av-filters { display:flex; align-items:center; gap:6px; padding:0 16px 10px; flex-wrap:wrap; }
+  .av-filter-select, .av-filter-input { font-size:13px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg-white); color:var(--text); outline:none; }
+  .av-filter-select { padding-right:24px; cursor:pointer; }
+  .av-filter-input { width:120px; }
+  .av-filter-select:focus, .av-filter-input:focus { border-color:var(--primary); }
+  .av-filter-input::placeholder { color:var(--text-muted); }
 
   /* Table */
-  .av-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 14px;
-    table-layout: fixed;
-  }
-  .av-table thead th {
-    padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-muted);
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-    position: sticky;
-    top: 0;
-    background: var(--bg-white);
-    user-select: none;
-  }
-  .av-table thead th.right { text-align: right; }
-  .av-table thead th.center { text-align: center; }
-
-  .av-table tbody tr {
-    transition: background 0.1s;
-  }
-  .av-table tbody tr:nth-child(even) {
-    background: rgba(0,0,0,0.015);
-  }
-  [data-theme="dark"] .av-table tbody tr:nth-child(even) {
-    background: rgba(255,255,255,0.02);
-  }
-  .av-table tbody tr:hover {
-    background: var(--primary-50);
-  }
-  .av-table tbody td {
-    padding: 10px 14px;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 240px;
-    border-bottom: 1px solid var(--border-light);
-  }
-  .av-table tbody td.mono {
-    font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-    font-size: 13px;
-  }
-  .av-table tbody td.muted {
-    color: var(--text-muted);
-    font-size: 13px;
-  }
-  .av-table tbody td.right { text-align: right; }
-  .av-table tbody td.center { text-align: center; }
-
-  /* Inline tag */
-  .av-tag {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 500;
-    background: var(--bg);
-    color: var(--text-secondary);
-  }
-
-  /* View link */
-  .av-view-link {
-    font-size: 13px;
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 400;
-  }
-  .av-view-link:hover {
-    text-decoration: underline;
-  }
-
-  /* Password */
-  .av-pass {
-    color: var(--text-muted);
-    font-size: 13px;
-    cursor: default;
-    letter-spacing: 1px;
-  }
-  .av-pass-reveal {
-    display: none;
-    color: var(--text);
-    letter-spacing: 0;
-  }
-  .av-pass-cell:hover .av-pass { display: none; }
-  .av-pass-cell:hover .av-pass-reveal { display: inline; }
+  .av-table { width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed; }
+  .av-table thead th { padding:10px 14px; font-size:12px; font-weight:500; color:var(--text-muted); text-align:left; border-bottom:1px solid var(--border); background:var(--bg-white); user-select:none; }
+  .av-table thead th.r { text-align:right; }
+  .av-table thead th.c { text-align:center; }
+  .av-table tbody tr { transition:background 0.1s; }
+  .av-table tbody tr:nth-child(even) { background:rgba(0,0,0,0.015); }
+  [data-theme="dark"] .av-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.02); }
+  .av-table tbody tr:hover { background:var(--primary-50); }
+  .av-table tbody td { padding:10px 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-bottom:1px solid var(--border-light); }
+  .av-table tbody td.m { color:var(--text-muted); }
+  .av-table tbody td.r { text-align:right; }
+  .av-table tbody td.c { text-align:center; }
+  .av-domain { color:var(--primary); font-weight:500; }
+  .av-pass { color:var(--text-muted); letter-spacing:1px; cursor:default; }
+  .av-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:500; background:var(--bg); color:var(--text-secondary); }
 
   /* Pagination */
-  .av-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 14px;
-    border-top: 1px solid var(--border-light);
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-  .av-pagination-nav {
-    display: flex;
-    gap: 2px;
-  }
-  .av-pagination-nav a,
-  .av-pagination-nav span {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px;
-    height: 26px;
-    padding: 0 6px;
-    border-radius: 5px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: all 0.15s;
-  }
-  .av-pagination-nav a:hover {
-    background: var(--bg);
-  }
-  .av-pagination-nav .active {
-    background: var(--primary);
-    color: #fff;
-  }
-  .av-pagination-nav .disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
+  .av-pag { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid var(--border-light); font-size:13px; color:var(--text-muted); }
+  .av-pag-nav { display:flex; gap:2px; }
+  .av-pag-nav a, .av-pag-nav span { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 6px; border-radius:5px; font-size:13px; font-weight:500; color:var(--text-secondary); text-decoration:none; cursor:pointer; transition:all 0.15s; }
+  .av-pag-nav a:hover { background:var(--bg); }
+  .av-pag-nav .act { background:var(--primary); color:#fff; }
+  .av-pag-nav .dis { opacity:0.3; pointer-events:none; }
 
-  /* Filters row */
-  .av-filters {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0 16px 10px;
-    flex-wrap: wrap;
-  }
-  .av-filter-select {
-    font-size: 13px;
-    padding: 4px 24px 4px 8px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-white);
-    color: var(--text);
-    outline: none;
-    cursor: pointer;
-  }
-  .av-filter-select:focus {
-    border-color: var(--primary);
-  }
-  .av-filter-input {
-    font-size: 13px;
-    padding: 4px 8px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-white);
-    color: var(--text);
-    outline: none;
-    width: 110px;
-  }
-  .av-filter-input:focus {
-    border-color: var(--primary);
-  }
-  .av-filter-input::placeholder { color: var(--text-muted); }
-
-  /* Empty state */
-  .av-empty {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-  }
-  .av-empty p { margin: 8px 0 0; font-size: 14px; }
+  .av-empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
+  .av-loading { text-align:center; padding:40px; color:var(--text-muted); font-size:14px; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
   <div class="card" style="overflow:hidden;">
-    <!-- Single unified form -->
-    <form method="GET" id="filter-form">
-      <input type="hidden" name="date_filter" id="date-filter-val" value="{{ filters.date_filter or 'all' }}">
 
-      <!-- Toolbar -->
-      <div class="av-toolbar" style="border-bottom:1px solid var(--border-light);">
-        <div class="av-toolbar-left">
-          <div class="av-segmented">
-            {% set date_opts = [('all','All'),('today','Today'),('week','Week'),('month','Month')] %}
-            {% for val, label in date_opts %}
-            <a href="#" class="{% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}active{% endif %}" onclick="document.getElementById('date-filter-val').value='{{ val }}';document.getElementById('filter-form').submit();return false;">{{ label }}</a>
-            {% endfor %}
-          </div>
-          <span class="av-count">{{ stats.total|format_number }} items</span>
+    <!-- Toolbar -->
+    <div class="av-toolbar" style="border-bottom:1px solid var(--border-light);">
+      <div class="av-toolbar-left">
+        <div class="av-segmented" id="date-seg">
+          <a data-val="all" class="active">All</a>
+          <a data-val="today">Today</a>
+          <a data-val="week">Week</a>
+          <a data-val="month">Month</a>
         </div>
-        <div class="av-toolbar-right">
-          <div class="av-search">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" name="search" placeholder="Search..." value="{{ filters.search or '' }}">
-          </div>
-          <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="av-btn" id="export-btn">Export</a>
-          <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
-          {% if current_user.can_edit() %}
-          <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
-          {% endif %}
-        </div>
+        <span class="av-count" id="total-count">Loading...</span>
       </div>
-
-      <!-- Filters row -->
-      <div class="av-filters" style="padding-top:8px;">
-        <select class="av-filter-select" name="type" onchange="this.form.submit()">
-          <option value="">All types</option>
-          {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
-          <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
-          {% endfor %}
-        </select>
-        <input type="text" class="av-filter-input" name="source" placeholder="Source" value="{{ filters.source or '' }}">
-        <input type="text" class="av-filter-input" name="domain" placeholder="Domain" value="{{ filters.domain or '' }}">
-        <button type="submit" class="av-btn" style="font-size:13px;">Apply</button>
-        {% if filters.type or filters.source or filters.domain or filters.search %}
-        <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-btn" style="font-size:13px;color:var(--text-muted);">Clear</a>
+      <div class="av-toolbar-right">
+        <div class="av-search">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="Search...">
+        </div>
+        <a href="{{ url_for('threat_intel.breached_creds_export') }}" class="av-btn" id="export-btn">Export</a>
+        <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
+        {% if current_user.can_edit() %}
+        <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
         {% endif %}
       </div>
-    </form>
+    </div>
+
+    <!-- Filters -->
+    <div class="av-filters" style="padding-top:8px;">
+      <select class="av-filter-select" id="filter-type">
+        <option value="">All types</option>
+        {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
+        <option value="{{ t }}">{{ t|title }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" class="av-filter-input" id="filter-source" placeholder="Source">
+      <input type="text" class="av-filter-input" id="filter-domain" placeholder="Domain">
+      <a href="#" class="av-btn" id="clear-btn" style="color:var(--text-muted);display:none;">Clear</a>
+    </div>
 
     <!-- Table -->
-    {% if breached_creds %}
     <div style="overflow-x:auto;">
       <table class="av-table">
         <thead>
@@ -352,53 +107,270 @@
             <th style="width:15%;">Domain</th>
             <th style="width:10%;">Password</th>
             <th style="width:18%;">Source</th>
-            <th style="width:8%;" class="center">Type</th>
-            <th style="width:8%;" class="right" style="padding-right:16px;">Date</th>
+            <th style="width:8%;" class="c">Type</th>
+            <th style="width:8%;" class="r">Date</th>
             <th style="width:50px;"></th>
           </tr>
         </thead>
-        <tbody>
-          {% for cred in breached_creds %}
-          <tr>
-            <td class="muted" style="padding-left:16px;">{{ loop.index + (pagination.page - 1) * 20 }}</td>
-            <td style="font-weight:500;">{{ cred.username or '—' }}</td>
-            <td><span style="color:var(--primary);font-weight:500;">{{ cred.domain or '—' }}</span></td>
-            <td class="mono av-pass-cell">{% if cred.password %}<span class="av-pass">•••••</span><span class="av-pass-reveal mono">{{ cred.password }}</span>{% else %}—{% endif %}</td>
-            <td class="muted" style="max-width:160px;">{{ cred.source or '—' }}</td>
-            <td class="center">{% if cred.type %}<span class="av-tag">{{ cred.type }}</span>{% else %}—{% endif %}</td>
-            <td class="muted right" style="padding-right:16px;font-variant-numeric:tabular-nums;">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
-            <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
-          </tr>
-          {% endfor %}
+        <tbody id="table-body">
+          <tr><td colspan="8" class="av-loading">Loading...</td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- Pagination -->
-    {% if pagination.pages > 1 %}
-    <div class="av-pagination">
-      <span>{{ pagination.page }} of {{ pagination.pages }}</span>
-      <div class="av-pagination-nav">
-        <a href="?page={{ pagination.prev_num or 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" class="{% if not pagination.has_prev %}disabled{% endif %}">&lsaquo;</a>
-        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-          {% if page_num %}
-            <a href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" class="{% if page_num == pagination.page %}active{% endif %}">{{ page_num }}</a>
-          {% else %}
-            <span class="disabled">…</span>
-          {% endif %}
-        {% endfor %}
-        <a href="?page={{ pagination.next_num or pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" class="{% if not pagination.has_next %}disabled{% endif %}">&rsaquo;</a>
-      </div>
+    <div class="av-pag" id="pag-bar" style="display:none;">
+      <span id="pag-info"></span>
+      <div class="av-pag-nav" id="pag-nav"></div>
     </div>
-    {% endif %}
 
-    {% else %}
-    <div class="av-empty">
-      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+    <!-- Empty -->
+    <div class="av-empty" id="empty-state" style="display:none;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <p>No results found</p>
-      <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-btn" style="margin-top:8px;">Clear filters</a>
     </div>
-    {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script>
+(function() {
+  var state = { page: 1, date_filter: 'all', search: '', type: '', source: '', domain: '' };
+  var debounceTimer;
+  var tbody = document.getElementById('table-body');
+  var totalEl = document.getElementById('total-count');
+  var pagBar = document.getElementById('pag-bar');
+  var pagInfo = document.getElementById('pag-info');
+  var pagNav = document.getElementById('pag-nav');
+  var emptyEl = document.getElementById('empty-state');
+  var clearBtn = document.getElementById('clear-btn');
+
+  function load() {
+    tbody.textContent = '';
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    td.colSpan = 8;
+    td.className = 'av-loading';
+    td.textContent = 'Loading...';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    emptyEl.style.display = 'none';
+    pagBar.style.display = 'none';
+
+    fetch('/api/breached-creds/search', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      totalEl.textContent = Number(data.total).toLocaleString() + ' items';
+      tbody.textContent = '';
+
+      if (!data.rows || data.rows.length === 0) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      data.rows.forEach(function(row) {
+        var tr = document.createElement('tr');
+        if (row.is_marked) tr.style.borderLeft = '3px solid var(--warning)';
+
+        // #
+        var td0 = document.createElement('td');
+        td0.className = 'm';
+        td0.style.paddingLeft = '16px';
+        td0.textContent = row.num;
+        tr.appendChild(td0);
+
+        // Username
+        var td1 = document.createElement('td');
+        td1.style.fontWeight = '500';
+        td1.textContent = row.username || '\u2014';
+        tr.appendChild(td1);
+
+        // Domain
+        var td2 = document.createElement('td');
+        if (row.domain) {
+          var sp = document.createElement('span');
+          sp.className = 'av-domain';
+          sp.textContent = row.domain;
+          td2.appendChild(sp);
+        } else {
+          td2.textContent = '\u2014';
+          td2.className = 'm';
+        }
+        tr.appendChild(td2);
+
+        // Password
+        var td3 = document.createElement('td');
+        if (row.password) {
+          var mask = document.createElement('span');
+          mask.className = 'av-pass';
+          mask.textContent = '\u2022\u2022\u2022\u2022\u2022';
+          var reveal = document.createElement('span');
+          reveal.style.display = 'none';
+          reveal.style.fontFamily = "'SF Mono',SFMono-Regular,Consolas,monospace";
+          reveal.style.fontSize = '12px';
+          reveal.textContent = row.password;
+          td3.style.cursor = 'pointer';
+          td3.appendChild(mask);
+          td3.appendChild(reveal);
+          td3.addEventListener('mouseenter', function() { mask.style.display='none'; reveal.style.display='inline'; });
+          td3.addEventListener('mouseleave', function() { mask.style.display='inline'; reveal.style.display='none'; });
+        } else {
+          td3.textContent = '\u2014';
+          td3.className = 'm';
+        }
+        tr.appendChild(td3);
+
+        // Source
+        var td4 = document.createElement('td');
+        td4.className = 'm';
+        td4.style.maxWidth = '160px';
+        td4.textContent = row.source || '\u2014';
+        tr.appendChild(td4);
+
+        // Type
+        var td5 = document.createElement('td');
+        td5.className = 'c';
+        if (row.type) {
+          var tag = document.createElement('span');
+          tag.className = 'av-tag';
+          tag.textContent = row.type;
+          td5.appendChild(tag);
+        } else {
+          td5.textContent = '\u2014';
+        }
+        tr.appendChild(td5);
+
+        // Date
+        var td6 = document.createElement('td');
+        td6.className = 'm r';
+        td6.style.fontVariantNumeric = 'tabular-nums';
+        td6.textContent = row.date || '\u2014';
+        tr.appendChild(td6);
+
+        // View
+        var td7 = document.createElement('td');
+        var link = document.createElement('a');
+        link.href = '/threat-intelligence/breached-creds/' + row.es_id;
+        link.textContent = 'View';
+        link.style.cssText = 'color:var(--primary);text-decoration:none;font-size:13px;font-weight:500;';
+        td7.appendChild(link);
+        tr.appendChild(td7);
+
+        tbody.appendChild(tr);
+      });
+
+      // Pagination
+      if (data.pages > 1) {
+        pagBar.style.display = 'flex';
+        pagInfo.textContent = data.page + ' of ' + data.pages;
+        pagNav.textContent = '';
+
+        function mkPage(label, pg, cls) {
+          var a = document.createElement('a');
+          a.textContent = label;
+          if (cls) a.className = cls;
+          if (!cls || cls !== 'dis') {
+            a.addEventListener('click', function(e) { e.preventDefault(); state.page = pg; load(); });
+          }
+          pagNav.appendChild(a);
+        }
+
+        mkPage('\u2039', data.page - 1, data.has_prev ? '' : 'dis');
+
+        var start = Math.max(1, data.page - 2);
+        var end = Math.min(data.pages, data.page + 2);
+        if (start > 1) { mkPage('1', 1, ''); if (start > 2) { var s = document.createElement('span'); s.className='dis'; s.textContent='\u2026'; pagNav.appendChild(s); } }
+        for (var i = start; i <= end; i++) {
+          mkPage(String(i), i, i === data.page ? 'act' : '');
+        }
+        if (end < data.pages) { if (end < data.pages - 1) { var s2 = document.createElement('span'); s2.className='dis'; s2.textContent='\u2026'; pagNav.appendChild(s2); } mkPage(String(data.pages), data.pages, ''); }
+
+        mkPage('\u203A', data.page + 1, data.has_next ? '' : 'dis');
+      } else {
+        pagBar.style.display = 'none';
+      }
+    })
+    .catch(function(err) {
+      console.error('Load error:', err);
+      tbody.textContent = '';
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 8;
+      td.className = 'av-loading';
+      td.style.color = 'var(--danger)';
+      td.textContent = 'Error loading data';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateClear() {
+    clearBtn.style.display = (state.type || state.source || state.domain || state.search) ? 'inline' : 'none';
+  }
+
+  // Date segmented control
+  document.querySelectorAll('#date-seg a').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.querySelectorAll('#date-seg a').forEach(function(x) { x.classList.remove('active'); });
+      this.classList.add('active');
+      state.date_filter = this.getAttribute('data-val');
+      state.page = 1;
+      load();
+    });
+  });
+
+  // Search with debounce
+  document.getElementById('search-input').addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    var val = this.value;
+    debounceTimer = setTimeout(function() {
+      state.search = val;
+      state.page = 1;
+      updateClear();
+      load();
+    }, 400);
+  });
+
+  // Type filter
+  document.getElementById('filter-type').addEventListener('change', function() {
+    state.type = this.value;
+    state.page = 1;
+    updateClear();
+    load();
+  });
+
+  // Source filter (on Enter)
+  document.getElementById('filter-source').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); state.source = this.value; state.page = 1; updateClear(); load(); }
+  });
+
+  // Domain filter (on Enter)
+  document.getElementById('filter-domain').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); state.domain = this.value; state.page = 1; updateClear(); load(); }
+  });
+
+  // Clear
+  clearBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    state.search = ''; state.type = ''; state.source = ''; state.domain = '';
+    state.page = 1;
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-source').value = '';
+    document.getElementById('filter-domain').value = '';
+    updateClear();
+    load();
+  });
+
+  // Initial load
+  load();
+})();
+</script>
 {% endblock %}

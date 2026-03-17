@@ -23,7 +23,7 @@ try:
 except ImportError:
     REPORTLAB_AVAILABLE = False
 
-from . import db, cache
+from . import db, cache, csrf
 from .models import BreachedCredMeta, Company, Notification, User
 from .api_utils import sanitize_input
 from .audit_helpers import log_audit
@@ -154,6 +154,67 @@ def breached_creds_list():
                           pagination=pagination,
                           stats=stats,
                           filters=filter_dict)
+
+
+@threat_intel.route('/api/breached-creds/search', methods=['POST'])
+@csrf.exempt
+@login_required
+def breached_creds_api():
+    """AJAX API: POST filters, return JSON results from ES."""
+    from flask import jsonify
+    data = request.get_json(silent=True) or {}
+
+    page = data.get('page', 1)
+    per_page = data.get('per_page', 20)
+    search_query = sanitize_input(data.get('search', ''))
+    type_filter = sanitize_input(data.get('type', ''))
+    source_filter = sanitize_input(data.get('source', ''))
+    domain_filter_param = sanitize_input(data.get('domain', ''))
+    date_filter = sanitize_input(data.get('date_filter', 'all'))
+
+    domain_filters = _get_domain_filters()
+
+    filters = {}
+    if type_filter:
+        filters['type'] = type_filter
+    if source_filter:
+        filters['source'] = source_filter
+    if domain_filter_param:
+        filters['domain'] = domain_filter_param
+    if date_filter and date_filter != 'all':
+        filters['date_filter'] = date_filter
+
+    pagination = es_service.search(
+        query_text=search_query or None,
+        filters=filters if filters else None,
+        domain_filters=domain_filters,
+        page=page,
+        per_page=per_page
+    )
+    _attach_metadata(pagination.items)
+
+    rows = []
+    for i, cred in enumerate(pagination.items):
+        rows.append({
+            'num': (page - 1) * per_page + i + 1,
+            'es_id': cred.es_id,
+            'username': cred.username or '',
+            'domain': cred.domain or '',
+            'password': cred.password or '',
+            'source': cred.source or '',
+            'type': cred.type or '',
+            'date': cred.created_at.strftime('%b %d') if cred.created_at else '',
+            'is_marked': cred.is_marked,
+        })
+
+    return jsonify({
+        'rows': rows,
+        'page': pagination.page,
+        'pages': pagination.pages,
+        'total': pagination.total,
+        'has_prev': pagination.has_prev,
+        'has_next': pagination.has_next,
+    })
 
 
 @threat_intel.route('/threat-intelligence/breached-creds/<doc_id>')
