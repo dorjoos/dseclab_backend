@@ -46,10 +46,7 @@
             <span class="av-tag" style="font-size:10px;">{{ entry.entry_type }}</span>
             <span style="font-size:13px;font-weight:500;">{{ entry.entry_value }}</span>
           </div>
-          <form method="POST" action="{{ url_for('admin.delete_watchlist_entry', company_id=company.id, entry_id=entry.id) }}" style="display:inline;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px;" title="Remove">&times;</button>
-          </form>
+          <button type="button" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px;" title="Remove" onclick="deleteWatchlistEntry({{ company.id }}, {{ entry.id }}, this)">&times;</button>
         </div>
         {% endfor %}
         {% else %}
@@ -118,7 +115,7 @@
             </div>
             <div>
               <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Description</label>
-              <input type="text" name="description" value="{{ company.description if company else '' }}" class="form-control" style="font-size:14px;padding:10px 14px;" placeholder="Optional description">
+              <textarea name="description" class="form-control" style="font-size:14px;padding:10px 14px;min-height:44px;resize:vertical;" placeholder="Optional description">{{ company.description if company else '' }}</textarea>
             </div>
           </div>
 
@@ -166,6 +163,29 @@
     </div>
   </div>
 </div>
+
+{% if company %}
+<script>
+function deleteWatchlistEntry(companyId, entryId, btn) {
+  fetch('/admin/companies/' + companyId + '/watchlist/' + entryId + '/delete', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN }
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      var row = btn.closest('div[style]');
+      if (row) { row.style.transition='opacity 0.2s'; row.style.opacity='0'; setTimeout(function(){row.remove();},200); }
+      if (typeof showToast === 'function') showToast('Watchlist entry removed', 'success');
+    }
+  })
+  .catch(function() {
+    if (typeof showToast === 'function') showToast('Failed to remove entry', 'danger');
+  });
+}
+</script>
+{% endif %}
 
 {% if not company %}
 <script>
