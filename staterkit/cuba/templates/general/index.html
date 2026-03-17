@@ -504,14 +504,20 @@
                     <span class="text-muted f-12">{{ event.created_at.strftime('%b %d, %Y') if event.created_at else '-' }}</span>
                   </td>
                   <td class="py-3 text-end">
-                    <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="btn btn-outline-primary btn-sm me-1" title="View Details" style="padding: 4px 8px;">
-                      <i data-feather="eye" style="width: 13px; height: 13px;"></i>
-                    </a>
-                    {% if current_user.can_edit() %}
-                    <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=event.es_id) }}" class="btn btn-outline-secondary btn-sm" title="Edit" style="padding: 4px 8px;">
-                      <i data-feather="edit-2" style="width: 13px; height: 13px;"></i>
-                    </a>
-                    {% endif %}
+                    <ul class="action mb-0 d-flex justify-content-end gap-2">
+                      <li class="edit">
+                        <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" title="View Details">
+                          <i class="fa-regular fa-eye"></i>
+                        </a>
+                      </li>
+                      {% if current_user.can_edit() %}
+                      <li class="edit">
+                        <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=event.es_id) }}" title="Edit">
+                          <i class="fa-regular fa-pen-to-square"></i>
+                        </a>
+                      </li>
+                      {% endif %}
+                    </ul>
                   </td>
                 </tr>
                 {% endfor %}
