@@ -33,6 +33,7 @@ def indexPage():
     category_distribution = by_source if by_source else {'No Data': 1}
 
     context = {
+        "breadcrumb": {"parent": "Threat Intelligence", "child": "Dashboard"},
         "total_leaks": total_leaks,
         "total_change": 0,
         "total_change_text": "",

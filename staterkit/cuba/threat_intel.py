@@ -449,11 +449,13 @@ def breached_creds_export():
 @login_required
 def analysis():
     stats = build_analysis_stats()
+    breadcrumb = {"parent": "Threat Intelligence", "child": "Analysis",
+                  "description": "Comprehensive threat intelligence analysis and statistics"}
     return render_template('threat_intel/analysis.html',
                           total=stats["total"], by_type=stats["by_type"],
                           by_source=stats["by_source"], by_domain=stats["by_domain"],
                           recent=stats["recent"], marked_count=stats["marked_count"],
-                          user_domain=stats["user_domain"])
+                          user_domain=stats["user_domain"], breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/threat-intelligence/reports')
@@ -466,6 +468,7 @@ def reports():
     pagination = es_service.search(domain_filters=domain_filters, page=page, per_page=per_page)
     _attach_metadata(pagination.items)
 
+    breadcrumb = {"parent": "Threat Intelligence", "child": "Reports"}
     return render_template('threat_intel/reports.html',
                           breached_creds=pagination.items, pagination=pagination,
                           user_domain=get_user_company_domain(),
