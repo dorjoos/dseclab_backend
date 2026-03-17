@@ -55,16 +55,16 @@ class BreachedCredDoc:
         self.id = es_id
         self._source = source or {}
 
-        self.username = self._source.get("username")
-        self.domain = self._source.get("domain")
+        self.username = self._clean(self._source.get("username"))
+        self.domain = self._clean(self._source.get("domain"))
         self.password = self._source.get("password")
-        self.source_name = self._source.get("source")
+        self.source_name = self._clean(self._source.get("source"))
         self.source = self.source_name
-        self.type = self._source.get("type")
-        self.url = self._source.get("url")
-        self.file_hash = self._source.get("file_hash")
-        self.file_name = self._source.get("file_name")
-        self.value = self._source.get("value")
+        self.type = self._clean(self._source.get("type"))
+        self.url = self._clean(self._source.get("url"))
+        self.file_hash = self._clean(self._source.get("file_hash"))
+        self.file_name = self._clean(self._source.get("file_name"))
+        self.value = self._clean(self._source.get("value"))
 
         self.timestamp = self._parse_date(self._source.get("timestamp"))
         self.date_added = self._parse_date(self._source.get("date_added"))
@@ -75,6 +75,15 @@ class BreachedCredDoc:
         self.marked_at = None
         self.marker = None
         self.notes = None
+
+    @staticmethod
+    def _clean(val):
+        """Return None for empty/sentinel values like 'None', 'null', ''."""
+        if val is None:
+            return None
+        if isinstance(val, str) and val.strip().lower() in ("none", "null", "n/a", ""):
+            return None
+        return val
 
     @property
     def created_at(self):
@@ -266,6 +275,7 @@ class ElasticsearchService:
             body = {
                 "query": query,
                 "size": 0,
+                "track_total_hits": True,
                 "aggs": {
                     "by_type": {"terms": {"field": "type.keyword", "size": 50}},
                     "by_source": {"terms": {"field": "source.keyword", "size": 50}},
