@@ -405,27 +405,45 @@ def breached_creds_export():
     export_format = request.args.get('format', 'csv').lower()
     domain_filters = _get_domain_filters()
 
-    filters = {}
-    type_filter = sanitize_input(request.args.get('type', ''))
-    source_filter = sanitize_input(request.args.get('source', ''))
-    domain_filter_param = sanitize_input(request.args.get('domain', ''))
-    date_filter = sanitize_input(request.args.get('date_filter', ''))
+    # Check for selected IDs (export only checked rows)
+    selected_ids = request.args.get('ids', '').strip()
 
-    if type_filter:
-        filters['type'] = type_filter
-    if source_filter:
-        filters['source'] = source_filter
-    if domain_filter_param:
-        filters['domain'] = domain_filter_param
-    if date_filter and date_filter != 'all':
-        filters['date_filter'] = date_filter
+    if selected_ids:
+        # Export specific documents by ID
+        id_list = [i.strip() for i in selected_ids.split(',') if i.strip()][:500]
+        creds = []
+        for doc_id in id_list:
+            cred = es_service.get_by_id(doc_id)
+            if cred and _check_cred_access(cred):
+                creds.append(cred)
 
-    creds = es_service.export(filters=filters if filters else None, domain_filters=domain_filters)
+        log_audit("export", "breached_credential", None,
+                  f"Exported {len(creds)} selected breached credentials in {export_format.upper()} format")
 
-    log_audit("export", "breached_credential", None,
-              f"Exported {len(creds)} breached credentials in {export_format.upper()} format")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    else:
+        # Export all matching filters
+        filters = {}
+        type_filter = sanitize_input(request.args.get('type', ''))
+        source_filter = sanitize_input(request.args.get('source', ''))
+        domain_filter_param = sanitize_input(request.args.get('domain', ''))
+        date_filter = sanitize_input(request.args.get('date_filter', ''))
 
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        if type_filter:
+            filters['type'] = type_filter
+        if source_filter:
+            filters['source'] = source_filter
+        if domain_filter_param:
+            filters['domain'] = domain_filter_param
+        if date_filter and date_filter != 'all':
+            filters['date_filter'] = date_filter
+
+        creds = es_service.export(filters=filters if filters else None, domain_filters=domain_filters)
+
+        log_audit("export", "breached_credential", None,
+                  f"Exported {len(creds)} breached credentials in {export_format.upper()} format")
+
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     if export_format == 'json':
         data = [{

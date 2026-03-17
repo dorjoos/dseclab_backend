@@ -108,16 +108,27 @@
       <a href="#" class="av-btn" id="clear-btn" style="color:var(--text-muted);display:none;">Clear</a>
     </div>
 
+    <!-- Selection bar (hidden until items selected) -->
+    <div id="sel-bar" style="display:none;padding:8px 16px;background:var(--primary-50);border-bottom:1px solid var(--border-light);display:none;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;font-weight:500;color:var(--primary);"><span id="sel-count">0</span> selected</span>
+      <div style="display:flex;gap:6px;">
+        <a href="#" class="av-btn" style="font-size:12px;" onclick="exportSelected('csv');return false;">Export CSV</a>
+        <a href="#" class="av-btn" style="font-size:12px;" onclick="exportSelected('xlsx');return false;">Export Excel</a>
+        <a href="#" class="av-btn" style="font-size:12px;" onclick="exportSelected('json');return false;">Export JSON</a>
+        <a href="#" class="av-btn" style="font-size:12px;color:var(--text-muted);" onclick="clearSelection();return false;">Clear</a>
+      </div>
+    </div>
+
     <!-- Table -->
     <div style="overflow-x:auto;">
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:40px;padding-left:16px;">#</th>
-            <th style="width:28%;">Username</th>
-            <th style="width:15%;">Domain</th>
+            <th style="width:32px;padding-left:14px;"><input type="checkbox" id="select-all" style="accent-color:var(--primary);width:15px;height:15px;cursor:pointer;"></th>
+            <th style="width:26%;">Username</th>
+            <th style="width:14%;">Domain</th>
             <th style="width:10%;">Password</th>
-            <th style="width:18%;">Source</th>
+            <th style="width:17%;">Source</th>
             <th style="width:8%;" class="c">Type</th>
             <th style="width:8%;" class="r">Date</th>
             <th style="width:50px;"></th>
@@ -148,6 +159,7 @@
 <script>
 (function() {
   var state = { page: 1, date_filter: 'all', search: '', type: '', source: '', domain: '' };
+  var selectedIds = new Set();
   var debounceTimer;
   var tbody = document.getElementById('table-body');
   var totalEl = document.getElementById('total-count');
@@ -162,7 +174,7 @@
     for (var s = 0; s < 8; s++) {
       var sr = document.createElement('tr');
       var widths = ['30px','28%','15%','10%','18%','8%','8%','50px'];
-      for (var c = 0; c < 8; c++) {
+      for (var c = 0; c < 9; c++) {
         var std = document.createElement('td');
         std.style.padding = '12px 14px';
         var sk = document.createElement('div');
@@ -197,12 +209,20 @@
         var tr = document.createElement('tr');
         if (row.is_marked) tr.style.borderLeft = '3px solid var(--warning)';
 
-        // #
-        var td0 = document.createElement('td');
-        td0.className = 'm';
-        td0.style.paddingLeft = '16px';
-        td0.textContent = row.num;
-        tr.appendChild(td0);
+        // Checkbox
+        var tdCb = document.createElement('td');
+        tdCb.style.paddingLeft = '14px';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.style.cssText = 'accent-color:var(--primary);width:15px;height:15px;cursor:pointer;';
+        cb.setAttribute('data-id', row.es_id);
+        if (selectedIds.has(row.es_id)) cb.checked = true;
+        cb.addEventListener('change', function() {
+          if (this.checked) selectedIds.add(row.es_id); else selectedIds.delete(row.es_id);
+          updateSelBar();
+        });
+        tdCb.appendChild(cb);
+        tr.appendChild(tdCb);
 
         // Username
         var td1 = document.createElement('td');
@@ -304,7 +324,7 @@
       tbody.textContent = '';
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = 8;
+      td.colSpan = 9;
       td.className = 'av-loading';
       td.style.color = 'var(--danger)';
       td.textContent = 'Error loading data';
@@ -378,6 +398,52 @@
     var wrap = document.getElementById('export-wrap');
     if (menu && wrap && !wrap.contains(e.target)) menu.classList.remove('show');
   });
+
+  // Selection bar
+  function updateSelBar() {
+    var bar = document.getElementById('sel-bar');
+    var cnt = document.getElementById('sel-count');
+    var selectAll = document.getElementById('select-all');
+    if (selectedIds.size > 0) {
+      bar.style.display = 'flex';
+      cnt.textContent = selectedIds.size;
+    } else {
+      bar.style.display = 'none';
+    }
+    // Update select-all checkbox state
+    var cbs = tbody.querySelectorAll('input[type="checkbox"]');
+    if (cbs.length > 0 && selectAll) {
+      var allChecked = true;
+      cbs.forEach(function(c) { if (!c.checked) allChecked = false; });
+      selectAll.checked = allChecked && cbs.length > 0;
+    }
+  }
+
+  // Select all
+  document.getElementById('select-all').addEventListener('change', function() {
+    var checked = this.checked;
+    tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = checked;
+      var id = cb.getAttribute('data-id');
+      if (checked) selectedIds.add(id); else selectedIds.delete(id);
+    });
+    updateSelBar();
+  });
+
+  // Export selected
+  window.exportSelected = function(fmt) {
+    if (selectedIds.size === 0) return;
+    var ids = Array.from(selectedIds).join(',');
+    window.location.href = '/threat-intelligence/breached-creds/export?format=' + fmt + '&ids=' + encodeURIComponent(ids);
+  };
+
+  // Clear selection
+  window.clearSelection = function() {
+    selectedIds.clear();
+    tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+    document.getElementById('select-all').checked = false;
+    updateSelBar();
+  };
 
   // Initial load
   load();
