@@ -38,9 +38,9 @@ class DevelopmentConfig(BaseConfig):
 
 
 class ProductionConfig(BaseConfig):
-    SECRET_KEY = os.environ['SECRET_KEY']
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', os.environ['SECRET_KEY'])
-    SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+    SECRET_KEY = os.environ.get('SECRET_KEY', '')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', os.environ.get('SECRET_KEY', ''))
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '')
     SESSION_COOKIE_SECURE = True
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'simple')
     CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL')
