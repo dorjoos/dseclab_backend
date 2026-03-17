@@ -148,13 +148,21 @@
 
   function load() {
     tbody.textContent = '';
-    var tr = document.createElement('tr');
-    var td = document.createElement('td');
-    td.colSpan = 8;
-    td.className = 'av-loading';
-    td.textContent = 'Loading...';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
+    for (var s = 0; s < 8; s++) {
+      var sr = document.createElement('tr');
+      var widths = ['30px','28%','15%','10%','18%','8%','8%','50px'];
+      for (var c = 0; c < 8; c++) {
+        var std = document.createElement('td');
+        std.style.padding = '12px 14px';
+        var sk = document.createElement('div');
+        sk.className = 'skeleton skeleton-cell';
+        sk.style.width = (c === 0 ? '20px' : c === 7 ? '30px' : Math.floor(Math.random()*40+40) + '%');
+        sk.style.height = '14px';
+        std.appendChild(sk);
+        sr.appendChild(std);
+      }
+      tbody.appendChild(sr);
+    }
     emptyEl.style.display = 'none';
     pagBar.style.display = 'none';
 

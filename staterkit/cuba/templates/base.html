@@ -23,6 +23,7 @@
 
   <div class="dsec-layout">
     {% include "layout/sidebar.html" %}
+    <div class="dsec-overlay" id="dsec-overlay"></div>
 
     <div class="dsec-main">
       {% include "layout/header.html" %}
@@ -30,16 +31,7 @@
       <div class="dsec-content">
         {% include 'layout/breadcrumb.html' %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+        {% with messages = get_flashed_messages(with_categories=true) %}{% endwith %}
 
         {% block content %}{% endblock %}
       </div>
@@ -65,21 +57,58 @@
 
     // Auto-dismiss alerts
     document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.alert').forEach(function(el) {
-        setTimeout(function() {
-          el.style.transition = 'opacity 0.3s';
-          el.style.opacity = '0';
-          setTimeout(function() { el.remove(); }, 300);
-        }, 4000);
-      });
+      // Toast notification system
+      window.showToast = function(message, type) {
+        type = type || 'info';
+        var container = document.getElementById('toast-container');
+        if (!container) return;
+        var toast = document.createElement('div');
+        toast.className = 'dsec-toast dsec-toast-' + type;
+        var icons = { success: '\u2713', danger: '\u2717', warning: '!', info: 'i' };
+        var iconEl = document.createElement('div');
+        iconEl.className = 'dsec-toast-icon';
+        iconEl.textContent = icons[type] || 'i';
+        var msgEl = document.createElement('div');
+        msgEl.className = 'dsec-toast-msg';
+        msgEl.textContent = message;
+        var closeEl = document.createElement('button');
+        closeEl.className = 'dsec-toast-close';
+        closeEl.textContent = '\u00d7';
+        closeEl.addEventListener('click', function() { removeToast(toast); });
+        toast.appendChild(iconEl);
+        toast.appendChild(msgEl);
+        toast.appendChild(closeEl);
+        container.appendChild(toast);
+        setTimeout(function() { removeToast(toast); }, 4000);
+      };
+      function removeToast(el) {
+        if (!el || el.classList.contains('removing')) return;
+        el.classList.add('removing');
+        setTimeout(function() { el.remove(); }, 300);
+      }
+
+      // Show server flash messages as toasts
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      showToast({{ message|tojson }}, '{{ category }}');
+      {% endfor %}
+      {% endwith %}
 
       // Sidebar toggle (mobile)
       var toggle = document.getElementById('dsec-sidebar-toggle');
       var sidebar = document.getElementById('dsec-sidebar');
+      var overlay = document.getElementById('dsec-overlay');
       if (toggle && sidebar) {
         toggle.addEventListener('click', function() {
           sidebar.classList.toggle('open');
+          if (overlay) overlay.classList.toggle('show');
         });
+        if (overlay) {
+          overlay.addEventListener('click', function() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+          });
+        }
       }
 
       // Sidebar submenu toggles
@@ -108,6 +137,8 @@
       if (typeof feather !== 'undefined') feather.replace();
     });
   </script>
+  <!-- Toast container -->
+  <div class="dsec-toast-container" id="toast-container"></div>
   {% block scriptcontent %}{% endblock %}
 </body>
 </html>
