@@ -54,60 +54,36 @@
     </div>
   </div>
 
-  <!-- Data Table -->
+  <!-- Data Grid -->
   <div class="card">
     <div class="card-body p-0">
       {% if breached_creds %}
       <div class="table-responsive">
-        <table class="table table-hover mb-0" style="font-size:13px;">
+        <table class="mb-0" style="width:100%;font-size:12px;border-collapse:collapse;">
           <thead>
-            <tr>
-              <th style="min-width:200px;">Username</th>
-              <th>Domain</th>
-              <th>Password</th>
-              <th>Source</th>
-              <th>Type</th>
-              <th>Date</th>
-              <th style="width:80px;text-align:center;">Actions</th>
+            <tr style="background:var(--bg);border-bottom:2px solid var(--border);">
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">#</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Username</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Domain</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Pass</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Source</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:center;">Type</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:right;">Date</th>
+              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:center;width:60px;"></th>
             </tr>
           </thead>
           <tbody>
             {% for cred in breached_creds %}
-            <tr{% if cred.is_marked %} style="border-left:3px solid var(--warning);"{% endif %}>
-              <td style="padding:8px 14px;">
-                <div style="font-weight:500;font-size:13px;">{{ cred.username or '-' }}</div>
-              </td>
-              <td style="padding:8px 14px;">
-                {% if cred.domain %}
-                <span class="badge badge-light-info" style="font-size:11px;">{{ cred.domain }}</span>
-                {% else %}-{% endif %}
-              </td>
-              <td style="padding:8px 14px;">
-                {% if cred.password %}
-                <span class="password-mask" style="cursor:pointer;" title="Hover to reveal">
-                  <span class="masked-password" style="color:var(--text-muted);font-size:12px;">********</span>
-                  <span class="revealed-password" style="font-family:'SF Mono',monospace;font-size:11px;">{{ cred.password }}</span>
-                </span>
-                {% else %}<span style="color:var(--text-muted);">-</span>{% endif %}
-              </td>
-              <td style="padding:8px 14px;color:var(--text-secondary);font-size:12px;">{{ cred.source or '-' }}</td>
-              <td style="padding:8px 14px;">
-                {% if cred.type %}<span class="badge badge-light-{{ cred.type_color }}" style="font-size:10px;">{{ cred.type|title }}</span>{% else %}-{% endif %}
-              </td>
-              <td style="padding:8px 14px;color:var(--text-muted);font-size:12px;white-space:nowrap;">
-                {{ cred.created_at.strftime('%b %d') if cred.created_at else '-' }}
-              </td>
-              <td style="padding:8px 14px;text-align:center;">
-                <div style="display:flex;gap:2px;justify-content:center;">
-                  <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" title="View" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;color:var(--text-muted);transition:all 0.15s;text-decoration:none;">
-                    <i class="fa-regular fa-eye" style="font-size:12px;"></i>
-                  </a>
-                  {% if current_user.can_edit() %}
-                  <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=cred.es_id) }}" title="Edit" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:4px;color:var(--text-muted);transition:all 0.15s;text-decoration:none;">
-                    <i class="fa-regular fa-pen-to-square" style="font-size:11px;"></i>
-                  </a>
-                  {% endif %}
-                </div>
+            <tr style="border-bottom:1px solid var(--border-light);transition:background 0.1s;{% if cred.is_marked %}border-left:3px solid var(--warning);{% endif %}" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
+              <td style="padding:6px 12px;color:var(--text-muted);font-size:11px;font-variant-numeric:tabular-nums;">{{ loop.index + (pagination.page - 1) * 20 }}</td>
+              <td style="padding:6px 12px;font-weight:500;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cred.username or '-' }}</td>
+              <td style="padding:6px 12px;">{% if cred.domain %}<span style="background:var(--primary-50);color:var(--primary);padding:2px 6px;border-radius:3px;font-size:11px;font-weight:500;">{{ cred.domain }}</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
+              <td style="padding:6px 12px;">{% if cred.password %}<span class="password-mask" style="cursor:pointer;" title="Hover to reveal"><span class="masked-password" style="color:var(--text-muted);font-size:11px;">•••••</span><span class="revealed-password" style="font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:11px;color:var(--danger);">{{ cred.password }}</span></span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
+              <td style="padding:6px 12px;color:var(--text-secondary);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cred.source or '-' }}</td>
+              <td style="padding:6px 12px;text-align:center;">{% if cred.type %}<span style="background:{% if cred.type == 'url' %}#dbeafe{% elif cred.type == 'stealer' %}#fef2f2{% elif cred.type == 'malware' %}#fffbeb{% else %}#f1f5f9{% endif %};color:{% if cred.type == 'url' %}#1e40af{% elif cred.type == 'stealer' %}#991b1b{% elif cred.type == 'malware' %}#92400e{% else %}#475569{% endif %};padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">{{ cred.type }}</span>{% else %}—{% endif %}</td>
+              <td style="padding:6px 12px;color:var(--text-muted);font-size:11px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ cred.created_at.strftime('%m/%d') if cred.created_at else '-' }}</td>
+              <td style="padding:6px 12px;text-align:center;">
+                <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" title="View" style="color:var(--primary);text-decoration:none;font-size:11px;font-weight:500;opacity:0.7;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">View</a>
               </td>
             </tr>
             {% endfor %}
