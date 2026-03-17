@@ -1,238 +1,137 @@
 {% extends "base.html" %}
-
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5>Threat Intelligence Analysis Dashboard</h5>
-          {% if user_domain %}
-          <p class="text-muted mb-0">Showing data for: <strong>{{ user_domain }}</strong></p>
-          {% endif %}
-          <div class="card-header-right">
-            <a href="{{ url_for('threat_intel.reports') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="file-text"></i> Reports
-            </a>
-            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-primary btn-sm">
-              <i data-feather="list"></i> View All
-            </a>
-          </div>
+<div class="container-fluid p-0">
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+      <div class="dsec-stat-card">
+        <div class="dsec-stat-icon" style="background:#eff4ff;">
+          <svg style="color:#1a56db;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <div class="card-body">
-          <!-- Key Metrics -->
-          <div class="row mb-4">
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-primary rounded p-2">
-                        <i data-feather="database" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Total Breaches</h6>
-                      <h4 class="mb-0">{{ total|format_number }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-danger rounded p-2">
-                        <i data-feather="alert-circle" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Stealer Type</h6>
-                      <h4 class="mb-0">{{ by_type.get('stealer', 0) }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-warning rounded p-2">
-                        <i data-feather="alert-triangle" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Malware Type</h6>
-                      <h4 class="mb-0">{{ by_type.get('malware', 0) }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-3 col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <div class="d-flex align-items-center">
-                    <div class="flex-shrink-0">
-                      <div class="bg-info rounded p-2">
-                        <i data-feather="bookmark" class="text-white"></i>
-                      </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                      <h6 class="f-w-400 mb-1">Marked Items</h6>
-                      <h4 class="mb-0">{{ marked_count }}</h4>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Charts Row -->
-          <div class="row">
-            <div class="col-xl-4 col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5>By Type</h5>
-                </div>
-                <div class="card-body">
-                  <ul class="list-unstyled mb-0">
-                    {% for type_name, count in by_type.items() %}
-                    <li class="mb-3 d-flex justify-content-between align-items-center">
-                      <span class="badge badge-light-{{ type_name|lower|replace('stealer', 'danger')|replace('malware', 'warning')|replace('combolist', 'primary')|replace('pastebin', 'info')|replace('breach', 'secondary')|replace('phishing', 'danger')|replace('darkweb', 'dark') }}">{{ type_name|title }}</span>
-                      <span class="text-dark f-w-500">{{ count }}</span>
-                    </li>
-                    {% endfor %}
-                    {% if not by_type %}
-                    <li class="text-muted text-center py-4">No data available</li>
-                    {% endif %}
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-4 col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5>By Source</h5>
-                </div>
-                <div class="card-body">
-                  <ul class="list-unstyled mb-0">
-                    {% if by_source %}
-                      {% for source_name, count in by_source.items() %}
-                      <li class="mb-3 d-flex justify-content-between align-items-center">
-                        <span class="badge badge-light-info">{{ source_name }}</span>
-                        <span class="text-dark f-w-500">{{ count }}</span>
-                      </li>
-                      {% endfor %}
-                    {% else %}
-                      <li class="text-muted text-center py-4">No data available</li>
-                    {% endif %}
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div class="col-xl-4 col-md-6">
-              <div class="card">
-                <div class="card-header">
-                  <h5>By Domain</h5>
-                </div>
-                <div class="card-body">
-                  <ul class="list-unstyled mb-0">
-                    {% if by_domain %}
-                      {% for domain_name, count in by_domain.items() %}
-                      <li class="mb-3 d-flex justify-content-between align-items-center">
-                        <span class="badge badge-light-secondary">{{ domain_name }}</span>
-                        <span class="text-dark f-w-500">{{ count }}</span>
-                      </li>
-                      {% endfor %}
-                    {% else %}
-                      <li class="text-muted text-center py-4">No data available</li>
-                    {% endif %}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-          <!-- Recent Breaches -->
-          <div class="row mt-4">
-            <div class="col-12">
-              <div class="card">
-                <div class="card-header">
-                  <h5>Recent Breaches</h5>
-                </div>
-                <div class="card-body">
-                  <div class="table-responsive dom-source-data custom-scrollbar">
-                    <table class="display table-striped" style="width:100%">
-                      <thead>
-                        <tr>
-                          <th>Username</th>
-                          <th>Domain</th>
-                          <th>Domain</th>
-                          <th>Type</th>
-                          <th>Source</th>
-                          <th>Type</th>
-                          <th>Created</th>
-                          <th>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {% if recent %}
-                          {% for cred in recent %}
-                          <tr>
-                            <td><strong>{{ cred.username or '-' }}</strong></td>
-                            <td>{{ cred.domain or '-' }}</td>
-                            <td><span class="badge badge-light-info">{{ cred.domain or '-' }}</span></td>
-                            <td>
-                              <span class="badge badge-light-{{ cred.type_color }}">
-                                {{ cred.type|title if cred.type else '-' }}
-                              </span>
-                            </td>
-                            <td>
-                              <span class="badge badge-light-secondary">{{ cred.source or '-' }}</span>
-                            </td>
-                            <td>
-                              <span class="badge badge-light-secondary">{{ cred.type|title if cred.type else '-' }}</span>
-                            </td>
-                            <td>{{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}</td>
-                            <td>
-                              <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="btn btn-primary btn-sm">
-                                <i data-feather="eye" style="width: 14px; height: 14px;"></i>
-                              </a>
-                            </td>
-                          </tr>
-                          {% endfor %}
-                        {% else %}
-                          <tr>
-                            <td colspan="8" class="text-center">No recent breaches found.</td>
-                          </tr>
-                        {% endif %}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div>
+          <div class="dsec-stat-value">{{ total|format_number }}</div>
+          <div class="dsec-stat-label">Total Breaches</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="dsec-stat-card">
+        <div class="dsec-stat-icon" style="background:#fef2f2;">
+          <svg style="color:#dc2626;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div>
+          <div class="dsec-stat-value">{{ by_type.get('stealer', 0)|format_number }}</div>
+          <div class="dsec-stat-label">Stealer Type</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="dsec-stat-card">
+        <div class="dsec-stat-icon" style="background:#fffbeb;">
+          <svg style="color:#d97706;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div>
+          <div class="dsec-stat-value">{{ by_type.get('malware', 0)|format_number }}</div>
+          <div class="dsec-stat-label">Malware Type</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="dsec-stat-card">
+        <div class="dsec-stat-icon" style="background:#ecfdf5;">
+          <svg style="color:#059669;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div>
+          <div class="dsec-stat-value">{{ marked_count|format_number }}</div>
+          <div class="dsec-stat-label">Marked Items</div>
         </div>
       </div>
     </div>
   </div>
-</div>
-{% endblock %}
 
-{% block scriptcontent %}
-<script>
-  // Initialize feather icons
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof feather !== 'undefined') {
-      feather.replace();
-    }
-  });
-</script>
+  <!-- Distribution tables -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:600;">By Type</div>
+        <table class="av-table">
+          <tbody>
+            {% for type_name, count in by_type.items() %}
+            <tr>
+              <td style="font-weight:500;">{{ type_name }}</td>
+              <td class="r m">{{ count|format_number }}</td>
+            </tr>
+            {% endfor %}
+            {% if not by_type %}<tr><td colspan="2" class="m" style="text-align:center;padding:20px;">No data</td></tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:600;">By Source</div>
+        <table class="av-table">
+          <tbody>
+            {% for src, count in by_source.items() %}
+            <tr>
+              <td><span class="av-domain">{{ src }}</span></td>
+              <td class="r m">{{ count|format_number }}</td>
+            </tr>
+            {% endfor %}
+            {% if not by_source %}<tr><td colspan="2" class="m" style="text-align:center;padding:20px;">No data</td></tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:600;">Top Domains</div>
+        <table class="av-table">
+          <tbody>
+            {% for dom, count in by_domain.items() %}
+            <tr>
+              <td><span class="av-domain">{{ dom }}</span></td>
+              <td class="r m">{{ count|format_number }}</td>
+            </tr>
+            {% endfor %}
+            {% if not by_domain %}<tr><td colspan="2" class="m" style="text-align:center;padding:20px;">No data</td></tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent -->
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-light);">
+      <span style="font-size:14px;font-weight:600;">Recent Breaches</span>
+      <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-view-link">View all</a>
+    </div>
+    <table class="av-table">
+      <thead>
+        <tr>
+          <th style="padding-left:16px;">Username</th>
+          <th>Domain</th>
+          <th>Source</th>
+          <th>Type</th>
+          <th class="r">Date</th>
+          <th style="width:50px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cred in recent %}
+        <tr>
+          <td style="padding-left:16px;font-weight:500;">{{ cred.username or '—' }}</td>
+          <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
+          <td class="m">{{ cred.source or '—' }}</td>
+          <td><span class="av-tag">{{ cred.type or '—' }}</span></td>
+          <td class="m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
+          <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
+        </tr>
+        {% endfor %}
+        {% if not recent %}<tr><td colspan="6" class="av-empty" style="padding:30px;">No recent breaches</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
 {% endblock %}
