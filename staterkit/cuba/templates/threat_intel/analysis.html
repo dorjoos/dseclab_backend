@@ -104,7 +104,7 @@
         <div style="display:flex;gap:24px;align-items:flex-start;">
           <!-- Donut chart left -->
           <div style="flex-shrink:0;">
-            <div id="source-donut" style="min-width:180px;"></div>
+            <div id="source-donut" style="min-width:280px;"></div>
           </div>
           <!-- Source cards right -->
           <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
@@ -211,7 +211,7 @@
     var srcVals = Object.values(srcData);
     new ApexCharts(sdEl, {
       series: srcVals,
-      chart: { type: 'donut', height: 200, fontFamily: 'Inter, sans-serif' },
+      chart: { type: 'donut', height: 280, fontFamily: 'Inter, sans-serif' },
       labels: srcLabels,
       colors: colors,
       plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '11px', fontWeight: 500, color: 'var(--text-muted)', formatter: function(w) { return w.globals.seriesTotals.reduce(function(a,b){return a+b;},0).toLocaleString(); } }, value: { fontSize: '16px', fontWeight: 700, color: 'var(--text)' } } } } },
