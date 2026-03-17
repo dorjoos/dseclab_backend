@@ -1,161 +1,148 @@
-<!-- Page Header Start-->
-<div class="page-header">
-  <div class="header-wrapper row m-0">
-    <form class="form-inline search-full col" action="{{ url_for('threat_intel.breached_creds_list') }}" method="get">
-      <div class="form-group w-100">
-        <div class="Typeahead Typeahead--twitterUsers">
-          <div class="u-posRelative">
-            <input class="demo-input Typeahead-input form-control-plaintext w-100" type="text" placeholder="Search breached credentials..." name="search" title="" autofocus>
-            <div class="spinner-border Typeahead-spinner" role="status" style="display: none;"><span class="sr-only">Loading...</span></div><i class="close-search" data-feather="x"></i>
-          </div>
-          <div class="Typeahead-menu"></div>
-        </div>
-      </div>
-    </form>
-    <div class="header-logo-wrapper col-auto p-0">
-      <div class="logo-wrapper"><a href="{{ url_for('main.indexPage') }}"><img class="img-fluid for-light" src="{{ url_for('static', filename= 'assets/images/logo/logo.png')}}" alt="D-sec Lab"><img class="img-fluid for-dark" src="{{ url_for('static', filename= 'assets/images/logo/logo_dark.png')}}" alt="D-sec Lab"></a></div>
-      <div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="align-center"></i></div>
+<header class="dsec-header">
+  <div class="dsec-header-left">
+    <button class="dsec-sidebar-toggle" id="dsec-sidebar-toggle">
+      <i data-feather="menu"></i>
+    </button>
+    <div class="dsec-header-search">
+      <i data-feather="search"></i>
+      <form action="{{ url_for('threat_intel.breached_creds_list') }}" method="get" style="margin:0;">
+        <input type="text" name="search" placeholder="Search breached credentials..." autocomplete="off">
+      </form>
     </div>
-    <div class="left-header col-xxl-5 col-xl-6 col-lg-5 col-md-4 col-sm-3 p-0">
-      <div class="notification-slider">
-        <div class="d-flex h-100">
-          <img src="{{ url_for('static', filename = 'assets/images/giftools.gif' )}}" alt="gif">
-          <h6 class="mb-0 f-w-400"><span class="font-primary">Don't Miss Out! </span><span class="f-light">Our new update has been released.</span></h6>
-          <i class="icon-arrow-top-right f-light"></i>
-        </div>
-        <div class="d-flex h-100">
-          <img src="{{ url_for('static', filename = 'assets/images/giftools.gif' )}}" alt="gif">
-          <h6 class="mb-0 f-w-400"><span class="f-light">D-sec Lab Threat Intelligence Platform</span></h6>
-        </div>
-      </div>
-    </div>
-    <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
-      <ul class="nav-menus">
-        <li class="language-nav">
-          <div class="translate_wrapper">
-            <div class="current_lang">
-              <div class="lang"><i class="flag-icon flag-icon-us"></i><span class="lang-txt">EN</span></div>
-            </div>
-            <div class="more_lang">
-              <div class="lang selected" data-value="en"><i class="flag-icon flag-icon-us"></i><span class="lang-txt">English<span> (US)</span></span></div>
-              <div class="lang" data-value="mn"><i class="flag-icon flag-icon-mn"></i><span class="lang-txt">Mongolian</span></div>
-              </div>
-          </div>
-        </li>
-        <li class="fullscreen-body">                       <span>
-            <svg id="maximize-screen">
-              <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#full-screen"></use>
-            </svg></span></li>
-        <li>                         <span class="header-search">
-            <svg>
-              <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#search"></use>
-            </svg></span></li>
-        <li class="onhover-dropdown">
-          <svg>
-            <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#star"></use>
-          </svg>
-          <div class="onhover-show-div bookmark-flip">
-            <div class="flip-card">
-              <div class="flip-card-inner">
-                <div class="front">
-                  <h6 class="f-18 mb-0 dropdown-title">Bookmark</h6>
-                  <ul class="bookmark-dropdown">
-                    <li>
-                      <div class="row">
-                        <div class="col-4 text-center">
-                          <div class="bookmark-content">
-                            <div class="bookmark-icon"><i data-feather="file-text"></i></div><span>Forms</span>
-                          </div>
-                        </div>
-                        <div class="col-4 text-center">
-                          <div class="bookmark-content">
-                            <div class="bookmark-icon"><i data-feather="user"></i></div><span>Profile</span>
-                          </div>
-                        </div>
-                        <div class="col-4 text-center">
-                          <div class="bookmark-content">
-                            <div class="bookmark-icon"><i data-feather="server"></i></div><span>Tables</span>
-                          </div>
-                        </div>
-                      </div>
-                    </li>
-                    <li class="text-center"><a class="flip-btn f-w-700" id="flip-btn" href="#!">Add Bookmark</a></li>
-                  </ul>
-                </div>
-                <div class="back">
-                  <ul>
-                    <li>
-                      <div class="bookmark-dropdown flip-back-content">
-                        <input type="text" placeholder="Search...">
-                      </div>
-                    </li>
-                    <li><a class="f-w-700 d-block flip-back" id="flip-back" href="#!">Back</a></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </li>
-        <li>
-          <div class="mode">
-            <svg>
-              <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#moon"></use>
-            </svg>
-          </div>
-        </li>
-        {% if current_user.is_authenticated %}
-        <li class="onhover-dropdown">
-          <div class="notification-box">
-            <svg>
-              <use href="{{ url_for('static', filename= 'assets/svg/icon-sprite.svg' )}}#notification"></use>
-            </svg><span class="badge rounded-pill badge-danger" id="notification-badge" style="display: none;">0</span>
-          </div>
-          <div class="onhover-show-div notification-dropdown">
-            <h6 class="f-18 mb-0 dropdown-title">
-              Notifications
-              <button class="btn btn-primary btn-sm py-0 px-2 ms-2" id="mark-all-read-btn" style="display: none;">Mark all read</button>
-            </h6>
-            <ul id="notification-list">
-              <li class="text-center p-3">
-                <div class="spinner-border spinner-border-sm" role="status">
-                  <span class="sr-only">Loading...</span>
-                </div>
-              </li>
-            </ul>
-            <div class="text-center p-2 border-top">
-              <a href="#" class="btn btn-sm btn-primary" id="view-all-notifications">View All</a>
-            </div>
-          </div>
-        </li>
-        {% endif %}
-        {% if current_user.is_authenticated %}
-        <li class="profile-nav onhover-dropdown pe-0 py-0">
-          <div class="d-flex profile-media"><img class="b-r-10" src="{{ url_for('static', filename= 'assets/images/dashboard/profile.png')}}" alt="">
-            <div class="flex-grow-1"><span>{{ current_user.username }}</span>
-              <p class="mb-0">{% if current_user.isAdmin %}Admin{% else %}User{% endif %} <i class="middle fa-solid fa-angle-down"></i></p>
-            </div>
-          </div>
-          <ul class="profile-dropdown onhover-show-div">
-            <li><a href="{{ url_for('auth.profile') }}"><i data-feather="user"></i><span>Profile</span></a></li>
-            <li><a href="{{ url_for('auth.logout') }}"><i data-feather="log-out"></i><span>Log out</span></a></li>
-          </ul>
-        </li>
-        {% else %}
-        <li class="profile-nav pe-0 py-0">
-          <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
-        </li>
-        {% endif %}
-      </ul>
-    </div>
-    <script class="result-template" type="text/x-handlebars-template">
-      <div class="ProfileCard u-cf">                        
-      <div class="ProfileCard-avatar"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-airplay m-0"><path d="M5 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-1"></path><polygon points="12 15 17 21 7 21 12 15"></polygon></svg></div>
-      <div class="ProfileCard-details">
-      <div class="ProfileCard-realName">{{name}}</div>
-      </div>
-      </div>
-    </script>
-    <script class="empty-template" type="text/x-handlebars-template"><div class="EmptyMessage">Your search turned up 0 results. This most likely means the backend is down, yikes!</div></script>
   </div>
-</div>
-<!-- Page Header Ends -->
+  <div class="dsec-header-right">
+    {% if current_user.is_authenticated %}
+    <div style="position:relative;">
+      <button class="dsec-header-btn" id="notif-toggle" title="Notifications">
+        <i data-feather="bell"></i>
+        <span class="dsec-header-badge" id="notification-badge" style="display:none;"></span>
+      </button>
+      <div class="dsec-notif-dropdown" id="notif-dropdown">
+        <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:600; font-size:14px;">Notifications</span>
+          <button class="btn btn-sm btn-outline-primary" id="mark-all-read-btn" style="display:none; font-size:11px; padding:2px 8px;">Mark all read</button>
+        </div>
+        <ul id="notification-list" style="list-style:none; padding:0; margin:0; max-height:300px; overflow-y:auto;">
+          <li style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">No notifications</li>
+        </ul>
+      </div>
+    </div>
+    <div style="position:relative;">
+      <div class="dsec-header-profile" id="profile-toggle">
+        <div class="dsec-header-profile-info">
+          <div class="dsec-header-profile-name">{{ current_user.username }}</div>
+          <div class="dsec-header-profile-role">{{ 'Admin' if current_user.is_admin_user else 'Member' }}</div>
+        </div>
+        <i data-feather="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
+      </div>
+      <div class="dsec-profile-dropdown" id="profile-dropdown">
+        <a href="{{ url_for('auth.profile') }}"><i data-feather="user" style="width:16px;height:16px;"></i> Profile</a>
+        <a href="{{ url_for('auth.logout') }}"><i data-feather="log-out" style="width:16px;height:16px;"></i> Logout</a>
+      </div>
+    </div>
+    {% else %}
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-sm">Sign In</a>
+    {% endif %}
+  </div>
+</header>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Profile dropdown toggle
+  var pt = document.getElementById('profile-toggle');
+  var pd = document.getElementById('profile-dropdown');
+  if (pt && pd) {
+    pt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      pd.classList.toggle('show');
+      var nd = document.getElementById('notif-dropdown');
+      if (nd) nd.classList.remove('show');
+    });
+  }
+
+  // Notification dropdown toggle
+  var nt = document.getElementById('notif-toggle');
+  var nd = document.getElementById('notif-dropdown');
+  if (nt && nd) {
+    nt.addEventListener('click', function(e) {
+      e.stopPropagation();
+      nd.classList.toggle('show');
+      if (pd) pd.classList.remove('show');
+      if (nd.classList.contains('show')) loadNotifications();
+    });
+  }
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', function() {
+    if (pd) pd.classList.remove('show');
+    if (nd) nd.classList.remove('show');
+  });
+
+  // Notification loading
+  function escapeHtml(t) {
+    if (!t) return '';
+    var d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  function loadNotifications() {
+    fetch('/api/notifications?limit=5&unread_only=1', { credentials: 'same-origin' })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var badge = document.getElementById('notification-badge');
+        var list = document.getElementById('notification-list');
+        var markBtn = document.getElementById('mark-all-read-btn');
+        if (badge) badge.style.display = data.unread_count > 0 ? 'block' : 'none';
+        if (!list) return;
+        if (!data.notifications || !data.notifications.length) {
+          list.textContent = '';
+          var li = document.createElement('li');
+          li.style.cssText = 'text-align:center;padding:24px;color:var(--text-muted);font-size:13px;';
+          li.textContent = 'No notifications';
+          list.appendChild(li);
+          if (markBtn) markBtn.style.display = 'none';
+          return;
+        }
+        list.textContent = '';
+        data.notifications.forEach(function(n) {
+          var li = document.createElement('li');
+          li.style.cssText = 'border-bottom:1px solid var(--border-light);';
+          var a = document.createElement('a');
+          a.href = n.link || '#';
+          a.style.cssText = 'display:block;padding:10px 16px;text-decoration:none;color:var(--text);' + (n.is_read ? '' : 'background:var(--primary-50);');
+          var title = document.createElement('div');
+          title.style.cssText = 'font-weight:' + (n.is_read ? '400' : '600') + ';font-size:13px;';
+          title.textContent = n.title || 'Notification';
+          var msg = document.createElement('div');
+          msg.style.cssText = 'font-size:12px;color:var(--text-muted);margin-top:2px;';
+          msg.textContent = n.message || '';
+          var time = document.createElement('div');
+          time.style.cssText = 'font-size:11px;color:var(--text-muted);margin-top:4px;';
+          time.textContent = n.time_ago || '';
+          a.appendChild(title);
+          a.appendChild(msg);
+          a.appendChild(time);
+          li.appendChild(a);
+          list.appendChild(li);
+        });
+        if (markBtn) markBtn.style.display = data.unread_count > 0 ? 'inline-block' : 'none';
+      })
+      .catch(function() {});
+  }
+
+  // Mark all read
+  var markAllBtn = document.getElementById('mark-all-read-btn');
+  if (markAllBtn) {
+    markAllBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      fetch('/api/notifications/mark-all-read', { method:'POST', credentials:'same-origin', headers:{'X-CSRFToken':window.CSRF_TOKEN} })
+        .then(function() { loadNotifications(); });
+    });
+  }
+
+  // Initial load + polling
+  loadNotifications();
+  setInterval(loadNotifications, 60000);
+});
+</script>

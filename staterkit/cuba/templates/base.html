@@ -1,696 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="D-sec Lab Threat Intelligence Platform - Comprehensive threat intelligence management system for enterprise security operations.">
-    <meta name="keywords" content="threat intelligence, cybersecurity, security operations, threat management, D-sec Lab, security platform">
-    <meta name="author" content="D-sec Lab">
-    <link rel="icon" href="{{ url_for('static', filename= 'assets/images/favicon.png' )}}" type="image/x-icon">
-    <link rel="shortcut icon" href="{{ url_for('static', filename= 'assets/images/favicon.png' )}}" type="image/x-icon">
-    <title>{% block title %}Threat Intelligence Platform | D-sec Lab{% endblock %}</title>
-    <!-- Google font-->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/fontawesome.css')}}">
-    <!-- ico-font-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/icofont.css')}}">
-    <!-- Themify icon-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/themify.css')}}">
-    <!-- Flag icon-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/flag-icon.css')}}">
-    <!-- Feather icon-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/feather-icon.css')}}">
-    <!-- Plugins css start-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/slick.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/slick-theme.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/scrollbar.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/prism.css')}}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}D-SECLAB | Threat Intelligence{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='assets/images/favicon.png') }}" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/vendors/bootstrap.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/fontawesome.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/vendors/feather-icon.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/custom-branding.css') }}">
+  {% block css %}{% endblock %}
+</head>
+<body>
+  <!-- Loader -->
+  <div class="dsec-loader" id="dsec-loader">
+    <div class="dsec-loader-spinner"></div>
+  </div>
 
-    {% block css %} {% endblock %}
+  <div class="dsec-layout">
+    {% include "layout/sidebar.html" %}
 
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/vendors/bootstrap.css')}}">
-    <!-- App css-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/style.scss.css')}}">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename= 'assets/css/custom-branding.css')}}">
-  </head>
-  <body> 
-    <!-- loader starts-->
-    <div class="loader-wrapper">
-      <div class="loader-index"> <span></span></div>
-      <svg>
-        <defs></defs>
-        <filter id="goo">
-          <fegaussianblur in="SourceGraphic" stddeviation="11" result="blur"></fegaussianblur>
-          <fecolormatrix in="blur" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo"> </fecolormatrix>
-        </filter>
-      </svg>
-    </div>
-    <!-- loader ends-->
-    <!-- tap on top starts-->
-    <div class="tap-top"><i data-feather="chevrons-up"></i></div>
-    <!-- tap on tap ends-->
-    <!-- page-wrapper Start-->
-    <div class="page-wrapper compact-wrapper" id="pageWrapper">
+    <div class="dsec-main">
       {% include "layout/header.html" %}
-      <!-- Page Body Start-->
-      <div class="page-body-wrapper horizontal-menu">
-        {% include "layout/sidebar.html" %}
-        <div class="page-body">
-          {% include 'layout/breadcrumb.html' %}
-          {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-              <div class="container-fluid">
-                {% for category, message in messages %}
-                  <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                  </div>
-                {% endfor %}
+
+      <div class="dsec-content">
+        {% include 'layout/breadcrumb.html' %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
               </div>
-            {% endif %}
-          {% endwith %}
-          {% block content %} {% endblock %}
-        </div>
-        {% include "layout/footer.html" %}
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
       </div>
+
+      {% include "layout/footer.html" %}
     </div>
+  </div>
 
+  <script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/bootstrap/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='assets/js/icons/feather-icon/feather.min.js') }}"></script>
+  <script>
+    // Hide loader
+    window.addEventListener('load', function() {
+      document.getElementById('dsec-loader').classList.add('hidden');
+    });
 
-    <!-- latest jquery-->
-    <script src="{{ url_for('static', filename= 'assets/js/jquery.min.js')}}"></script>
-    <!-- Bootstrap js-->
-    <script src="{{ url_for('static', filename= 'assets/js/bootstrap/bootstrap.bundle.min.js')}}"></script>
-    <!-- feather icon js-->
-    <script src="{{ url_for('static', filename= 'assets/js/icons/feather-icon/feather.min.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/icons/feather-icon/feather-icon.js')}}"></script>
-    <!-- scrollbar js-->
-    <script src="{{ url_for('static', filename= 'assets/js/scrollbar/simplebar.min.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/scrollbar/custom.js')}}"></script>
-    <!-- Sidebar jquery-->
-    <script src="{{ url_for('static', filename= 'assets/js/config.js')}}"></script>
-    <!-- Plugins JS start-->
-    <script src="{{ url_for('static', filename= 'assets/js/sidebar-menu.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/sidebar-pin.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/slick/slick.min.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/slick/slick.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/header-slick.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/prism/prism.min.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/clipboard/clipboard.min.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/custom-card/custom-card.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/typeahead/handlebars.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/typeahead/typeahead.bundle.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/typeahead/typeahead.custom.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/typeahead-search/handlebars.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/typeahead-search/typeahead-custom.js')}}"></script>
+    // Feather icons
+    if (typeof feather !== 'undefined') feather.replace();
 
+    // CSRF token
+    window.CSRF_TOKEN = {{ csrf_token()|tojson }};
 
-    {% block scriptcontent %} {% endblock %}
+    // Auto-dismiss alerts
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.alert').forEach(function(el) {
+        setTimeout(function() {
+          el.style.transition = 'opacity 0.3s';
+          el.style.opacity = '0';
+          setTimeout(function() { el.remove(); }, 300);
+        }, 4000);
+      });
 
-    <script src="{{ url_for('static', filename= 'assets/js/script.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/script1.js')}}"></script>
-    <script src="{{ url_for('static', filename= 'assets/js/theme-customizer/customizer.js')}}"></script>
-    
-    <!-- Ensure Feather icons are initialized in card-header-right -->
-    <script>
-      // CSRF token for same-origin AJAX (Flask-WTF CSRFProtect)
-      window.CSRF_TOKEN = {{ csrf_token()|tojson }};
-
-      // Re-initialize Feather icons after page load and for dynamically added content
-      if (typeof feather !== 'undefined') {
-        feather.replace();
-        // Also initialize on DOMContentLoaded if not already done
-        document.addEventListener('DOMContentLoaded', function() {
-          feather.replace();
+      // Sidebar toggle (mobile)
+      var toggle = document.getElementById('dsec-sidebar-toggle');
+      var sidebar = document.getElementById('dsec-sidebar');
+      if (toggle && sidebar) {
+        toggle.addEventListener('click', function() {
+          sidebar.classList.toggle('open');
         });
       }
-      
-      // Loading indicators for forms and async operations
-      document.addEventListener('DOMContentLoaded', function() {
-        // Form submission loading
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-          form.addEventListener('submit', function(e) {
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-              const spinner = submitBtn.querySelector('.spinner-border');
-              if (spinner) {
-                spinner.classList.remove('d-none');
-                submitBtn.disabled = true;
-              }
-            }
-          });
-        });
-        
-        // Export button loading
-        const exportBtn = document.getElementById('export-btn');
-        if (exportBtn) {
-          exportBtn.addEventListener('click', function() {
-            const icon = this.querySelector('i[data-feather]');
-            if (icon) {
-              this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Exporting...';
-              this.disabled = true;
-            }
-          });
-        }
-        
-        // Mark button loading
-        const markForms = document.querySelectorAll('form[action*="mark"]');
-        markForms.forEach(form => {
-          form.addEventListener('submit', function() {
-            const btn = form.querySelector('button[type="submit"]');
-            if (btn) {
-              btn.disabled = true;
-              const originalText = btn.innerHTML;
-              btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-            }
-          });
-        });
-        
-        // Password mask hover reveal functionality
-        document.querySelectorAll('.password-mask').forEach(function(mask) {
-          const masked = mask.querySelector('.masked-password');
-          const revealed = mask.querySelector('.revealed-password');
-          
-          if (masked && revealed) {
-            // Ensure initial state is fully masked (prevents partial reveal on first render)
-            masked.style.display = 'inline-block';
-            revealed.style.display = 'none';
 
-            mask.addEventListener('mouseenter', function() {
-              masked.style.display = 'none';
-              revealed.style.display = 'inline-block';
-            });
-            
-            mask.addEventListener('mouseleave', function() {
-              masked.style.display = 'inline-block';
-              revealed.style.display = 'none';
-            });
-          }
+      // Sidebar submenu toggles
+      document.querySelectorAll('.dsec-nav-toggle').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var submenu = this.nextElementSibling;
+          if (submenu) submenu.classList.toggle('show');
+          var icon = this.querySelector('.dsec-toggle-icon');
+          if (icon) icon.style.transform = submenu.classList.contains('show') ? 'rotate(90deg)' : '';
         });
-        
-        // Header search functionality
-        const searchInput = document.querySelector('.Typeahead-input');
-        const searchMenu = document.querySelector('.Typeahead-menu');
-        const searchSpinner = document.querySelector('.Typeahead-spinner');
-        let searchTimeout;
-        
-        if (searchInput && searchMenu) {
-          searchInput.addEventListener('input', function(e) {
-            const query = e.target.value.trim();
-            
-            clearTimeout(searchTimeout);
-            
-            if (query.length < 2) {
-              searchMenu.innerHTML = '';
-              if (searchSpinner) searchSpinner.style.display = 'none';
-              return;
-            }
-            
-            if (searchSpinner) searchSpinner.style.display = 'block';
-            
-            searchTimeout = setTimeout(function() {
-              fetch(`/api/search?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                  if (searchSpinner) searchSpinner.style.display = 'none';
-                  
-                  if (data.length === 0) {
-                    searchMenu.innerHTML = '<div class="Typeahead-suggestion"><p class="text-muted p-2">No results found</p></div>';
-                    return;
-                  }
-                  
-                  let html = '';
-                  data.forEach(function(item) {
-                    html += `
-                      <div class="Typeahead-suggestion">
-                        <a href="${item.url}" class="d-flex align-items-center p-2 text-decoration-none text-dark">
-                          <i data-feather="${item.icon}" class="me-2" style="width: 16px; height: 16px;"></i>
-                          <div>
-                            <div class="fw-bold">${item.name}</div>
-                            <small class="text-muted">${item.type}</small>
-                          </div>
-                        </a>
-                      </div>
-                    `;
-                  });
-                  searchMenu.innerHTML = html;
-                  if (typeof feather !== 'undefined') {
-                    feather.replace();
-                  }
-                })
-                .catch(error => {
-                  console.error('Search error:', error);
-                  if (searchSpinner) searchSpinner.style.display = 'none';
-                  searchMenu.innerHTML = '<div class="Typeahead-suggestion"><p class="text-danger p-2">Search error</p></div>';
-                });
-            }, 300);
-          });
-          
-          // Hide menu when clicking outside
-          document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && !searchMenu.contains(e.target)) {
-              searchMenu.innerHTML = '';
-            }
-          });
-        }
-        
-        // Helper function to escape HTML
-        function escapeHtml(text) {
-          if (!text) return '';
-          const div = document.createElement('div');
-          div.textContent = text;
-          return div.innerHTML;
-        }
-        
-        // Notification system
-        function loadNotifications() {
-          console.log('Loading notifications...');
-          const notificationList = document.getElementById('notification-list');
-          if (!notificationList) {
-            console.warn('Notification list element not found');
-            return;
-          }
-          
-          fetch('/api/notifications?limit=5&unread_only=1', {
-            method: 'GET',
-            credentials: 'same-origin',
-            headers: {
-              'Accept': 'application/json',
-            }
-          })
-            .then(response => {
-              console.log('Notification response status:', response.status);
-              if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.status);
-              }
-              return response.json();
-            })
-            .then(data => {
-              console.log('Notification data received:', data);
-              const badge = document.getElementById('notification-badge');
-              const list = document.getElementById('notification-list');
-              const markAllBtn = document.getElementById('mark-all-read-btn');
-              
-              if (!badge || !list) {
-                console.error('Notification elements not found');
-                return;
-              }
-              
-              if (badge) {
-                if (data.unread_count > 0) {
-                  badge.textContent = data.unread_count;
-                  badge.style.display = 'inline-block';
-                } else {
-                  badge.style.display = 'none';
-                }
-              }
-              
-              if (list) {
-                if (!data.notifications || data.notifications.length === 0) {
-                  list.innerHTML = '<li class="text-center p-3 text-muted">No notifications</li>';
-                  if (markAllBtn) markAllBtn.style.display = 'none';
-                  return;
-                }
-                
-                let html = '';
-                if (data.notifications && data.notifications.length > 0) {
-                  data.notifications.forEach(function(notif) {
-                    const borderClass = {
-                      'warning': 'b-l-warning',
-                      'success': 'b-l-success',
-                      'danger': 'b-l-danger',
-                      'info': 'b-l-info',
-                      'alert': 'b-l-primary'
-                    }[notif.type] || 'b-l-secondary';
-                    
-                    const link = notif.link || '#';
-                    const readClass = notif.is_read ? '' : 'fw-bold';
-                    const bgClass = notif.is_read ? '' : 'bg-light';
-                    
-                    html += `
-                      <li class="${borderClass} border-4 ${bgClass}">
-                        <a href="${link}" class="d-block p-2 text-decoration-none text-dark ${readClass}" data-notification-id="${notif.id}">
-                          <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                              <div class="fw-bold">${escapeHtml(notif.title || 'Notification')}</div>
-                              <div class="small text-muted">${escapeHtml(notif.message || '')}</div>
-                              <div class="small text-muted mt-1">${escapeHtml(notif.time_ago || '')}</div>
-                            </div>
-                            ${notif.is_read ? '' : '<span class="badge badge-primary">New</span>'}
-                          </div>
-                        </a>
-                      </li>
-                    `;
-                  });
-                } else {
-                  html = '<li class="text-center p-3 text-muted">No notifications</li>';
-                }
-                list.innerHTML = html;
-                
-                // Mark as read on click
-                list.querySelectorAll('a[data-notification-id]').forEach(function(link) {
-                  link.addEventListener('click', function(e) {
-                    const notifId = this.getAttribute('data-notification-id');
-                    if (notifId) {
-                      const href = this.getAttribute('href');
-                      const shouldNavigate = href && href !== '#' && href !== 'javascript:void(0)' && href !== 'javascript:void(0);';
-                      if (shouldNavigate) e.preventDefault();
+      });
 
-                      const markPromise = fetch(`/api/notifications/${notifId}/read`, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        keepalive: true,
-                        headers: {
-                          'Accept': 'application/json',
-                          'X-CSRFToken': window.CSRF_TOKEN,
-                        }
-                      })
-                      .then(response => {
-                        if (!response.ok) {
-                          throw new Error('Failed to mark notification as read: ' + response.status);
-                        }
-                        return response.json().catch(() => ({}));
-                      })
-                      .then(() => loadNotifications())
-                      .catch(error => console.error('Error marking notification as read:', error));
-
-                      // If this click navigates away, give the POST a tiny window to flush.
-                      if (shouldNavigate) {
-                        Promise.race([markPromise, new Promise(resolve => setTimeout(resolve, 250))])
-                          .finally(() => { window.location.href = href; });
-                      }
-                    }
-                  });
-                });
-                
-                // Mark all read button - remove old listeners first
-                if (markAllBtn) {
-                  const newMarkAllBtn = markAllBtn.cloneNode(true);
-                  markAllBtn.parentNode.replaceChild(newMarkAllBtn, markAllBtn);
-                  
-                  if (data.unread_count > 0) {
-                    newMarkAllBtn.style.display = 'inline-block';
-                    newMarkAllBtn.addEventListener('click', function(e) {
-                      e.preventDefault();
-                      fetch('/api/notifications/mark-all-read', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        keepalive: true,
-                        headers: {
-                          'Accept': 'application/json',
-                          'X-CSRFToken': window.CSRF_TOKEN,
-                        }
-                      })
-                      .then(response => response.json())
-                      .then(() => loadNotifications())
-                      .catch(error => console.error('Error marking all as read:', error));
-                    });
-                  } else {
-                    newMarkAllBtn.style.display = 'none';
-                  }
-                }
-              }
-            })
-            .catch(error => {
-              console.error('Notification error:', error);
-              const list = document.getElementById('notification-list');
-              if (list) {
-                list.innerHTML = '<li class="text-center p-3 text-danger">Error loading notifications: ' + error.message + '</li>';
-              }
-            });
-        }
-        
-        // Load notifications on page load and refresh every 30 seconds
-        function initNotifications() {
-          const notificationList = document.getElementById('notification-list');
-          console.log('Initializing notifications, element found:', !!notificationList);
-          
-          if (notificationList) {
-            // Load immediately when page loads
-            loadNotifications();
-            
-            // Refresh every 30 seconds
-            setInterval(loadNotifications, 60000);
-            
-            // Also refresh when notification dropdown is opened (hover)
-            const notificationBox = document.querySelector('.notification-box');
-            const notificationDropdown = document.querySelector('.notification-dropdown');
-            if (notificationBox) {
-              // Use mouseenter event for hover
-              notificationBox.addEventListener('mouseenter', function() {
-                console.log('Notification box hovered');
-                loadNotifications();
-              });
-              
-              // Also refresh on click
-              notificationBox.addEventListener('click', function() {
-                console.log('Notification box clicked');
-                setTimeout(loadNotifications, 100);
-              });
-            }
-          } else {
-            console.warn('Notification list element not found');
-          }
-        }
-        
-        // Initialize when DOM is ready - run immediately and also on DOMContentLoaded
-        initNotifications();
-        
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded - reinitializing notifications');
-            initNotifications();
-          });
+      // Password hover reveal
+      document.querySelectorAll('.password-mask').forEach(function(mask) {
+        var m = mask.querySelector('.masked-password');
+        var r = mask.querySelector('.revealed-password');
+        if (m && r) {
+          m.style.display = 'inline';
+          r.style.display = 'none';
+          mask.addEventListener('mouseenter', function() { m.style.display='none'; r.style.display='inline'; });
+          mask.addEventListener('mouseleave', function() { m.style.display='inline'; r.style.display='none'; });
         }
       });
-      
-      // Initialize notifications outside of DOMContentLoaded to ensure it runs
-      (function() {
-        function initNotificationsNow() {
-          const notificationList = document.getElementById('notification-list');
-          if (notificationList) {
-            console.log('Notification system initializing...');
-            
-            function loadNotifications() {
-              console.log('Loading notifications...');
-              fetch('/api/notifications?limit=5&unread_only=1', {
-                method: 'GET',
-                credentials: 'same-origin',
-                headers: {
-                  'Accept': 'application/json',
-                }
-              })
-                .then(response => {
-                  console.log('Notification response status:', response.status);
-                  if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.status);
-                  }
-                  return response.json();
-                })
-                .then(data => {
-                  console.log('Notification data received:', data);
-                  const badge = document.getElementById('notification-badge');
-                  const list = document.getElementById('notification-list');
-                  const markAllBtn = document.getElementById('mark-all-read-btn');
-                  
-                  if (badge) {
-                    if (data.unread_count > 0) {
-                      badge.textContent = data.unread_count;
-                      badge.style.display = 'inline-block';
-                    } else {
-                      badge.style.display = 'none';
-                    }
-                  }
-                  
-                  if (list) {
-                    if (!data.notifications || data.notifications.length === 0) {
-                      list.innerHTML = '<li class="text-center p-3 text-muted">No notifications</li>';
-                      if (markAllBtn) markAllBtn.style.display = 'none';
-                      return;
-                    }
-                    
-                    let html = '';
-                    data.notifications.forEach(function(notif) {
-                      const borderClass = {
-                        'warning': 'b-l-warning',
-                        'success': 'b-l-success',
-                        'danger': 'b-l-danger',
-                        'info': 'b-l-info',
-                        'alert': 'b-l-primary'
-                      }[notif.type] || 'b-l-secondary';
-                      
-                      const link = notif.link || '#';
-                      const readClass = notif.is_read ? '' : 'fw-bold';
-                      const bgClass = notif.is_read ? '' : 'bg-light';
-                      
-                      html += `
-                        <li class="${borderClass} border-4 ${bgClass}">
-                          <a href="${link}" class="d-block p-2 text-decoration-none text-dark ${readClass}" data-notification-id="${notif.id}">
-                            <div class="d-flex justify-content-between align-items-start">
-                              <div class="flex-grow-1">
-                                <div class="fw-bold">${(notif.title || 'Notification').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                                <div class="small text-muted">${(notif.message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                                <div class="small text-muted mt-1">${(notif.time_ago || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
-                              </div>
-                              ${notif.is_read ? '' : '<span class="badge badge-primary">New</span>'}
-                            </div>
-                          </a>
-                        </li>
-                      `;
-                    });
-                    list.innerHTML = html;
-                    
-                    // Mark as read on click
-                    list.querySelectorAll('a[data-notification-id]').forEach(function(link) {
-                      link.addEventListener('click', function(e) {
-                        const notifId = this.getAttribute('data-notification-id');
-                        if (notifId) {
-                          const href = this.getAttribute('href');
-                          const shouldNavigate = href && href !== '#' && href !== 'javascript:void(0)' && href !== 'javascript:void(0);';
-                          if (shouldNavigate) e.preventDefault();
 
-                          const markPromise = fetch(`/api/notifications/${notifId}/read`, {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            keepalive: true,
-                            headers: {
-                              'Accept': 'application/json',
-                              'X-CSRFToken': window.CSRF_TOKEN,
-                            }
-                          })
-                          .then(response => {
-                            if (!response.ok) {
-                              throw new Error('Failed to mark notification as read: ' + response.status);
-                            }
-                            return response.json().catch(() => ({}));
-                          })
-                          .then(() => loadNotifications())
-                          .catch(error => console.error('Error marking notification as read:', error));
-
-                          if (shouldNavigate) {
-                            Promise.race([markPromise, new Promise(resolve => setTimeout(resolve, 250))])
-                              .finally(() => { window.location.href = href; });
-                          }
-                        }
-                      });
-                    });
-                    
-                    // Mark all read button
-                    if (markAllBtn) {
-                      const newMarkAllBtn = markAllBtn.cloneNode(true);
-                      markAllBtn.parentNode.replaceChild(newMarkAllBtn, markAllBtn);
-                      
-                      if (data.unread_count > 0) {
-                        newMarkAllBtn.style.display = 'inline-block';
-                        newMarkAllBtn.addEventListener('click', function(e) {
-                          e.preventDefault();
-                          fetch('/api/notifications/mark-all-read', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            keepalive: true,
-                            headers: {
-                              'Accept': 'application/json',
-                              'X-CSRFToken': window.CSRF_TOKEN,
-                            }
-                          })
-                          .then(response => response.json())
-                          .then(() => loadNotifications())
-                          .catch(error => console.error('Error marking all as read:', error));
-                        });
-                      } else {
-                        newMarkAllBtn.style.display = 'none';
-                      }
-                    }
-                  }
-                })
-                .catch(error => {
-                  console.error('Notification error:', error);
-                  const list = document.getElementById('notification-list');
-                  if (list) {
-                    list.innerHTML = '<li class="text-center p-3 text-danger">Error: ' + error.message + '</li>';
-                  }
-                });
-            }
-            
-            // Load immediately
-            loadNotifications();
-            
-            // Refresh every 30 seconds
-            setInterval(loadNotifications, 60000);
-            
-            // Refresh on hover/click
-            const notificationBox = document.querySelector('.notification-box');
-            if (notificationBox) {
-              notificationBox.addEventListener('mouseenter', loadNotifications);
-              notificationBox.addEventListener('click', function() {
-                setTimeout(loadNotifications, 100);
-              });
-            }
-          }
-        }
-        
-        // Run when DOM is ready
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initNotificationsNow);
-        } else {
-          setTimeout(initNotificationsNow, 100);
-        }
-      })();
-    </script>
-<script>
-// Auto-dismiss flash messages after 5 seconds
-document.addEventListener('DOMContentLoaded', function() {
-    var alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            alert.style.transition = 'opacity 0.5s';
-            alert.style.opacity = '0';
-            setTimeout(function() { alert.remove(); }, 500);
-        }, 5000);
+      // Re-init feather
+      if (typeof feather !== 'undefined') feather.replace();
     });
-
-    // Loading state on form submit buttons
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            var btn = form.querySelector('button[type="submit"]');
-            if (btn && !btn.disabled) {
-                btn.disabled = true;
-                var spinner = btn.querySelector('.spinner-border');
-                if (spinner) {
-                    spinner.classList.remove('d-none');
-                }
-            }
-        });
-    });
-
-    // SweetAlert delete confirmations
-    document.querySelectorAll('form[data-confirm]').forEach(function(form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var msg = form.getAttribute('data-confirm') || 'Are you sure?';
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    title: 'Confirm',
-                    text: msg,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    confirmButtonText: 'Yes, delete'
-                }).then(function(result) {
-                    if (result.isConfirmed) {
-                        form.removeAttribute('data-confirm');
-                        form.submit();
-                    }
-                });
-            } else if (confirm(msg)) {
-                form.removeAttribute('data-confirm');
-                form.submit();
-            }
-        });
-    });
-});
-</script>
-  </body>
+  </script>
+  {% block scriptcontent %}{% endblock %}
+</body>
 </html>
