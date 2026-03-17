@@ -53,6 +53,9 @@
 
   .av-empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
   .av-loading { text-align:center; padding:40px; color:var(--text-muted); font-size:14px; }
+
+  #export-menu a:hover { background:var(--primary-50); color:var(--primary); }
+  #export-menu.show { display:block !important; }
 </style>
 {% endblock %}
 
@@ -76,7 +79,15 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="search-input" placeholder="Search...">
         </div>
-        <a href="{{ url_for('threat_intel.breached_creds_export') }}" class="av-btn" id="export-btn">Export</a>
+        <div style="position:relative;" id="export-wrap">
+          <a href="#" class="av-btn" onclick="document.getElementById('export-menu').classList.toggle('show');event.preventDefault();">Export &#9662;</a>
+          <div id="export-menu" style="display:none;position:absolute;right:0;top:100%;background:var(--bg-white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);padding:4px;min-width:140px;z-index:100;">
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='csv') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">CSV</a>
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='xlsx') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">Excel</a>
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='json') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">JSON</a>
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='pdf') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">PDF</a>
+          </div>
+        </div>
         <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
         {% if current_user.can_edit() %}
         <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
@@ -359,6 +370,13 @@
     document.getElementById('filter-domain').value = '';
     updateClear();
     load();
+  });
+
+  // Close export dropdown on outside click
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('export-menu');
+    var wrap = document.getElementById('export-wrap');
+    if (menu && wrap && !wrap.contains(e.target)) menu.classList.remove('show');
   });
 
   // Initial load

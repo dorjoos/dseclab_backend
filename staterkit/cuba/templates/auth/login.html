@@ -29,6 +29,22 @@
     .alert-danger{background:#fef2f2;color:#dc2626;}
     .alert-success{background:#ecfdf5;color:#059669;}
     .alert-warning{background:#fffbeb;color:#92400e;}
+    @media (prefers-color-scheme: dark) {
+      body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%); }
+      .login-card { background: #1e293b; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+      .login-logo h1 { color: #e2e8f0; }
+      .login-logo p { color: #64748b; }
+      .form-group label { color: #94a3b8; }
+      .form-group input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+      .form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+      .form-group input::placeholder { color: #475569; }
+      .form-check { color: #94a3b8; }
+      .login-footer { color: #64748b; }
+      .login-footer a { color: #3b82f6; }
+      .alert-danger { background: rgba(220,38,38,0.15); color: #fca5a5; }
+      .alert-success { background: rgba(5,150,105,0.15); color: #6ee7b7; }
+      .alert-warning { background: rgba(217,119,6,0.15); color: #fcd34d; }
+    }
   </style>
 </head>
 <body>
