@@ -1,64 +1,20 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_, func
-from sqlalchemy.sql import text
 from datetime import datetime
 import re
+import logging
 
 from . import db
-from .models import User, Company, BreachedCredential, WatchlistEntry, AuditLog, UserActivity
+from .models import User, Company, WatchlistEntry, AuditLog, UserActivity
 from .auth import validate_password, validate_email
 from .audit_helpers import log_audit
 from .security import admin_required
+from .services.elasticsearch_service import es_service
+
+logger = logging.getLogger(__name__)
 
 admin_bp = Blueprint('admin', __name__)
-
-
-def build_domain_match_query(domains):
-    """
-    Build a query filter that matches breached credentials using watchlist entries.
-    
-    Matches based on:
-    - Domain field matches watchlist entry (exact or contains)
-    - Username field contains the watchlist domain
-    - URL field contains the watchlist domain
-    
-    Args:
-        domains: List of domain/IP/values from watchlist (e.g., ['test.com', '1.1.1.2', 'aduu.com'])
-    
-    Returns:
-        SQLAlchemy filter condition
-    """
-    if not domains:
-        return None
-    
-    conditions = []
-    for domain in domains:
-        if not domain:
-            continue
-        domain = domain.lower().strip()
-        if not domain:
-            continue
-        
-        # Match domain field - exact match or contains
-        conditions.append(BreachedCredential.domain.ilike(f'%{domain}%'))
-        conditions.append(func.lower(BreachedCredential.domain) == domain)
-        
-        # Match username field (handles both email format and username format)
-        # For email format: user@test.com, user@e.test.com
-        conditions.append(BreachedCredential.username.ilike(f'%@{domain}'))
-        conditions.append(BreachedCredential.username.ilike(f'%@%.{domain}'))
-        # For username format: if username equals domain
-        conditions.append(func.lower(BreachedCredential.username) == domain)
-        conditions.append(BreachedCredential.username.ilike(f'%{domain}%'))
-        
-        # Match URL field - contains domain
-        conditions.append(BreachedCredential.url.ilike(f'%{domain}%'))
-    
-    # Return None if no conditions, otherwise return or_() with at least one condition
-    if not conditions:
-        return None
-    return or_(*conditions)
 
 
 @admin_bp.route('/admin/users')
@@ -86,7 +42,7 @@ def user_management():
     
     companies = Company.query.order_by(Company.name).all()
     
-    breadcrumb = {"parent": "User Management", "child": "Admin"}
+    breadcrumb = {"parent": "Admin", "child": "User Management"}
     return render_template('admin/user_management.html',
                          users=users,
                          pagination=pagination,
@@ -115,51 +71,51 @@ def add_user():
         if not username or not email or not password:
             flash('All required fields must be filled.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Validate password match
         if password != confirm_password:
             flash('Passwords do not match.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Validate username
         if len(username) < 3 or len(username) > 50:
             flash('Username must be between 3 and 50 characters.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Security: Validate username contains only safe characters
         if not re.match(r'^[a-zA-Z0-9_-]+$', username):
             flash('Username can only contain letters, numbers, underscores, and hyphens.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Validate email
         if not validate_email(email):
             flash('Please enter a valid email address.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Validate password
         is_valid, error_msg = validate_password(password)
         if not is_valid:
             flash(error_msg, 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Validate role
         if role not in ['admin', 'member']:
             flash('Invalid role selected.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Check for existing user
         existing = User.query.filter(or_(User.email == email, User.username == username)).first()
         if existing:
             flash('User with that email or username already exists.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
-                                 breadcrumb={"parent": "Add User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add User"})
         
         # Create user
         user = User(
@@ -183,11 +139,12 @@ def add_user():
         
         db.session.add(user)
         db.session.commit()
-        
+        log_audit("create_user", "user", user.id, f"Created user '{username}'")
+
         flash(f'User "{username}" added successfully.', 'success')
         return redirect(url_for('admin.user_management'))
-    
-    breadcrumb = {"parent": "Add User", "child": "Admin"}
+
+    breadcrumb = {"parent": "Admin", "child": "Add User"}
     return render_template('admin/user_form.html', companies=companies, breadcrumb=breadcrumb)
 
 
@@ -214,31 +171,31 @@ def edit_user(user_id):
         if not username or not email:
             flash('Username and email are required.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
-                                 breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit User"})
         
         # Validate username
         if len(username) < 3 or len(username) > 50:
             flash('Username must be between 3 and 50 characters.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
-                                 breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit User"})
         
         # Security: Validate username
         if not re.match(r'^[a-zA-Z0-9_-]+$', username):
             flash('Username can only contain letters, numbers, underscores, and hyphens.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
-                                 breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit User"})
         
         # Validate email
         if not validate_email(email):
             flash('Please enter a valid email address.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
-                                 breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit User"})
         
         # Validate role
         if role not in ['admin', 'member']:
             flash('Invalid role selected.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
-                                 breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit User"})
         
         # Check for duplicate username/email
         existing = User.query.filter(
@@ -248,7 +205,7 @@ def edit_user(user_id):
         if existing:
             flash('User with that email or username already exists.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
-                                 breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit User"})
         
         # Update user
         user.username = username
@@ -265,14 +222,15 @@ def edit_user(user_id):
             if not is_valid:
                 flash(error_msg, 'warning')
                 return render_template('admin/user_form.html', user=user, companies=companies,
-                                     breadcrumb={"parent": "Edit User", "child": "Admin"})
+                                     breadcrumb={"parent": "Admin", "child": "Edit User"})
             user.set_password(new_password)
         
         db.session.commit()
+        log_audit("update_user", "user", user_id, f"Updated user '{username}'")
         flash(f'User "{username}" updated successfully.', 'success')
         return redirect(url_for('admin.user_management'))
-    
-    breadcrumb = {"parent": "Edit User", "child": "Admin"}
+
+    breadcrumb = {"parent": "Admin", "child": "Edit User"}
     return render_template('admin/user_form.html', user=user, companies=companies, breadcrumb=breadcrumb)
 
 
@@ -294,7 +252,8 @@ def delete_user(user_id):
     
     db.session.delete(user)
     db.session.commit()
-    
+    log_audit("delete_user", "user", user_id, f"Deleted user '{username}'")
+
     flash(f'User "{username}" deleted successfully.', 'success')
     return redirect(url_for('admin.user_management'))
 
@@ -311,24 +270,17 @@ def company_management():
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     companies = pagination.items
     
-    # Get breached credentials count for each company (by domain match including subdomains)
+    # Get breached credentials count for each company via Elasticsearch
     company_stats = {}
     for company in companies:
-        # Get domains to match (company domain + all watchlist entries - domain, url, email, slug, ip_address)
-        domains_to_match = [company.domain]
-        # Get all watchlist entries (all types, not just domains)
-        watchlist_values = [entry.entry_value.strip().lower() for entry in company.watchlist_entries if entry.entry_value]
-        domains_to_match.extend(watchlist_values)
-        
-        # Build query with subdomain and email matching
-        domain_filter = build_domain_match_query(domains_to_match)
-        if domain_filter is not None:
-            breached_count = BreachedCredential.query.filter(domain_filter).count()
+        domains = company.get_match_domains()
+        if domains:
+            stats = es_service.get_stats(domain_filters=domains)
+            company_stats[company.id] = stats['total']
         else:
-            breached_count = 0
-        company_stats[company.id] = breached_count
+            company_stats[company.id] = 0
     
-    breadcrumb = {"parent": "Company Management", "child": "Admin"}
+    breadcrumb = {"parent": "Admin", "child": "Company Management"}
     return render_template('admin/company_management.html', 
                          companies=companies, 
                          pagination=pagination,
@@ -345,38 +297,11 @@ def company_breached_creds(company_id):
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
-    # Get domains to match (company domain + all watchlist entries - domain, url, email, slug, ip_address)
-    domains_to_match = []
-    if company.domain:
-        domains_to_match.append(company.domain.lower().strip())
-    
-    # Get all watchlist entries (all types, not just domains)
-    for entry in company.watchlist_entries:
-        if entry.entry_value:
-            entry_value = entry.entry_value.strip().lower()
-            if entry_value:
-                domains_to_match.append(entry_value)
-    
-    # Remove duplicates and empty strings
-    domains_to_match = list(set([d for d in domains_to_match if d]))
-    
-    # Debug: Log what we're matching (can be removed in production)
-    # print(f"DEBUG: Company: {company.name}, Domains to match: {domains_to_match}")
-    
-    # Build query with subdomain and email matching
-    # Matches: exact domains, subdomains (e.test.com, prod-test.com), emails (@test.com, @erp.test.com), and company_name
-    domain_filter = build_domain_match_query(domains_to_match)
-    if domain_filter is not None:
-        query = BreachedCredential.query.filter(domain_filter)
-    else:
-        query = BreachedCredential.query.filter(False)  # No matches if no domains
-    
-    query = query.order_by(BreachedCredential.created_at.desc())
-    
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    domains = company.get_match_domains()
+    pagination = es_service.search(domain_filters=domains, page=page, per_page=per_page)
     breached_creds = pagination.items
     
-    breadcrumb = {"parent": "Company Management", "child": f"Breached Credentials - {company.name}"}
+    breadcrumb = {"parent": "Admin", "child": f"Breached Credentials - {company.name}"}
     return render_template('admin/company_breached_creds.html',
                          company=company,
                          breached_creds=breached_creds,
@@ -399,20 +324,20 @@ def add_company():
         if not name or not domain:
             flash('Company name and domain are required.', 'warning')
             return render_template('admin/company_form.html',
-                                 breadcrumb={"parent": "Add Company", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add Company"})
         
         # Validate domain format
         if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$', domain):
             flash('Invalid domain format.', 'warning')
             return render_template('admin/company_form.html',
-                                 breadcrumb={"parent": "Add Company", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add Company"})
         
         # Check for existing company
         existing = Company.query.filter_by(domain=domain).first()
         if existing:
             flash('Company with that domain already exists.', 'warning')
             return render_template('admin/company_form.html',
-                                 breadcrumb={"parent": "Add Company", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Add Company"})
         
         company = Company(
             name=name,
@@ -447,13 +372,15 @@ def add_company():
         
         try:
             db.session.commit()
+            log_audit("create_company", "company", company.id, f"Created company '{name}'")
             flash(f'Company "{name}" added successfully with {len(watchlist_entries)} watchlist entries.', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error adding company: {str(e)}', 'danger')
+            flash('An error occurred. Please try again.', 'danger')
+            logger.error("Error: %s", e)
         return redirect(url_for('admin.company_management'))
-    
-    breadcrumb = {"parent": "Add Company", "child": "Admin"}
+
+    breadcrumb = {"parent": "Admin", "child": "Add Company"}
     return render_template('admin/company_form.html', breadcrumb=breadcrumb)
 
 
@@ -470,13 +397,16 @@ def delete_company(company_id):
         return redirect(url_for('admin.company_management'))
 
     try:
+        company_name = company.name
         WatchlistEntry.query.filter_by(company_id=company.id).delete()
         db.session.delete(company)
         db.session.commit()
-        flash(f'Company "{company.name}" deleted successfully.', 'success')
+        log_audit("delete_company", "company", company_id, f"Deleted company '{company_name}'")
+        flash(f'Company "{company_name}" deleted successfully.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deleting company: {str(e)}', 'danger')
+        flash('An error occurred. Please try again.', 'danger')
+        logger.error("Error: %s", e)
 
     return redirect(url_for('admin.company_management'))
 
@@ -498,20 +428,20 @@ def edit_company(company_id):
         if not name or not domain:
             flash('Company name and domain are required.', 'warning')
             return render_template('admin/company_form.html', company=company,
-                                 breadcrumb={"parent": "Edit Company", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit Company"})
         
         # Validate domain format
         if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$', domain):
             flash('Invalid domain format.', 'warning')
             return render_template('admin/company_form.html', company=company,
-                                 breadcrumb={"parent": "Edit Company", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit Company"})
         
         # Check for duplicate domain (excluding current company)
         existing = Company.query.filter(Company.domain == domain, Company.id != company_id).first()
         if existing:
             flash('Company with that domain already exists.', 'warning')
             return render_template('admin/company_form.html', company=company,
-                                 breadcrumb={"parent": "Edit Company", "child": "Admin"})
+                                 breadcrumb={"parent": "Admin", "child": "Edit Company"})
         
         # Update company
         company.name = name
@@ -547,13 +477,15 @@ def edit_company(company_id):
         
         try:
             db.session.commit()
+            log_audit("update_company", "company", company_id, f"Updated company '{name}'")
             flash(f'Company "{name}" updated successfully with {len(watchlist_entries)} watchlist entries.', 'success')
         except Exception as e:
             db.session.rollback()
-            flash(f'Error updating company: {str(e)}', 'danger')
+            flash('An error occurred. Please try again.', 'danger')
+            logger.error("Error: %s", e)
         return redirect(url_for('admin.company_management'))
-    
-    breadcrumb = {"parent": "Edit Company", "child": "Admin"}
+
+    breadcrumb = {"parent": "Admin", "child": "Edit Company"}
     return render_template('admin/company_form.html', company=company, breadcrumb=breadcrumb)
 
 
@@ -606,7 +538,8 @@ def add_watchlist_entry(company_id):
         })
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error("Error: %s", e)
+        return jsonify({'success': False, 'error': 'An error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/admin/companies/<int:company_id>/watchlist/<int:entry_id>/delete', methods=['POST'])
@@ -623,7 +556,8 @@ def delete_watchlist_entry(company_id, entry_id):
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        logger.error("Error: %s", e)
+        return jsonify({'success': False, 'error': 'An error occurred. Please try again.'}), 500
 
 
 @admin_bp.route('/admin/audit-logs')
@@ -676,7 +610,7 @@ def audit_logs():
     action_types = db.session.query(AuditLog.action_type).distinct().all()
     resource_types = db.session.query(AuditLog.resource_type).distinct().all()
     
-    breadcrumb = {"parent": "Audit Logs", "child": "Admin"}
+    breadcrumb = {"parent": "Admin", "child": "Audit Logs"}
     return render_template('admin/audit_logs.html',
                          audit_logs=audit_logs,
                          pagination=pagination,
@@ -731,7 +665,7 @@ def user_activities():
     # Get unique activity types for filters
     activity_types = db.session.query(UserActivity.activity_type).distinct().all()
     
-    breadcrumb = {"parent": "User Activities", "child": "Admin"}
+    breadcrumb = {"parent": "Admin", "child": "User Activities"}
     return render_template('admin/user_activities.html',
                          activities=activities,
                          pagination=pagination,
