@@ -10,7 +10,7 @@
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:35px;padding-left:16px;">#</th>
+            <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
             <th style="width:22%;padding-left:16px;">Company</th>
             <th style="width:18%;">Domain</th>
             <th style="width:12%;">Type</th>
@@ -24,7 +24,7 @@
           {% if companies %}
           {% for company in companies %}
           <tr>
-            <td style="padding-left:16px;" class="m">{{ loop.index }}</td>
+            <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
             <td style="padding-left:16px;font-weight:500;">{{ company.name }}</td>
             <td><span class="av-domain">{{ company.domain }}</span></td>
             <td><span class="av-tag">{{ company.company_type }}</span></td>
