@@ -311,19 +311,20 @@ class ElasticsearchService:
             logger.exception("ES get_stats failed")
             return {"total": 0, "by_type": {}, "by_source": {}, "by_domain": {}}
 
-    def get_daily_trends(self, days=30, domain_filters=None):
-        """Return (labels, data) for a daily date_histogram."""
+    def get_weekly_trends(self, weeks=12, domain_filters=None):
+        """Return (labels, data) for a weekly date_histogram."""
         try:
             query = self._build_query(domain_filters=domain_filters)
-            gte = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+            gte = (datetime.utcnow() - timedelta(weeks=weeks)).strftime("%Y-%m-%d")
             body = {
                 "query": query,
                 "size": 0,
                 "aggs": {
-                    "daily": {
+                    "weekly": {
                         "date_histogram": {
                             "field": "timestamp",
-                            "calendar_interval": "day",
+                            "calendar_interval": "week",
+                            "format": "yyyy-MM-dd",
                             "min_doc_count": 0,
                             "extended_bounds": {
                                 "min": gte,
@@ -335,12 +336,12 @@ class ElasticsearchService:
                 "post_filter": {"range": {"timestamp": {"gte": gte}}},
             }
             resp = self.es.search(index=self.index, body=body)
-            buckets = resp["aggregations"]["daily"]["buckets"]
-            labels = [b["key_as_string"][:10] for b in buckets]
+            buckets = resp["aggregations"]["weekly"]["buckets"]
+            labels = ["W" + str(i + 1) for i in range(len(buckets))]
             data = [b["doc_count"] for b in buckets]
             return labels, data
         except Exception:
-            logger.exception("ES get_daily_trends failed")
+            logger.exception("ES get_weekly_trends failed")
             return [], []
 
     def get_monthly_trends(self, months=12, domain_filters=None):

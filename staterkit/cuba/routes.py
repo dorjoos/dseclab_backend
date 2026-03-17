@@ -17,7 +17,7 @@ def indexPage():
     domain_filters = get_user_watchlist_domains() if user_domain else None
 
     stats = es_service.get_stats(domain_filters=domain_filters)
-    chart_labels, chart_data = es_service.get_daily_trends(days=30, domain_filters=domain_filters)
+    chart_labels, chart_data = es_service.get_weekly_trends(weeks=12, domain_filters=domain_filters)
     latest_events = es_service.get_recent(limit=10, domain_filters=domain_filters)
 
     by_type = stats.get('by_type', {})
