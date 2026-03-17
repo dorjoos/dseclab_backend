@@ -42,13 +42,11 @@ def user_management():
     
     companies = Company.query.order_by(Company.name).all()
     
-    breadcrumb = {"parent": "Admin", "child": "User Management"}
     return render_template('admin/user_management.html',
                          users=users,
                          pagination=pagination,
                          companies=companies,
-                         search=search,
-                         breadcrumb=breadcrumb)
+                         search=search)
 
 
 @admin_bp.route('/admin/users/add', methods=['GET', 'POST'])
@@ -280,12 +278,10 @@ def company_management():
         else:
             company_stats[company.id] = 0
     
-    breadcrumb = {"parent": "Admin", "child": "Company Management"}
-    return render_template('admin/company_management.html', 
-                         companies=companies, 
+    return render_template('admin/company_management.html',
+                         companies=companies,
                          pagination=pagination,
-                         company_stats=company_stats,
-                         breadcrumb=breadcrumb)
+                         company_stats=company_stats)
 
 
 @admin_bp.route('/admin/companies/<int:company_id>/breached-creds')
@@ -301,12 +297,10 @@ def company_breached_creds(company_id):
     pagination = es_service.search(domain_filters=domains, page=page, per_page=per_page)
     breached_creds = pagination.items
     
-    breadcrumb = {"parent": "Admin", "child": f"Breached Credentials - {company.name}"}
     return render_template('admin/company_breached_creds.html',
                          company=company,
                          breached_creds=breached_creds,
-                         pagination=pagination,
-                         breadcrumb=breadcrumb)
+                         pagination=pagination)
 
 
 @admin_bp.route('/admin/companies/add', methods=['GET', 'POST'])
@@ -610,13 +604,11 @@ def audit_logs():
     action_types = db.session.query(AuditLog.action_type).distinct().all()
     resource_types = db.session.query(AuditLog.resource_type).distinct().all()
     
-    breadcrumb = {"parent": "Admin", "child": "Audit Logs"}
     return render_template('admin/audit_logs.html',
                          audit_logs=audit_logs,
                          pagination=pagination,
                          action_types=[a[0] for a in action_types],
-                         resource_types=[r[0] for r in resource_types],
-                         breadcrumb=breadcrumb)
+                         resource_types=[r[0] for r in resource_types])
 
 
 @admin_bp.route('/admin/user-activities')
@@ -665,10 +657,8 @@ def user_activities():
     # Get unique activity types for filters
     activity_types = db.session.query(UserActivity.activity_type).distinct().all()
     
-    breadcrumb = {"parent": "Admin", "child": "User Activities"}
     return render_template('admin/user_activities.html',
                          activities=activities,
                          pagination=pagination,
-                         activity_types=[a[0] for a in activity_types],
-                         breadcrumb=breadcrumb)
+                         activity_types=[a[0] for a in activity_types])
 
