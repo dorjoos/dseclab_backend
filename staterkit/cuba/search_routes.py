@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_
-from . import db
-from .models import BreachedCredential, Company, User
+from .api_utils import sanitize_input
+from .models import Company
+from .security import get_user_watchlist_domains
+from .services.elasticsearch_service import es_service
 
 search_bp = Blueprint('search', __name__)
 
@@ -10,50 +12,32 @@ search_bp = Blueprint('search', __name__)
 @search_bp.route('/api/search')
 @login_required
 def search():
-    """Global search endpoint for header search"""
-    query = request.args.get('q', '').strip()
-    
+    query = sanitize_input(request.args.get('q', ''))
     if not query or len(query) < 2:
         return jsonify([])
-    
+
     results = []
-    
-    # Search breached credentials
-    creds_query = BreachedCredential.query.filter(
-        or_(
-            BreachedCredential.username.ilike(f'%{query}%'),
-            BreachedCredential.domain.ilike(f'%{query}%'),
-            BreachedCredential.source.ilike(f'%{query}%'),
-            BreachedCredential.type.ilike(f'%{query}%'),
-            BreachedCredential.url.ilike(f'%{query}%')
-        )
-    ).limit(5).all()
-    
-    # Filter by company domain for members
-    if current_user.role != 'admin' and not current_user.isAdmin:
-        user_domain = current_user.company_domain
-        creds_query = [c for c in creds_query if c.domain == user_domain]
-    
-    for cred in creds_query:
-        display_name = f"{cred.username or 'N/A'}"
+
+    domain_filters = None
+    if not current_user.is_admin_user:
+        domain_filters = get_user_watchlist_domains()
+
+    pagination = es_service.search(query_text=query, domain_filters=domain_filters, per_page=5)
+    for cred in pagination.items:
+        display_name = cred.username or 'N/A'
         if cred.domain:
             display_name += f" ({cred.domain})"
         results.append({
             'name': display_name,
-            'url': f'/threat-intelligence/breached-creds/{cred.id}',
+            'url': f'/threat-intelligence/breached-creds/{cred.es_id}',
             'type': 'Breached Credential',
             'icon': 'shield'
         })
-    
-    # Search companies (admin only)
-    if current_user.role == 'admin' or current_user.isAdmin:
+
+    if current_user.is_admin_user:
         companies = Company.query.filter(
-            or_(
-                Company.name.ilike(f'%{query}%'),
-                Company.domain.ilike(f'%{query}%')
-            )
+            or_(Company.name.ilike(f'%{query}%'), Company.domain.ilike(f'%{query}%'))
         ).limit(3).all()
-        
         for company in companies:
             results.append({
                 'name': f"{company.name} ({company.domain})",
@@ -61,6 +45,5 @@ def search():
                 'type': 'Company',
                 'icon': 'briefcase'
             })
-    
-    return jsonify(results)
 
+    return jsonify(results)

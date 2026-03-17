@@ -1,9 +1,12 @@
 from flask import Blueprint, jsonify, request
 from flask_login import login_required, current_user
 from datetime import datetime
+import logging
 from . import db
 from .models import Notification
 from .api_utils import json_error, json_success
+
+logger = logging.getLogger(__name__)
 
 notification_bp = Blueprint('notifications', __name__)
 
@@ -43,9 +46,8 @@ def get_notifications():
             'unread_count': unread_count
         })
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return json_error(str(e), status_code=500, notifications=[], unread_count=0)
+        logger.exception("Error fetching notifications")
+        return json_error("An error occurred", status_code=500, notifications=[], unread_count=0)
 
 
 @notification_bp.route('/api/notifications/<int:id>/read', methods=['POST'])
