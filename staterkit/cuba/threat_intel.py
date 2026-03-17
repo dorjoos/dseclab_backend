@@ -340,6 +340,15 @@ def breached_creds_add():
 
         es_id = es_service.index_document(doc)
         if es_id:
+            # Real-time broadcast
+            from .ws_events import broadcast_new_breach
+            broadcast_new_breach({
+                'es_id': es_id,
+                'username': doc.get('username', ''),
+                'domain': doc.get('domain', ''),
+                'source': doc.get('source', ''),
+                'type': doc.get('type', ''),
+            })
             if doc.get('domain'):
                 _notify_new_breach(es_id, doc.get('domain'), doc.get('domain'), doc.get('username', ''))
             cache.clear()

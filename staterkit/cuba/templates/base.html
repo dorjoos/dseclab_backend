@@ -154,6 +154,25 @@
   </script>
   <!-- Toast container -->
   <div class="dsec-toast-container" id="toast-container"></div>
+  <!-- SocketIO for real-time updates -->
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script>
+    var socket = null;
+    try {
+      socket = io({ transports: ['websocket', 'polling'] });
+      socket.on('connect', function() { console.log('WS connected'); });
+      socket.on('new_breach', function(data) {
+        if (typeof showToast === 'function') {
+          showToast('New breach: ' + (data.username || data.domain || 'Unknown'), 'warning');
+        }
+        // Refresh breached creds table if on that page
+        if (typeof load === 'function') load();
+      });
+      socket.on('stats_update', function(data) {
+        console.log('Stats updated', data);
+      });
+    } catch(e) { console.log('WS not available'); }
+  </script>
   {% block scriptcontent %}{% endblock %}
 </body>
 </html>

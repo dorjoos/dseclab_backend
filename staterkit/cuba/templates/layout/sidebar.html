@@ -43,6 +43,9 @@
     {% endif %}
 
     <div class="dsec-nav-section" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border);">
+      <a href="/api/docs/" class="dsec-nav-item" target="_blank">
+        <i data-feather="book-open"></i> API Docs
+      </a>
       <a href="{{ url_for('auth.profile') }}" class="dsec-nav-item {% if request.endpoint == 'auth.profile' %}active{% endif %}">
         <i data-feather="settings"></i> Settings
       </a>

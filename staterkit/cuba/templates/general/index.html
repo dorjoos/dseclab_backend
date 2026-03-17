@@ -2,205 +2,330 @@
 
 {% block content %}
 <div class="container-fluid p-0">
-  <!-- Welcome Banner -->
-  <div class="dsec-welcome-banner mb-4">
-    <h2>Welcome to D-sec Lab</h2>
-    <p>Threat Intelligence Dashboard — monitor and manage breached credentials across your organization.</p>
-  </div>
-
-  <!-- Stat Cards -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background: #eff4ff;">
-          <svg style="color:#1a56db;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ total_leaks|format_number }}</div>
-          <div class="dsec-stat-label">Total Leaks</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background: #fef3c7;">
-          <svg style="color:#d97706;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ consumer_leaks|format_number }}</div>
-          <div class="dsec-stat-label">{{ consumer_change_text }} Leaks</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background: #ecfdf5;">
-          <svg style="color:#059669;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ corporate_leaks|format_number }}</div>
-          <div class="dsec-stat-label">{{ corporate_change_text }} Leaks</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background: #fef2f2;">
-          <svg style="color:#dc2626;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ infected_ips_count|format_number }}</div>
-          <div class="dsec-stat-label">Infected IPs</div>
-        </div>
-      </div>
+  <!-- Dashboard toolbar -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-size:13px;color:var(--text-muted);">Drag widgets to rearrange. Layout saves automatically.</div>
+    <div style="display:flex;gap:8px;">
+      <button class="av-btn" id="add-widget-btn" onclick="document.getElementById('widget-picker').style.display=document.getElementById('widget-picker').style.display==='none'?'block':'none'">+ Add Widget</button>
+      <button class="av-btn" style="color:var(--text-muted);" onclick="resetDashboard()">Reset</button>
     </div>
   </div>
 
-  <!-- Charts Row -->
-  <div class="row g-3 mb-4">
-    <div class="col-lg-7">
-      <div class="card">
-        <div class="card-header">
-          <h5>Leak Detection Trends</h5>
-          <span style="font-size:12px;color:var(--text-muted);">Last 12 weeks</span>
-        </div>
-        <div class="card-body">
-          <div id="leakTrendsChart"></div>
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-5">
-      <div class="card">
-        <div class="card-header">
-          <h5>Source Distribution</h5>
-        </div>
-        <div class="card-body">
-          <div id="categoryChart"></div>
-        </div>
-      </div>
-    </div>
+  <!-- Widget picker dropdown -->
+  <div id="widget-picker" style="display:none;background:var(--bg-white);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+    <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Available Widgets</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="widget-options"></div>
   </div>
 
-  <!-- Type Distribution -->
-  <div class="row g-3 mb-4">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5>Leak Distribution by Type</h5>
-        </div>
-        <div class="card-body">
-          <div id="typeChart"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Latest Security Events -->
-  <div class="card">
-    <div class="card-header">
-      <h5>Latest Security Events</h5>
-      <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm">View All</a>
-    </div>
-    <div class="card-body p-0">
-      {% if latest_events %}
-      <div class="table-responsive">
-        <table class="av-table">
-          <thead>
-            <tr>
-              <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
-              <th style="padding-left:20px;width:25%;">Username</th>
-              <th style="width:15%;">Domain</th>
-              <th style="width:20%;">Source</th>
-              <th style="width:10%;" class="c">Type</th>
-              <th style="width:12%;">Date</th>
-              <th style="width:60px;" class="r">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for event in latest_events %}
-            <tr>
-              <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-              <td style="padding-left:20px;font-weight:500;">{{ event.username or '—' }}</td>
-              <td><span class="av-domain">{{ event.domain or '—' }}</span></td>
-              <td class="m">{{ event.source or '—' }}</td>
-              <td class="c"><span class="av-tag av-tag-blue">{{ event.type or '—' }}</span></td>
-              <td class="m">{{ event.created_at.strftime('%b %d') if event.created_at else '—' }}</td>
-              <td class="r"><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="av-view-link">View</a></td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="dsec-empty">
-        <i data-feather="inbox"></i>
-        <p>No security events found</p>
-      </div>
-      {% endif %}
-    </div>
-  </div>
+  <!-- Dashboard grid -->
+  <div class="dash-grid" id="dash-grid"></div>
 </div>
 {% endblock %}
 
 {% block scriptcontent %}
 <script src="{{ url_for('static', filename='assets/js/chart/apex-chart/apex-chart.js') }}"></script>
 <script>
+(function() {
+  var grid = document.getElementById('dash-grid');
+  var picker = document.getElementById('widget-options');
   var primaryColor = '#1a56db';
-  var mutedColor = '#94a3b8';
 
-  // Leak Trends Chart
-  var trendsEl = document.getElementById('leakTrendsChart');
-  if (trendsEl) {
-    new ApexCharts(trendsEl, {
-      series: [{ name: 'Leaks', data: {{ chart_data|tojson }} }],
-      chart: { type: 'area', height: 300, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-      colors: [primaryColor],
-      stroke: { curve: 'smooth', width: 2 },
-      fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05 } },
-      dataLabels: { enabled: false },
-      xaxis: { categories: {{ chart_labels|tojson }}, labels: { style: { fontSize: '11px', colors: mutedColor } } },
-      yaxis: { labels: { style: { fontSize: '11px', colors: mutedColor }, formatter: function(v) { return Math.floor(v); } } },
-      grid: { borderColor: '#f1f5f9', strokeDashArray: 3 },
-      tooltip: { theme: 'light', style: { fontSize: '12px' } }
-    }).render();
+  // Widget registry
+  var widgets = {
+    welcome: { title: 'Welcome', size: 'dash-w-12', render: function(body) {
+      body.style.cssText = 'background:linear-gradient(135deg,#1a56db,#7c3aed,#ec4899);padding:28px;color:#fff;border-radius:0 0 12px 12px;';
+      var h = document.createElement('div');
+      h.style.cssText = 'font-size:20px;font-weight:700;';
+      h.textContent = 'Welcome to D-sec Lab';
+      var p = document.createElement('div');
+      p.style.cssText = 'font-size:13px;opacity:0.8;margin-top:4px;';
+      p.textContent = 'Threat Intelligence Dashboard';
+      body.appendChild(h);
+      body.appendChild(p);
+    }},
+    stats: { title: 'Statistics', size: 'dash-w-12', render: function(body) {
+      body.style.padding = '0';
+      var row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:0;';
+      var stats = {{ [
+        {'label':'Total Leaks','value':total_leaks|format_number,'color':'#1a56db','bg':'#eff4ff'},
+        {'label':consumer_change_text+' Leaks','value':consumer_leaks|format_number,'color':'#d97706','bg':'#fef3c7'},
+        {'label':corporate_change_text+' Leaks','value':corporate_leaks|format_number,'color':'#059669','bg':'#ecfdf5'},
+        {'label':'Infected IPs','value':infected_ips_count|format_number,'color':'#dc2626','bg':'#fef2f2'}
+      ]|tojson }};
+      stats.forEach(function(s, i) {
+        var cell = document.createElement('div');
+        cell.style.cssText = 'padding:20px;' + (i < 3 ? 'border-right:1px solid var(--border-light);' : '');
+        cell.textContent = '';
+        var val = document.createElement('div');
+        val.style.cssText = 'font-size:24px;font-weight:700;letter-spacing:-0.02em;';
+        val.textContent = s.value;
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-top:4px;';
+        lbl.textContent = s.label;
+        cell.appendChild(val);
+        cell.appendChild(lbl);
+        row.appendChild(cell);
+      });
+      body.appendChild(row);
+    }},
+    trends: { title: 'Leak Trends', size: 'dash-w-8', render: function(body) {
+      var el = document.createElement('div');
+      el.id = 'chart-trends-' + Date.now();
+      body.appendChild(el);
+      new ApexCharts(el, {
+        series: [{ name: 'Leaks', data: {{ chart_data|tojson }} }],
+        chart: { type:'area', height:260, toolbar:{show:false}, fontFamily:'Inter,sans-serif' },
+        colors: [primaryColor], stroke:{curve:'smooth',width:2},
+        fill: {type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.4,opacityTo:0.05}},
+        dataLabels:{enabled:false},
+        xaxis: {categories:{{ chart_labels|tojson }},labels:{style:{fontSize:'10px',colors:'var(--text-muted)'}}},
+        yaxis: {labels:{style:{fontSize:'10px',colors:'var(--text-muted)'},formatter:function(v){return v>=1000?(v/1000).toFixed(0)+'k':Math.floor(v);}}},
+        grid:{borderColor:'var(--border-light)',strokeDashArray:3},
+        tooltip:{theme:'light'}
+      }).render();
+    }},
+    distribution: { title: 'Source Distribution', size: 'dash-w-4', render: function(body) {
+      var el = document.createElement('div');
+      el.id = 'chart-dist-' + Date.now();
+      body.appendChild(el);
+      var catData = {{ category_distribution|tojson }};
+      new ApexCharts(el, {
+        series: Object.values(catData), chart:{type:'donut',height:240,fontFamily:'Inter,sans-serif'},
+        labels: Object.keys(catData), colors:['#1a56db','#0891b2','#d97706','#059669','#dc2626'],
+        plotOptions:{pie:{donut:{size:'65%'}}}, legend:{position:'bottom',fontSize:'11px'},
+        dataLabels:{enabled:true,formatter:function(v){return Math.round(v)+'%';},style:{fontSize:'10px'}}
+      }).render();
+    }},
+    events: { title: 'Latest Events', size: 'dash-w-12', render: function(body) {
+      body.style.padding = '0';
+      var tbl = document.createElement('table');
+      tbl.className = 'av-table';
+      tbl.style.tableLayout = 'fixed';
+      var theadRow = document.createElement('thead');
+      var tr0 = document.createElement('tr');
+      var cols = [
+        {text:'Username',style:'padding-left:16px;width:25%'},
+        {text:'Domain',style:'width:15%'},
+        {text:'Source',style:'width:20%'},
+        {text:'Type',style:'width:10%',cls:'c'},
+        {text:'Date',style:'width:10%'},
+        {text:'',style:'width:50px'}
+      ];
+      cols.forEach(function(c) {
+        var th = document.createElement('th');
+        th.style.cssText = c.style;
+        th.textContent = c.text;
+        if (c.cls) th.className = c.cls;
+        tr0.appendChild(th);
+      });
+      theadRow.appendChild(tr0);
+      tbl.appendChild(theadRow);
+      var tb = document.createElement('tbody');
+      {% for event in latest_events %}
+      (function() {
+        var tr = document.createElement('tr');
+        var td1 = document.createElement('td');
+        td1.style.cssText = 'padding-left:16px;font-weight:500';
+        td1.textContent = {{ (event.username or "\u2014")|tojson }};
+        var td2 = document.createElement('td');
+        var sp2 = document.createElement('span');
+        sp2.className = 'av-domain';
+        sp2.textContent = {{ (event.domain or "\u2014")|tojson }};
+        td2.appendChild(sp2);
+        var td3 = document.createElement('td');
+        td3.className = 'm';
+        td3.textContent = {{ (event.source or "\u2014")|tojson }};
+        var td4 = document.createElement('td');
+        td4.className = 'c';
+        var sp4 = document.createElement('span');
+        sp4.className = 'av-tag av-tag-blue';
+        sp4.textContent = {{ (event.type or "\u2014")|tojson }};
+        td4.appendChild(sp4);
+        var td5 = document.createElement('td');
+        td5.className = 'm';
+        td5.textContent = {{ (event.created_at.strftime("%b %d") if event.created_at else "\u2014")|tojson }};
+        var td6 = document.createElement('td');
+        var a6 = document.createElement('a');
+        a6.href = '/threat-intelligence/breached-creds/' + {{ event.es_id|tojson }};
+        a6.className = 'av-view-link';
+        a6.textContent = 'View';
+        td6.appendChild(a6);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tr.appendChild(td4);
+        tr.appendChild(td5);
+        tr.appendChild(td6);
+        tb.appendChild(tr);
+      })();
+      {% endfor %}
+      {% if not latest_events %}
+      var emptyTr = document.createElement('tr');
+      var emptyTd = document.createElement('td');
+      emptyTd.setAttribute('colspan', '6');
+      emptyTd.style.cssText = 'text-align:center;padding:30px;color:var(--text-muted)';
+      emptyTd.textContent = 'No events';
+      emptyTr.appendChild(emptyTd);
+      tb.appendChild(emptyTr);
+      {% endif %}
+      tbl.appendChild(tb);
+      body.appendChild(tbl);
+    }},
+    type_chart: { title: 'Type Distribution', size: 'dash-w-6', render: function(body) {
+      var el = document.createElement('div');
+      el.id = 'chart-type-' + Date.now();
+      body.appendChild(el);
+      var typeData = {{ type_chart_data|tojson }};
+      var labels = Object.keys(typeData).map(function(l){return l.charAt(0).toUpperCase()+l.slice(1);});
+      new ApexCharts(el, {
+        series:[{name:'Leaks',data:Object.values(typeData)}],
+        chart:{type:'bar',height:220,toolbar:{show:false},fontFamily:'Inter,sans-serif'},
+        colors:[primaryColor], plotOptions:{bar:{borderRadius:4,columnWidth:'50%'}},
+        dataLabels:{enabled:false},
+        xaxis:{categories:labels,labels:{style:{fontSize:'11px',colors:'var(--text-muted)'}}},
+        yaxis:{labels:{style:{fontSize:'10px',colors:'var(--text-muted)'}}},
+        grid:{borderColor:'var(--border-light)',strokeDashArray:3}
+      }).render();
+    }},
+  };
+
+  // Default layout
+  var defaultLayout = ['welcome','stats','trends','distribution','events'];
+
+  function getLayout() {
+    try {
+      var saved = localStorage.getItem('dsec-dashboard-layout');
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return defaultLayout.slice();
   }
 
-  // Category Distribution (Donut)
-  var catEl = document.getElementById('categoryChart');
-  if (catEl) {
-    var catData = {{ category_distribution|tojson }};
-    var catLabels = Object.keys(catData);
-    var catValues = Object.values(catData);
-    new ApexCharts(catEl, {
-      series: catValues,
-      chart: { type: 'donut', height: 300, fontFamily: 'Inter, sans-serif' },
-      labels: catLabels,
-      colors: ['#1a56db', '#0891b2', '#d97706', '#059669', '#dc2626'],
-      plotOptions: { pie: { donut: { size: '65%' } } },
-      legend: { position: 'bottom', fontSize: '12px' },
-      dataLabels: { enabled: true, formatter: function(val) { return Math.round(val) + '%'; }, style: { fontSize: '11px' } }
-    }).render();
+  function saveLayout() {
+    var ids = [];
+    grid.querySelectorAll('.dash-widget').forEach(function(w) { ids.push(w.getAttribute('data-widget')); });
+    localStorage.setItem('dsec-dashboard-layout', JSON.stringify(ids));
   }
 
-  // Type Distribution (Bar)
-  var typeEl = document.getElementById('typeChart');
-  if (typeEl) {
-    var typeData = {{ type_chart_data|tojson }};
-    var typeLabels = Object.keys(typeData).map(function(l) { return l.charAt(0).toUpperCase() + l.slice(1); });
-    var typeValues = Object.values(typeData);
-    new ApexCharts(typeEl, {
-      series: [{ name: 'Leaks', data: typeValues }],
-      chart: { type: 'bar', height: 280, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-      colors: [primaryColor],
-      plotOptions: { bar: { borderRadius: 4, columnWidth: '50%' } },
-      dataLabels: { enabled: false },
-      xaxis: { categories: typeLabels, labels: { style: { fontSize: '12px', colors: mutedColor } } },
-      yaxis: { labels: { style: { fontSize: '11px', colors: mutedColor } } },
-      grid: { borderColor: '#f1f5f9', strokeDashArray: 3 }
-    }).render();
+  function createWidget(id) {
+    var cfg = widgets[id];
+    if (!cfg) return null;
+    var w = document.createElement('div');
+    w.className = 'dash-widget ' + cfg.size;
+    w.setAttribute('data-widget', id);
+    w.draggable = true;
+
+    var header = document.createElement('div');
+    header.className = 'dash-widget-header';
+    var titleSpan = document.createElement('span');
+    titleSpan.textContent = cfg.title;
+    var controls = document.createElement('div');
+    controls.style.cssText = 'display:flex;align-items:center;gap:4px;';
+    var dragHandle = document.createElement('span');
+    dragHandle.className = 'dash-drag-handle';
+    dragHandle.textContent = '\u2261';
+    var closeBtn = document.createElement('button');
+    closeBtn.className = 'dash-widget-close';
+    closeBtn.textContent = '\u00d7';
+    closeBtn.addEventListener('click', function() { w.remove(); saveLayout(); updatePicker(); });
+    controls.appendChild(dragHandle);
+    controls.appendChild(closeBtn);
+    header.appendChild(titleSpan);
+    header.appendChild(controls);
+
+    var body = document.createElement('div');
+    body.className = 'dash-widget-body';
+    cfg.render(body);
+
+    w.appendChild(header);
+    w.appendChild(body);
+
+    // Drag events
+    w.addEventListener('dragstart', function(e) {
+      w.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', id);
+    });
+    w.addEventListener('dragend', function() {
+      w.classList.remove('dragging');
+      grid.querySelectorAll('.dash-placeholder').forEach(function(p) { p.remove(); });
+      saveLayout();
+    });
+
+    return w;
   }
 
-  // Re-init feather
+  function renderDashboard() {
+    grid.textContent = '';
+    var layout = getLayout();
+    layout.forEach(function(id) {
+      var w = createWidget(id);
+      if (w) grid.appendChild(w);
+    });
+    updatePicker();
+    setupDragDrop();
+  }
+
+  function updatePicker() {
+    picker.textContent = '';
+    var current = getLayout();
+    Object.keys(widgets).forEach(function(id) {
+      if (current.indexOf(id) === -1) {
+        var btn = document.createElement('button');
+        btn.style.cssText = 'padding:6px 14px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);cursor:pointer;transition:all 0.15s;';
+        btn.textContent = '+ ' + widgets[id].title;
+        btn.addEventListener('click', function() {
+          var w = createWidget(id);
+          if (w) { grid.appendChild(w); saveLayout(); updatePicker(); setupDragDrop(); }
+        });
+        btn.addEventListener('mouseover', function() { this.style.borderColor='var(--primary)'; this.style.color='var(--primary)'; });
+        btn.addEventListener('mouseout', function() { this.style.borderColor='var(--border)'; this.style.color='var(--text)'; });
+        picker.appendChild(btn);
+      }
+    });
+    if (!picker.children.length) {
+      var msg = document.createElement('span');
+      msg.style.cssText = 'font-size:12px;color:var(--text-muted);';
+      msg.textContent = 'All widgets are on the dashboard';
+      picker.appendChild(msg);
+    }
+  }
+
+  function setupDragDrop() {
+    grid.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      var dragging = grid.querySelector('.dragging');
+      var afterEl = getDragAfterElement(grid, e.clientY);
+      if (afterEl) {
+        grid.insertBefore(dragging, afterEl);
+      } else {
+        grid.appendChild(dragging);
+      }
+    });
+  }
+
+  function getDragAfterElement(container, y) {
+    var elements = Array.from(container.querySelectorAll('.dash-widget:not(.dragging)'));
+    return elements.reduce(function(closest, child) {
+      var box = child.getBoundingClientRect();
+      var offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset: offset, element: child };
+      }
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  window.resetDashboard = function() {
+    localStorage.removeItem('dsec-dashboard-layout');
+    renderDashboard();
+    if (typeof showToast === 'function') showToast('Dashboard reset to default', 'info');
+  };
+
+  // Init
+  renderDashboard();
   if (typeof feather !== 'undefined') feather.replace();
+})();
 </script>
 {% endblock %}

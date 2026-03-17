@@ -8,6 +8,7 @@ from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_socketio import SocketIO
 import os
 
 db = SQLAlchemy()
@@ -16,6 +17,7 @@ jwt = JWTManager()
 cache = Cache()
 csrf = CSRFProtect()
 limiter = Limiter(key_func=get_remote_address)
+socketio = SocketIO()
 
 
 def create_app(config_name=None):
@@ -35,6 +37,7 @@ def create_app(config_name=None):
     cache.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
+    socketio.init_app(app, cors_allowed_origins="*")
     Environment(app)
 
     # Init Elasticsearch service
@@ -130,6 +133,9 @@ def create_app(config_name=None):
     app.register_blueprint(search_bp)
     from .notification_routes import notification_bp
     app.register_blueprint(notification_bp)
+
+    # Register WebSocket events
+    from . import ws_events  # noqa: F401
 
     @app.errorhandler(403)
     def forbidden_error(error):

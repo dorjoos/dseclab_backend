@@ -1121,10 +1121,27 @@ body {
 .av-table tbody td.r { text-align:right; }
 .av-table tbody td.c { text-align:center; }
 .av-domain { color:var(--primary); font-weight:500; }
-.av-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--primary); color:#dbeafe; }
+.av-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--bg); color:var(--text-secondary); }
+.av-tag-blue { background:#eff6ff; color:#1d4ed8; }
+.av-tag-purple { background:#f5f3ff; color:#6d28d9; }
+.av-tag-teal { background:#ecfeff; color:#0e7490; }
+.av-tag-green { background:#ecfdf5; color:#059669; }
+.av-tag-red { background:#fef2f2; color:#dc2626; }
+.av-tag-orange { background:#fff7ed; color:#c2410c; }
+.av-tag-pink { background:#fdf2f8; color:#be185d; }
+.av-tag-indigo { background:#eef2ff; color:#4338ca; }
 .av-tag-danger { background:#fef2f2; color:#dc2626; }
 .av-tag-success { background:#ecfdf5; color:#059669; }
 .av-tag-warning { background:#fffbeb; color:#92400e; }
+.av-tag-info { background:#ecfeff; color:#0e7490; }
+[data-theme="dark"] .av-tag-blue { background:rgba(29,78,216,0.15); color:#93bbfd; }
+[data-theme="dark"] .av-tag-purple { background:rgba(109,40,217,0.15); color:#c4b5fd; }
+[data-theme="dark"] .av-tag-teal { background:rgba(14,116,144,0.15); color:#67e8f9; }
+[data-theme="dark"] .av-tag-green { background:rgba(5,150,105,0.15); color:#6ee7b7; }
+[data-theme="dark"] .av-tag-red { background:rgba(220,38,38,0.15); color:#fca5a5; }
+[data-theme="dark"] .av-tag-orange { background:rgba(194,65,12,0.15); color:#fdba74; }
+[data-theme="dark"] .av-tag-pink { background:rgba(190,24,93,0.15); color:#f9a8d4; }
+[data-theme="dark"] .av-tag-indigo { background:rgba(67,56,202,0.15); color:#a5b4fc; }
 .av-view-link { color:var(--primary); text-decoration:none; font-size:13px; font-weight:500; }
 .av-view-link:hover { text-decoration:underline; }
 .av-action-link { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:4px; color:var(--text-muted); text-decoration:none; transition:all 0.15s; }
@@ -1138,3 +1155,108 @@ body {
 .av-pag-nav a:hover { background:var(--bg); }
 .av-pag-nav .act { background:var(--primary); color:#fff; }
 .av-pag-nav .dis { opacity:0.3; pointer-events:none; }
+
+/* ===== Draggable Dashboard Widgets ===== */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  min-height: 200px;
+}
+
+.dash-widget {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow 0.2s, opacity 0.2s;
+  cursor: grab;
+  position: relative;
+}
+
+.dash-widget:active { cursor: grabbing; }
+
+.dash-widget.dragging {
+  opacity: 0.5;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.dash-widget-header {
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: grab;
+  user-select: none;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dash-widget-header .dash-drag-handle {
+  color: var(--text-muted);
+  cursor: grab;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.dash-widget-body {
+  padding: 16px;
+}
+
+.dash-widget-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.dash-widget-close:hover {
+  background: var(--border-light);
+  color: var(--danger);
+}
+
+/* Widget sizes */
+.dash-w-4 { grid-column: span 4; }
+.dash-w-6 { grid-column: span 6; }
+.dash-w-8 { grid-column: span 8; }
+.dash-w-12 { grid-column: span 12; }
+
+@media (max-width: 991px) {
+  .dash-w-4, .dash-w-6, .dash-w-8 { grid-column: span 12; }
+}
+
+/* Widget placeholder during drag */
+.dash-placeholder {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--primary-50);
+  min-height: 100px;
+}
+
+/* Add widget button */
+.dash-add-widget {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s;
+  grid-column: span 4;
+}
+
+.dash-add-widget:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-50);
+}
