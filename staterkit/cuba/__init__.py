@@ -34,6 +34,10 @@ def create_app(config_name=None):
     limiter.init_app(app)
     Environment(app)
 
+    # Init Elasticsearch service
+    from .services.elasticsearch_service import es_service
+    es_service.init_app(app)
+
     @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf
