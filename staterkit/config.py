@@ -31,7 +31,10 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', SECRET_KEY)
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///cuba.db')
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        'DATABASE_URL',
+        'sqlite:///' + os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'cuba.db')
+    )
     SESSION_COOKIE_SECURE = False
     CACHE_TYPE = 'simple'
     ALLOW_SELF_REGISTRATION = True
