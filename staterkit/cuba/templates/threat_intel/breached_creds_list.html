@@ -296,49 +296,49 @@
 {% block content %}
 <div class="container-fluid p-0">
   <div class="card" style="overflow:hidden;">
-    <!-- Toolbar -->
-    <div class="av-toolbar" style="border-bottom:1px solid var(--border-light);">
-      <div class="av-toolbar-left">
-        <div class="av-segmented">
-          {% set date_opts = [('all','All'),('today','Today'),('week','Week'),('month','Month')] %}
-          {% for val, label in date_opts %}
-          <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=val, type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}" class="{% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}active{% endif %}">{{ label }}</a>
-          {% endfor %}
+    <!-- Single unified form -->
+    <form method="GET" id="filter-form">
+      <input type="hidden" name="date_filter" id="date-filter-val" value="{{ filters.date_filter or 'all' }}">
+
+      <!-- Toolbar -->
+      <div class="av-toolbar" style="border-bottom:1px solid var(--border-light);">
+        <div class="av-toolbar-left">
+          <div class="av-segmented">
+            {% set date_opts = [('all','All'),('today','Today'),('week','Week'),('month','Month')] %}
+            {% for val, label in date_opts %}
+            <a href="#" class="{% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}active{% endif %}" onclick="document.getElementById('date-filter-val').value='{{ val }}';document.getElementById('filter-form').submit();return false;">{{ label }}</a>
+            {% endfor %}
+          </div>
+          <span class="av-count">{{ stats.total|format_number }} items</span>
         </div>
-        <span class="av-count">{{ stats.total|format_number }} items</span>
-      </div>
-      <div class="av-toolbar-right">
-        <form method="GET" style="margin:0;display:flex;align-items:center;gap:6px;" id="filter-form">
-          <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
+        <div class="av-toolbar-right">
           <div class="av-search">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" name="search" placeholder="Search..." value="{{ filters.search or '' }}">
           </div>
-        </form>
-        <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="av-btn" id="export-btn">Export</a>
-        <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
-        {% if current_user.can_edit() %}
-        <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
+          <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="av-btn" id="export-btn">Export</a>
+          <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
+          {% if current_user.can_edit() %}
+          <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Filters row -->
+      <div class="av-filters" style="padding-top:8px;">
+        <select class="av-filter-select" name="type" onchange="this.form.submit()">
+          <option value="">All types</option>
+          {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
+          <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" class="av-filter-input" name="source" placeholder="Source" value="{{ filters.source or '' }}">
+        <input type="text" class="av-filter-input" name="domain" placeholder="Domain" value="{{ filters.domain or '' }}">
+        <button type="submit" class="av-btn" style="font-size:13px;">Apply</button>
+        {% if filters.type or filters.source or filters.domain or filters.search %}
+        <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-btn" style="font-size:13px;color:var(--text-muted);">Clear</a>
         {% endif %}
       </div>
-    </div>
-
-    <!-- Filters (show only if any filter active, or always minimal) -->
-    <form method="GET" class="av-filters" style="padding-top:8px;">
-      <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
-      <input type="hidden" name="search" value="{{ filters.search or '' }}">
-      <select class="av-filter-select" name="type" onchange="this.form.submit()">
-        <option value="">All types</option>
-        {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
-        <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
-        {% endfor %}
-      </select>
-      <input type="text" class="av-filter-input" name="source" placeholder="Source" value="{{ filters.source or '' }}">
-      <input type="text" class="av-filter-input" name="domain" placeholder="Domain" value="{{ filters.domain or '' }}">
-      <button type="submit" class="av-btn" style="font-size:11px;">Apply</button>
-      {% if filters.type or filters.source or filters.domain %}
-      <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=filters.date_filter or '') }}" class="av-btn" style="font-size:11px;color:var(--text-muted);">Clear</a>
-      {% endif %}
     </form>
 
     <!-- Table -->
@@ -362,7 +362,7 @@
           <tr>
             <td class="muted" style="padding-left:16px;">{{ loop.index + (pagination.page - 1) * 20 }}</td>
             <td style="font-weight:500;">{{ cred.username or '—' }}</td>
-            <td class="muted">{{ cred.domain or '—' }}</td>
+            <td><span style="color:var(--primary);font-weight:500;">{{ cred.domain or '—' }}</span></td>
             <td class="mono av-pass-cell">{% if cred.password %}<span class="av-pass">•••••</span><span class="av-pass-reveal mono">{{ cred.password }}</span>{% else %}—{% endif %}</td>
             <td class="muted" style="max-width:160px;">{{ cred.source or '—' }}</td>
             <td class="center">{% if cred.type %}<span class="av-tag">{{ cred.type }}</span>{% else %}—{% endif %}</td>
