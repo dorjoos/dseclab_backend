@@ -175,8 +175,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Initial load + polling
+  // Initial load + polling (5 min)
   loadNotifications();
-  setInterval(loadNotifications, 60000);
+  setInterval(loadNotifications, 300000);
 });
 </script>
