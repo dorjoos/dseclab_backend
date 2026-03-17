@@ -432,7 +432,7 @@
             loadNotifications();
             
             // Refresh every 30 seconds
-            setInterval(loadNotifications, 30000);
+            setInterval(loadNotifications, 60000);
             
             // Also refresh when notification dropdown is opened (hover)
             const notificationBox = document.querySelector('.notification-box');
@@ -618,7 +618,7 @@
             loadNotifications();
             
             // Refresh every 30 seconds
-            setInterval(loadNotifications, 30000);
+            setInterval(loadNotifications, 60000);
             
             // Refresh on hover/click
             const notificationBox = document.querySelector('.notification-box');
@@ -639,5 +639,58 @@
         }
       })();
     </script>
+<script>
+// Auto-dismiss flash messages after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    var alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+    alerts.forEach(function(alert) {
+        setTimeout(function() {
+            alert.style.transition = 'opacity 0.5s';
+            alert.style.opacity = '0';
+            setTimeout(function() { alert.remove(); }, 500);
+        }, 5000);
+    });
+
+    // Loading state on form submit buttons
+    document.querySelectorAll('form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn && !btn.disabled) {
+                btn.disabled = true;
+                var spinner = btn.querySelector('.spinner-border');
+                if (spinner) {
+                    spinner.classList.remove('d-none');
+                }
+            }
+        });
+    });
+
+    // SweetAlert delete confirmations
+    document.querySelectorAll('form[data-confirm]').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var msg = form.getAttribute('data-confirm') || 'Are you sure?';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Confirm',
+                    text: msg,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    confirmButtonText: 'Yes, delete'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        form.removeAttribute('data-confirm');
+                        form.submit();
+                    }
+                });
+            } else if (confirm(msg)) {
+                form.removeAttribute('data-confirm');
+                form.submit();
+            }
+        });
+    });
+});
+</script>
   </body>
 </html>
