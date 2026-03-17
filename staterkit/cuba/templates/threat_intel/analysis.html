@@ -117,7 +117,22 @@
     <div class="col-lg-5">
       <div class="card" style="padding:24px;">
         <div class="an-section">Type Breakdown</div>
-        <div id="type-chart" style="min-height:200px;"></div>
+        {% set max_type = by_type.values()|max if by_type else 1 %}
+        {% set type_colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'] %}
+        {% for t, count in by_type.items() %}
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:14px;font-weight:600;color:var(--text);">{{ t }}</span>
+            <span style="font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">{{ count|format_number }}</span>
+          </div>
+          <div style="height:32px;background:var(--border-light);border-radius:8px;overflow:hidden;">
+            <div style="height:100%;width:{{ (count / max_type * 100)|round|int }}%;background:{{ type_colors[loop.index0 % 7] }};border-radius:8px;display:flex;align-items:center;padding-left:10px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);">
+              <span style="font-size:11px;font-weight:600;color:#fff;">{{ ((count / total) * 100)|round(1) }}%</span>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% if not by_type %}<div style="text-align:center;padding:30px;color:var(--text-muted);">No data</div>{% endif %}
       </div>
     </div>
   </div>
@@ -175,41 +190,6 @@
 <script>
   var colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'];
 
-  // Type donut
-  var typeEl = document.getElementById('type-chart');
-  if (typeEl) {
-    var typeData = {{ by_type|tojson }};
-    var labels = Object.keys(typeData);
-    var vals = Object.values(typeData);
-    new ApexCharts(typeEl, {
-      series: vals,
-      chart: { type: 'donut', height: 260, fontFamily: 'Inter, sans-serif' },
-      labels: labels,
-      colors: colors,
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '55%',
-            labels: {
-              show: true,
-              total: {
-                show: true,
-                label: 'Total',
-                fontSize: '14px',
-                fontWeight: 600,
-                formatter: function(w) { return w.globals.seriesTotals.reduce(function(a,b){return a+b;}, 0).toLocaleString(); }
-              },
-              value: { fontSize: '22px', fontWeight: 700 }
-            }
-          }
-        }
-      },
-      legend: { position: 'bottom', fontSize: '13px', fontWeight: 500, markers: { width: 10, height: 10, radius: 3 } },
-      dataLabels: { enabled: false },
-      stroke: { width: 2, colors: ['var(--bg-white)'] },
-      tooltip: { y: { formatter: function(v) { return v.toLocaleString() + ' records'; } } }
-    }).render();
-  }
 
   if (typeof feather !== 'undefined') feather.replace();
 </script>
