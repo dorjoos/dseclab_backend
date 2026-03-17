@@ -149,11 +149,13 @@ def breached_creds_list():
         'date_filter': date_filter
     }
 
+    breadcrumb = {"parent": "Threat Intelligence", "child": "Breached Credentials"}
     return render_template('threat_intel/breached_creds_list.html',
                           breached_creds=pagination.items,
                           pagination=pagination,
                           stats=stats,
-                          filters=filter_dict)
+                          filters=filter_dict,
+                          breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/api/breached-creds/search', methods=['POST'])
