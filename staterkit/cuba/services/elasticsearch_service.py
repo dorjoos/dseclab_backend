@@ -176,12 +176,16 @@ class ElasticsearchService:
 
         # Free-text search (never on password)
         if query_text and query_text.strip():
+            q = query_text.strip().lower()
             must.append({
-                "multi_match": {
-                    "query": query_text.strip(),
-                    "fields": ["username", "domain", "url", "source"],
-                    "type": "best_fields",
-                    "lenient": True,
+                "bool": {
+                    "should": [
+                        {"wildcard": {"username": {"value": f"*{q}*", "case_insensitive": True}}},
+                        {"wildcard": {"domain": {"value": f"*{q}*", "case_insensitive": True}}},
+                        {"wildcard": {"url": {"value": f"*{q}*", "case_insensitive": True}}},
+                        {"wildcard": {"source": {"value": f"*{q}*", "case_insensitive": True}}},
+                    ],
+                    "minimum_should_match": 1
                 }
             })
 
@@ -190,7 +194,7 @@ class ElasticsearchService:
             if filters.get("type"):
                 filter_clauses.append({"term": {"type.keyword": filters["type"]}})
             if filters.get("source"):
-                filter_clauses.append({"term": {"source.keyword": filters["source"]}})
+                filter_clauses.append({"wildcard": {"source.keyword": {"value": f"*{filters['source']}*", "case_insensitive": True}}})
             if filters.get("domain"):
                 filter_clauses.append({"wildcard": {"domain.keyword": {"value": f"*{filters['domain']}*", "case_insensitive": True}}})
 
