@@ -26,7 +26,7 @@
             <td style="padding-left:16px;font-weight:500;">{{ cred.username or '—' }}</td>
             <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
             <td class="m">{{ cred.source or '—' }}</td>
-            <td class="c"><span class="av-tag">{{ cred.type or '—' }}</span></td>
+            <td class="c"><span class="av-tag av-tag-blue">{{ cred.type or '—' }}</span></td>
             <td class="m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
             <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
           </tr>

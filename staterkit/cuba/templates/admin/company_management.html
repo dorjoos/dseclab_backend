@@ -27,7 +27,7 @@
             <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
             <td style="padding-left:16px;font-weight:500;">{{ company.name }}</td>
             <td><span class="av-domain">{{ company.domain }}</span></td>
-            <td><span class="av-tag">{{ company.company_type }}</span></td>
+            <td><span class="av-tag {% if company.company_type == 'bank' %}av-tag-blue{% elif company.company_type == 'operator' %}av-tag-teal{% elif company.company_type == 'government' %}av-tag-orange{% endif %}">{{ company.company_type }}</span></td>
             <td class="c m">{{ company.watchlist_entries|length }}</td>
             <td class="c">
               {% set bc = company_stats.get(company.id, 0) %}

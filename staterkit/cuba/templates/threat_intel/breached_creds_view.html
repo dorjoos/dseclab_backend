@@ -13,7 +13,7 @@
         <div style="margin-top:6px;"><span class="av-domain" style="font-size:14px;">{{ breached_cred.domain }}</span></div>
         {% endif %}
         <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
-          {% if breached_cred.type %}<span class="av-tag">{{ breached_cred.type }}</span>{% endif %}
+          {% if breached_cred.type %}<span class="av-tag av-tag-blue">{{ breached_cred.type }}</span>{% endif %}
           {% if breached_cred.is_marked %}<span class="av-tag av-tag-warning">Marked{% if breached_cred.marker %} by {{ breached_cred.marker.username }}{% endif %}</span>{% endif %}
         </div>
       </div>
@@ -72,7 +72,7 @@
           <div style="padding:14px 16px;border-bottom:1px solid var(--border-light);">
             <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Type</div>
             {% if breached_cred.type %}
-            <span class="av-tag">{{ breached_cred.type }}</span>
+            <span class="av-tag av-tag-blue">{{ breached_cred.type }}</span>
             {% else %}
             <div style="font-size:14px;font-weight:500;">—</div>
             {% endif %}

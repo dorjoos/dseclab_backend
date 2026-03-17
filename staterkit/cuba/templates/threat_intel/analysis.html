@@ -189,7 +189,7 @@
           <td style="padding-left:24px;font-weight:500;">{{ cred.username or '—' }}</td>
           <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
           <td class="m">{{ cred.source or '—' }}</td>
-          <td class="c"><span class="av-tag">{{ cred.type or '—' }}</span></td>
+          <td class="c"><span class="av-tag av-tag-blue">{{ cred.type or '—' }}</span></td>
           <td class="m r" style="padding-right:24px;">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
         </tr>
         {% endfor %}

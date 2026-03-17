@@ -36,7 +36,7 @@
           {% for log in audit_logs %}
           <tr>
             <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;"><span class="av-tag">{{ log.action_type }}</span></td>
+            <td style="padding-left:16px;"><span class="av-tag av-tag-indigo">{{ log.action_type }}</span></td>
             <td class="m">{{ log.resource_type }}</td>
             <td style="max-width:300px;">{{ log.description }}</td>
             <td class="m">{{ log.user.username if log.user else '—' }}</td>

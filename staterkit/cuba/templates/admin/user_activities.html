@@ -29,7 +29,7 @@
           {% for act in activities %}
           <tr>
             <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;"><span class="av-tag">{{ act.activity_type }}</span></td>
+            <td style="padding-left:16px;"><span class="av-tag {% if act.activity_type == 'login' %}av-tag-green{% elif 'failed' in act.activity_type %}av-tag-red{% elif act.activity_type == 'logout' %}av-tag-blue{% else %}av-tag-purple{% endif %}">{{ act.activity_type }}</span></td>
             <td class="m">{{ act.user.username if act.user else '—' }}</td>
             <td class="m" style="font-family:'SF Mono',monospace;font-size:12px;">{{ act.ip_address or '—' }}</td>
             <td class="c">{% if act.status == 'success' %}<span class="av-tag av-tag-success">OK</span>{% else %}<span class="av-tag av-tag-danger">{{ act.status }}</span>{% endif %}</td>

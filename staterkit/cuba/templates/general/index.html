@@ -123,7 +123,7 @@
               <td style="padding-left:20px;font-weight:500;">{{ event.username or '—' }}</td>
               <td><span class="av-domain">{{ event.domain or '—' }}</span></td>
               <td class="m">{{ event.source or '—' }}</td>
-              <td class="c"><span class="av-tag">{{ event.type or '—' }}</span></td>
+              <td class="c"><span class="av-tag av-tag-blue">{{ event.type or '—' }}</span></td>
               <td class="m">{{ event.created_at.strftime('%b %d') if event.created_at else '—' }}</td>
               <td class="r"><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="av-view-link">View</a></td>
             </tr>

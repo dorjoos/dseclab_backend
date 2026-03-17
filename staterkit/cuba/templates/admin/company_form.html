@@ -12,7 +12,7 @@
         <div style="font-size:18px;font-weight:700;">{{ company.name }}</div>
         <div style="font-size:13px;color:var(--text-muted);margin-top:4px;" class="av-domain">{{ company.domain }}</div>
         <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
-          <span class="av-tag">{{ company.company_type|title }}</span>
+          <span class="av-tag {% if company.company_type == 'bank' %}av-tag-blue{% elif company.company_type == 'operator' %}av-tag-teal{% elif company.company_type == 'government' %}av-tag-orange{% else %}av-tag{% endif %}">{{ company.company_type|title }}</span>
         </div>
       </div>
 
@@ -43,7 +43,7 @@
         {% for entry in company.watchlist_entries %}
         <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
           <div style="display:flex;align-items:center;gap:8px;">
-            <span class="av-tag" style="font-size:10px;">{{ entry.entry_type }}</span>
+            <span class="av-tag {% if entry.entry_type == 'domain' %}av-tag-blue{% elif entry.entry_type == 'url' %}av-tag-purple{% elif entry.entry_type == 'email' %}av-tag-teal{% elif entry.entry_type == 'ip_address' %}av-tag-orange{% else %}av-tag-pink{% endif %}" style="font-size:10px;">{{ entry.entry_type }}</span>
             <span style="font-size:13px;font-weight:500;">{{ entry.entry_value }}</span>
           </div>
           <button type="button" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px;" title="Remove" onclick="deleteWatchlistEntry({{ company.id }}, {{ entry.id }}, this)">&times;</button>
@@ -204,7 +204,8 @@ function addWatchlistEntry() {
   var left = document.createElement('div');
   left.style.cssText = 'display:flex;align-items:center;gap:8px;';
   var tag = document.createElement('span');
-  tag.className = 'av-tag';
+  var tagColors = {domain:'av-tag-blue',url:'av-tag-purple',email:'av-tag-teal',ip_address:'av-tag-orange',slug:'av-tag-pink'};
+  tag.className = 'av-tag ' + (tagColors[type] || '');
   tag.style.fontSize = '10px';
   tag.textContent = type;
   var val = document.createElement('span');
