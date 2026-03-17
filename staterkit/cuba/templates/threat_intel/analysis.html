@@ -97,21 +97,36 @@
   <div class="row g-3 mb-4">
     <div class="col-lg-7">
       <div class="card" style="padding:24px;">
-        <div class="an-section">Source Distribution</div>
-        {% set max_src = by_source.values()|max if by_source else 1 %}
-        {% set bar_colors = ['bar-c1','bar-c2','bar-c3','bar-c4','bar-c5','bar-c6','bar-c7'] %}
-        {% for src, count in by_source.items() %}
-        <div class="an-bar">
-          <div class="an-bar-label">{{ src }}</div>
-          <div class="an-bar-track">
-            <div class="an-bar-fill {{ bar_colors[loop.index0 % 7] }}" style="width:{{ (count / max_src * 100)|round|int }}%;">
-              {{ ((count / total) * 100)|round(1) }}%
-            </div>
-          </div>
-          <div class="an-bar-num">{{ count|format_number }}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div class="an-section" style="margin:0;">Source Distribution</div>
+          <span style="font-size:12px;color:var(--text-muted);">{{ total|format_number }} total</span>
         </div>
-        {% endfor %}
-        {% if not by_source %}<div style="text-align:center;padding:30px;color:var(--text-muted);">No data</div>{% endif %}
+        <div style="display:flex;gap:24px;align-items:flex-start;">
+          <!-- Donut chart left -->
+          <div style="flex-shrink:0;">
+            <div id="source-donut" style="min-width:180px;"></div>
+          </div>
+          <!-- Source cards right -->
+          <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+            {% set src_icons = ['📡','📨','🔗','📎','📦','🌐','💾'] %}
+            {% set src_colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'] %}
+            {% for src, count in by_source.items() %}
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);transition:all 0.15s;background:var(--bg-white);" onmouseover="this.style.borderColor='{{ src_colors[loop.index0 % 7] }}';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+              <div style="width:36px;height:36px;border-radius:8px;background:{{ src_colors[loop.index0 % 7] }}15;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+                {{ src_icons[loop.index0 % 7] }}
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:14px;font-weight:600;color:var(--text);">{{ src }}</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">{{ count|format_number }} records</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:18px;font-weight:700;color:var(--text);line-height:1;">{{ ((count / total) * 100)|round(1) }}<span style="font-size:12px;font-weight:500;color:var(--text-muted);">%</span></div>
+                <div style="font-size:11px;color:{{ src_colors[loop.index0 % 7] }};font-weight:600;margin-top:2px;">↑ {{ ((count / total) * 100)|round(0)|int }}%</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-5">
@@ -187,6 +202,25 @@
 <script src="{{ url_for('static', filename='assets/js/chart/apex-chart/apex-chart.js') }}"></script>
 <script>
   var colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'];
+
+  // Source Distribution Donut
+  var sdEl = document.getElementById('source-donut');
+  if (sdEl) {
+    var srcData = {{ by_source|tojson }};
+    var srcLabels = Object.keys(srcData);
+    var srcVals = Object.values(srcData);
+    new ApexCharts(sdEl, {
+      series: srcVals,
+      chart: { type: 'donut', height: 200, fontFamily: 'Inter, sans-serif' },
+      labels: srcLabels,
+      colors: colors,
+      plotOptions: { pie: { donut: { size: '65%', labels: { show: true, total: { show: true, label: 'Total', fontSize: '11px', fontWeight: 500, color: 'var(--text-muted)', formatter: function(w) { return w.globals.seriesTotals.reduce(function(a,b){return a+b;},0).toLocaleString(); } }, value: { fontSize: '16px', fontWeight: 700, color: 'var(--text)' } } } } },
+      legend: { show: false },
+      dataLabels: { enabled: false },
+      stroke: { width: 3, colors: ['var(--bg-white)'] },
+      tooltip: { y: { formatter: function(v) { return v.toLocaleString(); } } }
+    }).render();
+  }
 
   // Breach Timeline — area chart with period switching
   var tlEl = document.getElementById('timeline-chart');
