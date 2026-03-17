@@ -11,7 +11,7 @@
             Breached credential records discovered for your watchlisted applications, domains, and IPs.
             Use the filters below to focus on what matters.
           </p>
-          <div class="card-header-right">
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">
             {% if current_user.can_edit() %}
             <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="btn btn-primary btn-sm">
               <i data-feather="plus" style="width: 14px; height: 14px;"></i> Add New
