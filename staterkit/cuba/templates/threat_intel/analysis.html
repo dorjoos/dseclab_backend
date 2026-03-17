@@ -116,7 +116,14 @@
     </div>
     <div class="col-lg-5">
       <div class="card" style="padding:24px;">
-        <div class="an-section">Breach Timeline <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:6px;">Monthly</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="an-section" style="margin:0;">Breach Timeline</div>
+          <select id="timeline-period" style="font-size:12px;padding:4px 24px 4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none;cursor:pointer;">
+            <option value="7d" selected>Last 7 days</option>
+            <option value="week">Weekly</option>
+            <option value="month">Monthly</option>
+          </select>
+        </div>
         <div id="timeline-chart"></div>
       </div>
     </div>
@@ -175,31 +182,57 @@
 <script>
   var colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'];
 
-  // Breach Timeline — area chart
+  // Breach Timeline — area chart with period switching
   var tlEl = document.getElementById('timeline-chart');
-  if (tlEl) {
-    var tlLabels = {{ timeline_labels|tojson }};
-    var tlData = {{ timeline_data|tojson }};
-    new ApexCharts(tlEl, {
-      series: [{ name: 'Breaches', data: tlData }],
-      chart: { type: 'area', height: 280, fontFamily: 'Inter, sans-serif', toolbar: { show: false }, sparkline: { enabled: false } },
+  var tlChart = null;
+
+  function renderTimeline(labels, data) {
+    var opts = {
+      series: [{ name: 'Breaches', data: data }],
+      chart: { type: 'bar', height: 260, fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
       colors: ['#7c3aed'],
-      stroke: { curve: 'smooth', width: 2.5 },
+      plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
       fill: {
         type: 'gradient',
-        gradient: { shadeIntensity: 1, opacityFrom: 0.5, opacityTo: 0.05, stops: [0, 90, 100],
+        gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.3, opacityFrom: 1, opacityTo: 0.8, stops: [0, 100],
           colorStops: [
-            { offset: 0, color: '#7c3aed', opacity: 0.4 },
-            { offset: 100, color: '#ec4899', opacity: 0.05 }
+            { offset: 0, color: '#7c3aed', opacity: 1 },
+            { offset: 100, color: '#ec4899', opacity: 0.9 }
           ]
         }
       },
       dataLabels: { enabled: false },
-      xaxis: { categories: tlLabels, labels: { show: true, rotate: -45, rotateAlways: false, style: { fontSize: '10px', colors: 'var(--text-muted)' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-      yaxis: { labels: { style: { fontSize: '11px', colors: 'var(--text-muted)' }, formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + 'k' : v; } } },
+      xaxis: { categories: labels, labels: { style: { fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+      yaxis: { labels: { style: { fontSize: '11px', colors: 'var(--text-muted)' }, formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + 'k' : Math.floor(v); } } },
       grid: { borderColor: 'var(--border-light)', strokeDashArray: 3, xaxis: { lines: { show: false } } },
-      tooltip: { theme: 'light', x: { show: true }, y: { formatter: function(v) { return v.toLocaleString() + ' breaches'; } } }
-    }).render();
+      tooltip: { theme: 'light', y: { formatter: function(v) { return v.toLocaleString() + ' breaches'; } } }
+    };
+    if (tlChart) { tlChart.destroy(); }
+    tlChart = new ApexCharts(tlEl, opts);
+    tlChart.render();
+  }
+
+  function loadTimeline(period) {
+    fetch('/api/timeline', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ period: period })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { renderTimeline(d.labels, d.data); })
+    .catch(function(e) { console.error('Timeline error:', e); });
+  }
+
+  // Initial render with server data
+  if (tlEl) {
+    renderTimeline({{ timeline_labels|tojson }}, {{ timeline_data|tojson }});
+  }
+
+  // Dropdown switch
+  var periodSel = document.getElementById('timeline-period');
+  if (periodSel) {
+    periodSel.addEventListener('change', function() { loadTimeline(this.value); });
   }
 
   if (typeof feather !== 'undefined') feather.replace();

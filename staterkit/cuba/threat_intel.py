@@ -158,6 +158,28 @@ def breached_creds_list():
                           breadcrumb=breadcrumb)
 
 
+@threat_intel.route('/api/timeline', methods=['POST'])
+@csrf.exempt
+@login_required
+def timeline_api():
+    """AJAX API: return timeline data for different periods."""
+    from flask import jsonify
+    data = request.get_json(silent=True) or {}
+    period = data.get('period', '7d')
+    domain_filters = _get_domain_filters()
+
+    if period == '7d':
+        labels, values = es_service.get_daily_trends(days=7, domain_filters=domain_filters)
+    elif period == 'week':
+        labels, values = es_service.get_weekly_trends(weeks=8, domain_filters=domain_filters)
+    elif period == 'month':
+        labels, values = es_service.get_monthly_trends(months=12, domain_filters=domain_filters)
+    else:
+        labels, values = es_service.get_daily_trends(days=7, domain_filters=domain_filters)
+
+    return jsonify({'labels': labels, 'data': values})
+
+
 @threat_intel.route('/api/breached-creds/search', methods=['POST'])
 @csrf.exempt
 @login_required

@@ -311,6 +311,39 @@ class ElasticsearchService:
             logger.exception("ES get_stats failed")
             return {"total": 0, "by_type": {}, "by_source": {}, "by_domain": {}}
 
+    def get_daily_trends(self, days=7, domain_filters=None):
+        """Return (labels, data) for a daily date_histogram."""
+        try:
+            query = self._build_query(domain_filters=domain_filters)
+            gte = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+            body = {
+                "query": query,
+                "size": 0,
+                "aggs": {
+                    "daily": {
+                        "date_histogram": {
+                            "field": "timestamp",
+                            "calendar_interval": "day",
+                            "format": "EEE",
+                            "min_doc_count": 0,
+                            "extended_bounds": {
+                                "min": gte,
+                                "max": datetime.utcnow().strftime("%Y-%m-%d"),
+                            },
+                        }
+                    }
+                },
+                "post_filter": {"range": {"timestamp": {"gte": gte}}},
+            }
+            resp = self.es.search(index=self.index, body=body)
+            buckets = resp["aggregations"]["daily"]["buckets"]
+            labels = [b["key_as_string"] for b in buckets]
+            data = [b["doc_count"] for b in buckets]
+            return labels, data
+        except Exception:
+            logger.exception("ES get_daily_trends failed")
+            return [], []
+
     def get_weekly_trends(self, weeks=12, domain_filters=None):
         """Return (labels, data) for a weekly date_histogram."""
         try:
