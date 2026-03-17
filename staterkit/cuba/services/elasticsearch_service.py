@@ -343,6 +343,39 @@ class ElasticsearchService:
             logger.exception("ES get_daily_trends failed")
             return [], []
 
+    def get_monthly_trends(self, months=12, domain_filters=None):
+        """Return (labels, data) for a monthly date_histogram."""
+        try:
+            query = self._build_query(domain_filters=domain_filters)
+            gte = (datetime.utcnow() - timedelta(days=months * 30)).strftime("%Y-%m-%d")
+            body = {
+                "query": query,
+                "size": 0,
+                "aggs": {
+                    "monthly": {
+                        "date_histogram": {
+                            "field": "timestamp",
+                            "calendar_interval": "month",
+                            "format": "yyyy-MM",
+                            "min_doc_count": 0,
+                            "extended_bounds": {
+                                "min": gte,
+                                "max": datetime.utcnow().strftime("%Y-%m-%d"),
+                            },
+                        }
+                    }
+                },
+                "post_filter": {"range": {"timestamp": {"gte": gte}}},
+            }
+            resp = self.es.search(index=self.index, body=body)
+            buckets = resp["aggregations"]["monthly"]["buckets"]
+            labels = [b["key_as_string"] for b in buckets]
+            data = [b["doc_count"] for b in buckets]
+            return labels, data
+        except Exception:
+            logger.exception("ES get_monthly_trends failed")
+            return [], []
+
     def get_recent(self, limit=10, domain_filters=None):
         """Return the most recent documents."""
         try:

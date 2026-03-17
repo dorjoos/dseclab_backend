@@ -18,7 +18,7 @@ def build_analysis_stats():
 
     stats = es_service.get_stats(domain_filters=domain_filters)
     recent = es_service.get_recent(limit=10, domain_filters=domain_filters)
-    timeline_labels, timeline_data = es_service.get_daily_trends(days=90, domain_filters=domain_filters)
+    timeline_labels, timeline_data = es_service.get_monthly_trends(months=12, domain_filters=domain_filters)
 
     return {
         "user_domain": user_domain,
