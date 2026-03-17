@@ -129,19 +129,25 @@
     </div>
   </div>
 
-  <!-- Top Domains -->
-  <div class="card" style="padding:24px;margin-bottom:20px;">
-    <div class="an-section">Top Affected Domains</div>
-    <div class="an-dom-grid">
-      {% for dom, count in by_domain.items() %}
-      <div class="an-dom-card">
-        <div class="an-dom-rank {% if loop.index == 1 %}r1{% elif loop.index == 2 %}r2{% elif loop.index == 3 %}r3{% else %}rn{% endif %}">{{ loop.index }}</div>
-        <div class="an-dom-name">{{ dom }}</div>
-        <div class="an-dom-count">{{ count|format_number }}</div>
-      </div>
-      {% endfor %}
+  <!-- Top Domains Treemap -->
+  <div class="card" style="padding:24px;margin-bottom:20px;position:relative;overflow:hidden;">
+    <!-- SVG background pattern -->
+    <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.03;pointer-events:none;" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="0.5"/>
+        </pattern>
+        <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1" fill="currentColor"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid)"/>
+      <rect width="100%" height="100%" fill="url(#dots)"/>
+    </svg>
+    <div style="position:relative;z-index:1;">
+      <div class="an-section">Top Affected Domains</div>
+      <div id="domain-treemap"></div>
     </div>
-    {% if not by_domain %}<div style="text-align:center;padding:30px;color:var(--text-muted);">No data</div>{% endif %}
   </div>
 
   <!-- Recent Breaches -->
@@ -233,6 +239,35 @@
   var periodSel = document.getElementById('timeline-period');
   if (periodSel) {
     periodSel.addEventListener('change', function() { loadTimeline(this.value); });
+  }
+
+  // Domain Treemap
+  var tmEl = document.getElementById('domain-treemap');
+  if (tmEl) {
+    var domData = {{ by_domain|tojson }};
+    var tmSeries = Object.keys(domData).map(function(k) { return { x: k, y: domData[k] }; });
+    new ApexCharts(tmEl, {
+      series: [{ data: tmSeries }],
+      chart: { type: 'treemap', height: 320, fontFamily: 'Inter, sans-serif', toolbar: { show: false } },
+      colors: ['#1a56db', '#3b82f6', '#7c3aed', '#a78bfa', '#0891b2', '#06b6d4', '#059669', '#34d399', '#d97706', '#f59e0b'],
+      plotOptions: {
+        treemap: {
+          distributed: true,
+          enableShades: false,
+        }
+      },
+      dataLabels: {
+        enabled: true,
+        style: { fontSize: '13px', fontWeight: 600 },
+        formatter: function(text, op) { return text + '\n' + op.value.toLocaleString(); },
+        offsetY: -2
+      },
+      tooltip: {
+        y: { formatter: function(v) { return v.toLocaleString() + ' breaches'; } }
+      },
+      legend: { show: false },
+      stroke: { width: 2, colors: ['var(--bg-white)'] }
+    }).render();
   }
 
   if (typeof feather !== 'undefined') feather.replace();
