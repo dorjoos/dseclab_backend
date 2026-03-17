@@ -104,33 +104,26 @@
     <div class="card-body p-0">
       {% if latest_events %}
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="av-table">
           <thead>
             <tr>
-              <th>Username</th>
-              <th>Domain</th>
-              <th>Source</th>
-              <th>Type</th>
-              <th>Date</th>
-              <th class="text-end">Actions</th>
+              <th style="padding-left:20px;width:25%;">Username</th>
+              <th style="width:15%;">Domain</th>
+              <th style="width:20%;">Source</th>
+              <th style="width:10%;" class="c">Type</th>
+              <th style="width:12%;">Date</th>
+              <th style="width:60px;" class="r">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for event in latest_events %}
             <tr>
-              <td><span style="font-weight:500;">{{ event.username or '-' }}</span></td>
-              <td><span class="badge badge-light-info">{{ event.domain or '-' }}</span></td>
-              <td style="color:var(--text-secondary);">{{ event.source or '-' }}</td>
-              <td><span class="badge badge-light-primary">{{ event.type|title if event.type else '-' }}</span></td>
-              <td style="color:var(--text-muted);font-size:12px;">{{ event.created_at.strftime('%b %d, %Y') if event.created_at else '-' }}</td>
-              <td class="text-end">
-                <ul class="action">
-                  <li><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" title="View"><i class="fa-regular fa-eye"></i></a></li>
-                  {% if current_user.can_edit() %}
-                  <li><a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=event.es_id) }}" title="Edit"><i class="fa-regular fa-pen-to-square"></i></a></li>
-                  {% endif %}
-                </ul>
-              </td>
+              <td style="padding-left:20px;font-weight:500;">{{ event.username or '—' }}</td>
+              <td><span class="av-domain">{{ event.domain or '—' }}</span></td>
+              <td class="m">{{ event.source or '—' }}</td>
+              <td class="c"><span class="av-tag">{{ event.type or '—' }}</span></td>
+              <td class="m">{{ event.created_at.strftime('%b %d') if event.created_at else '—' }}</td>
+              <td class="r"><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="av-view-link">View</a></td>
             </tr>
             {% endfor %}
           </tbody>

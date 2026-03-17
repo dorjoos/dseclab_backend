@@ -1,153 +1,87 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5>Breached Credential Details</h5>
-          <div class="card-header-right">
-            {% if current_user.can_mark() %}
-            <form method="POST" action="{{ url_for('threat_intel.breached_creds_mark', doc_id=breached_cred.es_id) }}" style="display: inline;">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-              <button type="submit" class="btn btn-sm {% if breached_cred.is_marked %}btn-danger{% else %}btn-warning{% endif %}">
-                <i data-feather="{% if breached_cred.is_marked %}check-circle{% else %}circle{% endif %}" style="width: 14px; height: 14px;"></i> {% if breached_cred.is_marked %}Unmark{% else %}Mark{% endif %}
-              </button>
-            </form>
-            {% endif %}
-            {% if current_user.can_edit() %}
-            <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=breached_cred.es_id) }}" class="btn btn-primary btn-sm">
-              <i data-feather="edit" style="width: 14px; height: 14px;"></i> Edit
-            </a>
-            {% endif %}
-            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-secondary btn-sm">
-              <i data-feather="arrow-left" style="width: 14px; height: 14px;"></i> Back
-            </a>
-          </div>
-        </div>
-        <div class="card-body">
-          <div class="row">
-            <div class="col-md-6">
-              <div class="table-responsive dom-source-data custom-scrollbar">
-              <table class="display table-striped" style="width:100%">
-                <tr>
-                  <th width="40%">Username</th>
-                  <td>{{ breached_cred.username or '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Domain</th>
-                  <td><span class="badge badge-light-info">{{ breached_cred.domain or '-' }}</span></td>
-                </tr>
-                <tr>
-                  <th>Password</th>
-                  <td>
-                    {% if breached_cred.password %}
-                      <span class="password-mask" data-password="{{ breached_cred.password }}" title="Hover to reveal password">
-                        <span class="masked-password">••••••••</span>
-                        <span class="revealed-password">{{ breached_cred.password }}</span>
-                      </span>
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Source</th>
-                  <td>{{ breached_cred.source or '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Type</th>
-                  <td>
-                    {% if breached_cred.type %}
-                      <span class="badge badge-light-{{ breached_cred.type_color }}">
-                        {{ breached_cred.type|title }}
-                      </span>
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>URL</th>
-                  <td>
-                    {% if breached_cred.url %}
-                      <a href="{{ breached_cred.url }}" target="_blank" rel="noopener noreferrer">{{ breached_cred.url }}</a>
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                </tr>
-              </table>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="table-responsive dom-source-data custom-scrollbar">
-              <table class="display table-striped" style="width:100%">
-                <tr>
-                  <th width="40%">ID</th>
-                  <td>{{ breached_cred._id or '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Index</th>
-                  <td>{{ breached_cred._index or '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Score</th>
-                  <td>
-                    {% if breached_cred._score is not none %}
-                      <span class="badge badge-light-secondary">{{ "%.2f"|format(breached_cred._score) }}</span>
-                    {% else %}
-                      -
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Ignored</th>
-                  <td>
-                    {% if breached_cred._ignored %}
-                      <span class="badge badge-light-warning">Yes</span>
-                    {% else %}
-                      <span class="badge badge-light-success">No</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Marked</th>
-                  <td>
-                    {% if breached_cred.is_marked %}
-                      <span class="badge badge-light-warning">
-                        <i data-feather="check-circle" style="width: 12px; height: 12px;"></i> 
-                        Marked by {{ breached_cred.marker.username if breached_cred.marker else 'Unknown' }}
-                        {% if breached_cred.marked_at %}
-                          ({{ breached_cred.marked_at.strftime('%Y-%m-%d %H:%M') }})
-                        {% endif %}
-                      </span>
-                    {% else %}
-                      <span class="text-muted">Not marked</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Created By</th>
-                  <td>{{ breached_cred.creator.username if breached_cred.creator else '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Created At</th>
-                  <td>{{ breached_cred.created_at.strftime('%Y-%m-%d %H:%M:%S') if breached_cred.created_at else '-' }}</td>
-                </tr>
-                <tr>
-                  <th>Last Updated</th>
-                  <td>{{ breached_cred.updated_at.strftime('%Y-%m-%d %H:%M:%S') if breached_cred.updated_at else '-' }}</td>
-                </tr>
-              </table>
-              </div>
-            </div>
-          </div>
-        </div>
+<div class="container-fluid p-0">
+  <div class="card">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border-light);flex-wrap:wrap;gap:8px;">
+      <div style="font-size:15px;font-weight:600;">Credential Details</div>
+      <div style="display:flex;gap:6px;">
+        {% if current_user.can_mark() %}
+        <form method="POST" action="{{ url_for('threat_intel.breached_creds_mark', doc_id=breached_cred.es_id) }}" style="margin:0;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+          <button type="submit" class="btn btn-sm {% if breached_cred.is_marked %}btn-warning{% else %}btn-outline-primary{% endif %}" style="font-size:12px;">
+            {% if breached_cred.is_marked %}Unmark{% else %}Mark{% endif %}
+          </button>
+        </form>
+        {% endif %}
+        {% if current_user.can_edit() %}
+        <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=breached_cred.es_id) }}" class="btn btn-primary btn-sm" style="font-size:12px;">Edit</a>
+        {% endif %}
+        <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">Back</a>
       </div>
+    </div>
+
+    <!-- Detail table -->
+    <div style="padding:0;">
+      <table class="av-table">
+        <tbody>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;width:160px;color:var(--text-muted);">Username</td>
+            <td style="font-weight:600;">{{ breached_cred.username or '—' }}</td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Domain</td>
+            <td><span class="av-domain">{{ breached_cred.domain or '—' }}</span></td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Password</td>
+            <td>
+              {% if breached_cred.password %}
+              <span class="password-mask" style="cursor:pointer;" title="Hover to reveal">
+                <span class="masked-password" style="color:var(--text-muted);">••••••••</span>
+                <span class="revealed-password" style="font-family:'SF Mono',monospace;font-size:13px;">{{ breached_cred.password }}</span>
+              </span>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Source</td>
+            <td>{{ breached_cred.source or '—' }}</td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Type</td>
+            <td>{% if breached_cred.type %}<span class="av-tag">{{ breached_cred.type }}</span>{% else %}—{% endif %}</td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">URL</td>
+            <td>{% if breached_cred.url %}<a href="{{ breached_cred.url }}" target="_blank" rel="noopener noreferrer" class="av-view-link">{{ breached_cred.url }}</a>{% else %}—{% endif %}</td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Date</td>
+            <td>{{ breached_cred.created_at.strftime('%Y-%m-%d %H:%M') if breached_cred.created_at else '—' }}</td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">Status</td>
+            <td>
+              {% if breached_cred.is_marked %}
+              <span class="av-tag av-tag-warning">Marked{% if breached_cred.marker %} by {{ breached_cred.marker.username }}{% endif %}</span>
+              {% else %}
+              <span class="m">Not marked</span>
+              {% endif %}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">File Hash</td>
+            <td style="font-family:'SF Mono',monospace;font-size:12px;">{{ breached_cred.file_hash or '—' }}</td>
+          </tr>
+          <tr>
+            <td style="padding-left:24px;font-weight:500;color:var(--text-muted);">File Name</td>
+            <td>{{ breached_cred.file_name or '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>
 {% endblock %}
-
