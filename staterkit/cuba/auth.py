@@ -4,11 +4,12 @@ from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from urllib.parse import urlparse
 import re
 from datetime import datetime
 import os
 
-from . import db
+from . import db, limiter
 from .models import User, Company
 from .audit_helpers import log_user_activity, log_audit
 
@@ -16,7 +17,16 @@ from .audit_helpers import log_user_activity, log_audit
 auth = Blueprint("auth", __name__)
 
 
+def is_safe_url(target):
+    """Validate that redirect target is a safe, relative URL."""
+    if not target:
+        return False
+    parsed = urlparse(target)
+    return not parsed.netloc and not parsed.scheme and target.startswith('/')
+
+
 @auth.route("/login", methods=["GET", "POST"])
+@limiter.limit("5/minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.indexPage"))
@@ -62,12 +72,15 @@ def login():
         log_audit("login", "user", user.id, f"User {user.username} logged in successfully")
         
         next_url = request.args.get("next")
-        return redirect(next_url or url_for("main.indexPage"))
+        if next_url and is_safe_url(next_url):
+            return redirect(next_url)
+        return redirect(url_for("main.indexPage"))
 
     return render_template("auth/login.html")
 
 
 @auth.route("/api/auth/login", methods=["POST"])
+@limiter.limit("10/minute")
 def api_login():
     """
     JSON-based login that returns a short-lived JWT access token.
@@ -132,7 +145,13 @@ def validate_email(email):
 
 
 @auth.route("/register", methods=["GET", "POST"])
+@limiter.limit("3/minute")
 def register():
+    from flask import current_app
+    if not current_app.config.get('ALLOW_SELF_REGISTRATION', False):
+        flash("Registration is disabled. Please contact an administrator.", "warning")
+        return redirect(url_for("auth.login"))
+
     if current_user.is_authenticated:
         return redirect(url_for("main.indexPage"))
 
