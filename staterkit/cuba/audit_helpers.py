@@ -12,11 +12,7 @@ logger = logging.getLogger(__name__)
 
 def get_client_ip():
     """Get client IP address from request."""
-    if request.headers.get('X-Forwarded-For'):
-        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
-    elif request.headers.get('X-Real-IP'):
-        return request.headers.get('X-Real-IP')
-    return request.remote_addr
+    return request.remote_addr or '0.0.0.0'
 
 
 def get_user_agent():

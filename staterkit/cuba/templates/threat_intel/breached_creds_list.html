@@ -169,7 +169,7 @@
     fetch('/api/breached-creds/search', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
       body: JSON.stringify(state)
     })
     .then(function(r) { return r.json(); })
@@ -214,24 +214,8 @@
 
         // Password
         var td3 = document.createElement('td');
-        if (row.password) {
-          var mask = document.createElement('span');
-          mask.className = 'av-pass';
-          mask.textContent = '\u2022\u2022\u2022\u2022\u2022';
-          var reveal = document.createElement('span');
-          reveal.style.display = 'none';
-          reveal.style.fontFamily = "'SF Mono',SFMono-Regular,Consolas,monospace";
-          reveal.style.fontSize = '12px';
-          reveal.textContent = row.password;
-          td3.style.cursor = 'pointer';
-          td3.appendChild(mask);
-          td3.appendChild(reveal);
-          td3.addEventListener('mouseenter', function() { mask.style.display='none'; reveal.style.display='inline'; });
-          td3.addEventListener('mouseleave', function() { mask.style.display='inline'; reveal.style.display='none'; });
-        } else {
-          td3.textContent = '\u2014';
-          td3.className = 'm';
-        }
+        td3.className = 'm';
+        td3.textContent = row.password ? '\u2022\u2022\u2022\u2022\u2022' : '\u2014';
         tr.appendChild(td3);
 
         // Source

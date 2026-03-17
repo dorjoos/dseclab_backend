@@ -16,7 +16,7 @@ notification_bp = Blueprint('notifications', __name__)
 def get_notifications():
     """Get recent notifications for current user"""
     try:
-        limit = int(request.args.get('limit', 5))
+        limit = min(max(int(request.args.get('limit', 5)), 1), 50)
         unread_only = request.args.get('unread_only', '').lower() in ('1', 'true', 'yes', 'on')
         
         q = Notification.query.filter_by(user_id=current_user.id)

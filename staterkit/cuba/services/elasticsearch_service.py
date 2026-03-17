@@ -130,7 +130,7 @@ class ElasticsearchService:
         self.es = Elasticsearch(
             es_url,
             basic_auth=("elastic", es_password),
-            verify_certs=False,
+            verify_certs=app.config.get('ELASTICSEARCH_VERIFY_CERTS', False),
             ssl_show_warn=False,
         )
         logger.info("Elasticsearch client initialised for %s / index=%s", es_url, self.index)

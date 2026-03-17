@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_
-from .api_utils import sanitize_input
+from .api_utils import sanitize_input, escape_like
 from .models import Company
 from .security import get_user_watchlist_domains
 from .services.elasticsearch_service import es_service
@@ -36,7 +36,7 @@ def search():
 
     if current_user.is_admin_user:
         companies = Company.query.filter(
-            or_(Company.name.ilike(f'%{query}%'), Company.domain.ilike(f'%{query}%'))
+            or_(Company.name.ilike(f'%{escape_like(query)}%'), Company.domain.ilike(f'%{escape_like(query)}%'))
         ).limit(3).all()
         for company in companies:
             results.append({

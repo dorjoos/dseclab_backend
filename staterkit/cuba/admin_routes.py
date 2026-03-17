@@ -6,6 +6,7 @@ import re
 import logging
 
 from . import db
+from .api_utils import escape_like
 from .models import User, Company, WatchlistEntry, AuditLog, UserActivity
 from .auth import validate_password, validate_email
 from .audit_helpers import log_audit
@@ -31,8 +32,8 @@ def user_management():
     if search:
         query = query.filter(
             or_(
-                User.username.ilike(f'%{search}%'),
-                User.email.ilike(f'%{search}%')
+                User.username.ilike(f'%{escape_like(search)}%'),
+                User.email.ilike(f'%{escape_like(search)}%')
             )
         )
     

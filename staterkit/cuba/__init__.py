@@ -26,6 +26,9 @@ def create_app(config_name=None):
     from config import config as config_dict
     app.config.from_object(config_dict[config_name])
 
+    if config_name == 'production' and not app.config.get('SECRET_KEY'):
+        raise RuntimeError('SECRET_KEY must be set in production')
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)

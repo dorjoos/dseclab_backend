@@ -258,7 +258,7 @@
     fetch('/api/timeline', {
       method: 'POST',
       credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
       body: JSON.stringify({ period: period })
     })
     .then(function(r) { return r.json(); })

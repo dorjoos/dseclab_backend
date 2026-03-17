@@ -43,6 +43,23 @@ def _get_domain_filters():
     return get_user_watchlist_domains()
 
 
+def _check_cred_access(cred):
+    """Check if current user can access this credential. Returns True if allowed."""
+    if current_user.is_admin_user:
+        return True
+    domain_filters = _get_domain_filters()
+    if not domain_filters:
+        return False
+    cred_domain = (cred.domain or '').lower()
+    cred_username = (cred.username or '').lower()
+    cred_url = (cred.url or '').lower()
+    for d in domain_filters:
+        d = d.lower()
+        if d in cred_domain or d in cred_username or d in cred_url:
+            return True
+    return False
+
+
 def _attach_metadata(items):
     """Attach local metadata (marks) to a list of BreachedCredDoc items."""
     if not items:
@@ -159,7 +176,6 @@ def breached_creds_list():
 
 
 @threat_intel.route('/api/timeline', methods=['POST'])
-@csrf.exempt
 @login_required
 def timeline_api():
     """AJAX API: return timeline data for different periods."""
@@ -181,7 +197,6 @@ def timeline_api():
 
 
 @threat_intel.route('/api/breached-creds/search', methods=['POST'])
-@csrf.exempt
 @login_required
 def breached_creds_api():
     """AJAX API: POST filters, return JSON results from ES."""
@@ -190,6 +205,7 @@ def breached_creds_api():
 
     page = data.get('page', 1)
     per_page = data.get('per_page', 20)
+    per_page = min(max(int(per_page), 1), 100)
     search_query = sanitize_input(data.get('search', ''))
     type_filter = sanitize_input(data.get('type', ''))
     source_filter = sanitize_input(data.get('source', ''))
@@ -224,7 +240,7 @@ def breached_creds_api():
             'es_id': cred.es_id,
             'username': cred.username or '',
             'domain': cred.domain or '',
-            'password': cred.password or '',
+            'password': '********' if cred.password else '',
             'source': cred.source or '',
             'type': cred.type or '',
             'date': cred.created_at.strftime('%b %d') if cred.created_at else '',
@@ -247,6 +263,9 @@ def breached_creds_view(doc_id):
     cred = es_service.get_by_id(doc_id)
     if not cred:
         flash('Record not found.', 'warning')
+        return redirect(url_for('threat_intel.breached_creds_list'))
+    if not _check_cred_access(cred):
+        flash('Access denied.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
     _attach_metadata([cred])
     breadcrumb = {"parent": "Threat Intelligence", "child": "Credential Details"}
@@ -294,6 +313,9 @@ def breached_creds_mark(doc_id):
     if not cred:
         flash('Record not found.', 'warning')
         return redirect(url_for('threat_intel.breached_creds_list'))
+    if not _check_cred_access(cred):
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.breached_creds_list'))
 
     meta = BreachedCredMeta.query.filter_by(es_id=doc_id).first()
     if not meta:
@@ -326,6 +348,9 @@ def breached_creds_edit(doc_id):
     if not cred:
         flash('Record not found.', 'warning')
         return redirect(url_for('threat_intel.breached_creds_list'))
+    if not _check_cred_access(cred):
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.breached_creds_list'))
 
     if request.method == 'POST':
         doc = {
@@ -354,6 +379,14 @@ def breached_creds_edit(doc_id):
 def breached_creds_delete(doc_id):
     if not current_user.is_admin_user:
         flash('Only administrators can delete breached credentials.', 'danger')
+        return redirect(url_for('threat_intel.breached_creds_list'))
+
+    cred = es_service.get_by_id(doc_id)
+    if not cred:
+        flash('Record not found.', 'warning')
+        return redirect(url_for('threat_intel.breached_creds_list'))
+    if not _check_cred_access(cred):
+        flash('Access denied.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
 
     if es_service.delete_document(doc_id):

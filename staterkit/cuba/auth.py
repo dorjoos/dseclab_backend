@@ -9,7 +9,7 @@ import re
 from datetime import datetime
 import os
 
-from . import db
+from . import db, limiter
 from .models import User, Company
 from .audit_helpers import log_user_activity, log_audit
 
@@ -26,6 +26,7 @@ def is_safe_url(target):
 
 
 @auth.route("/login", methods=["GET", "POST"])
+@limiter.limit("5/minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.indexPage"))
@@ -79,6 +80,7 @@ def login():
 
 
 @auth.route("/api/auth/login", methods=["POST"])
+@limiter.limit("10/minute")
 def api_login():
     """
     JSON-based login that returns a short-lived JWT access token.
