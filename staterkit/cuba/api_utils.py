@@ -40,3 +40,18 @@ def json_success(data: Dict[str, Any] | None = None, status_code: int = 200):
     return response
 
 
+import html
+
+
+def sanitize_input(text: str) -> str:
+    """Sanitize user input to prevent XSS."""
+    if not text:
+        return ""
+    return html.escape(str(text).strip())
+
+
+def escape_like(value: str) -> str:
+    """Escape SQL LIKE wildcard characters."""
+    if not value:
+        return ""
+    return value.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
