@@ -1,7 +1,6 @@
-from cuba import app
+from cuba import create_app
 
-if __name__ == "__main__":
-    # Local development entrypoint
-    app.run(debug=True)
+app = create_app()
 
-
+if __name__ == '__main__':
+    app.run(debug=True, port=8003)
