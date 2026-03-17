@@ -1,138 +1,403 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="container-fluid p-0">
+{% block css %}
+<style>
+  /* Apple-style data view */
+  .av-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .av-toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .av-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
-  <!-- Toolbar: everything in one compact bar -->
-  <div class="card mb-3">
-    <div class="card-body" style="padding:12px 20px;">
-      <form method="GET" id="filter-form" style="margin:0;">
-        <!-- Row 1: Date pills + search + actions -->
-        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-          <!-- Date pills -->
-          <div class="d-flex align-items-center gap-1">
-            {% set date_options = [('today', 'Today'), ('week', 'Week'), ('month', 'Month'), ('all', 'All')] %}
-            {% for val, label in date_options %}
-            <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=val, type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
-               style="padding:4px 12px; font-size:12px; font-weight:500; border-radius:4px; text-decoration:none; transition:all 0.15s;
-               {% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}background:var(--primary);color:#fff;{% else %}background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);{% endif %}">
-              {{ label }}
-            </a>
-            {% endfor %}
-            <span style="margin:0 8px;color:var(--border);">|</span>
-            <span style="font-size:12px;color:var(--text-muted);">{{ stats.total|format_number }} records</span>
-          </div>
+  /* Segmented control */
+  .av-segmented {
+    display: inline-flex;
+    background: var(--bg);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 1px;
+  }
+  .av-segmented a {
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: 5px;
+    transition: all 0.15s;
+  }
+  .av-segmented a.active {
+    background: var(--bg-white);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .av-segmented a:hover:not(.active) {
+    color: var(--text);
+  }
 
-          <!-- Actions -->
-          <div class="d-flex gap-2">
-            {% if current_user.can_edit() %}
-            <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="btn btn-primary btn-sm" style="padding:4px 12px;font-size:12px;">+ Add</a>
-            {% endif %}
-            <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="btn btn-outline-primary btn-sm" style="padding:4px 12px;font-size:12px;" id="export-btn">Export</a>
-            <a href="{{ url_for('threat_intel.analysis') }}" class="btn btn-outline-primary btn-sm" style="padding:4px 12px;font-size:12px;">Analysis</a>
-          </div>
-        </div>
+  /* Search field */
+  .av-search {
+    position: relative;
+  }
+  .av-search input {
+    background: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px 6px 28px;
+    font-size: 12px;
+    width: 180px;
+    outline: none;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+  .av-search input:focus {
+    background: var(--bg-white);
+    box-shadow: 0 0 0 2px var(--primary);
+    width: 220px;
+  }
+  .av-search input::placeholder { color: var(--text-muted); }
+  .av-search svg {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+  }
 
-        <!-- Row 2: Filters (compact, inline) -->
-        <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
-          <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
-          <select class="form-select form-select-sm" name="type" style="width:auto;min-width:110px;font-size:12px;padding:4px 28px 4px 8px;">
-            <option value="">All Types</option>
-            {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
-            <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
-            {% endfor %}
-          </select>
-          <input type="text" class="form-control form-control-sm" name="source" placeholder="Source" value="{{ filters.source or '' }}" style="width:120px;font-size:12px;padding:4px 8px;">
-          <input type="text" class="form-control form-control-sm" name="domain" placeholder="Domain" value="{{ filters.domain or '' }}" style="width:120px;font-size:12px;padding:4px 8px;">
-          <input type="text" class="form-control form-control-sm" name="search" placeholder="Search..." value="{{ filters.search or '' }}" style="width:160px;font-size:12px;padding:4px 8px;">
-          <button type="submit" class="btn btn-primary btn-sm" style="padding:4px 12px;font-size:12px;">Go</button>
-          {% if filters.search or filters.type or filters.source or filters.domain %}
-          <a href="{{ url_for('threat_intel.breached_creds_list') }}" style="font-size:12px;color:var(--text-muted);text-decoration:none;">Clear</a>
-          {% endif %}
-        </div>
-      </form>
-    </div>
-  </div>
+  /* Toolbar button */
+  .av-btn {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary);
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .av-btn:hover {
+    background: var(--primary-50);
+    color: var(--primary);
+    text-decoration: none;
+  }
+  .av-btn-filled {
+    background: var(--primary);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 6px;
+  }
+  .av-btn-filled:hover {
+    background: var(--primary-hover);
+    color: #fff;
+  }
 
-  <!-- Data Grid -->
-  <div class="card">
-    <div class="card-body p-0">
-      {% if breached_creds %}
-      <div class="table-responsive">
-        <table class="mb-0" style="width:100%;font-size:12px;border-collapse:collapse;">
-          <thead>
-            <tr style="background:var(--bg);border-bottom:2px solid var(--border);">
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">#</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Username</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Domain</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Pass</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:left;">Source</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:center;">Type</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:right;">Date</th>
-              <th style="padding:6px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);text-align:center;width:60px;"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for cred in breached_creds %}
-            <tr style="border-bottom:1px solid var(--border-light);transition:background 0.1s;{% if cred.is_marked %}border-left:3px solid var(--warning);{% endif %}" onmouseover="this.style.background='var(--primary-50)'" onmouseout="this.style.background=''">
-              <td style="padding:6px 12px;color:var(--text-muted);font-size:11px;font-variant-numeric:tabular-nums;">{{ loop.index + (pagination.page - 1) * 20 }}</td>
-              <td style="padding:6px 12px;font-weight:500;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cred.username or '-' }}</td>
-              <td style="padding:6px 12px;">{% if cred.domain %}<span style="background:var(--primary-50);color:var(--primary);padding:2px 6px;border-radius:3px;font-size:11px;font-weight:500;">{{ cred.domain }}</span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
-              <td style="padding:6px 12px;">{% if cred.password %}<span class="password-mask" style="cursor:pointer;" title="Hover to reveal"><span class="masked-password" style="color:var(--text-muted);font-size:11px;">•••••</span><span class="revealed-password" style="font-family:'SF Mono',SFMono-Regular,Consolas,monospace;font-size:11px;color:var(--danger);">{{ cred.password }}</span></span>{% else %}<span style="color:var(--text-muted);">—</span>{% endif %}</td>
-              <td style="padding:6px 12px;color:var(--text-secondary);font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cred.source or '-' }}</td>
-              <td style="padding:6px 12px;text-align:center;">{% if cred.type %}<span style="background:{% if cred.type == 'url' %}#dbeafe{% elif cred.type == 'stealer' %}#fef2f2{% elif cred.type == 'malware' %}#fffbeb{% else %}#f1f5f9{% endif %};color:{% if cred.type == 'url' %}#1e40af{% elif cred.type == 'stealer' %}#991b1b{% elif cred.type == 'malware' %}#92400e{% else %}#475569{% endif %};padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">{{ cred.type }}</span>{% else %}—{% endif %}</td>
-              <td style="padding:6px 12px;color:var(--text-muted);font-size:11px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">{{ cred.created_at.strftime('%m/%d') if cred.created_at else '-' }}</td>
-              <td style="padding:6px 12px;text-align:center;">
-                <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" title="View" style="color:var(--primary);text-decoration:none;font-size:11px;font-weight:500;opacity:0.7;transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">View</a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+  /* Record count */
+  .av-count {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
 
-      <!-- Pagination -->
-      {% if pagination.pages > 1 %}
-      <div style="padding:10px 20px; border-top:1px solid var(--border-light); display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:11px; color:var(--text-muted);">
-          {{ pagination.page }}/{{ pagination.pages }} &middot; {{ pagination.total|format_number }} total
-        </span>
-        <nav>
-          <ul class="pagination mb-0" style="gap:2px;">
-            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-              <a class="page-link" style="padding:4px 8px;font-size:12px;" href="?page={{ pagination.prev_num or 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&lsaquo;</a>
-            </li>
-            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-              {% if page_num %}
-                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                  <a class="page-link" style="padding:4px 8px;font-size:12px;" href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">{{ page_num }}</a>
-                </li>
-              {% else %}
-                <li class="page-item disabled"><span class="page-link" style="padding:4px 8px;font-size:12px;">...</span></li>
-              {% endif %}
-            {% endfor %}
-            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-              <a class="page-link" style="padding:4px 8px;font-size:12px;" href="?page={{ pagination.next_num or pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&rsaquo;</a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-      {% endif %}
+  /* Table */
+  .av-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .av-table thead th {
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg-white);
+    user-select: none;
+  }
+  .av-table thead th.right { text-align: right; }
+  .av-table thead th.center { text-align: center; }
 
-      {% else %}
-      <div class="dsec-empty">
-        <i data-feather="shield-off"></i>
-        <p style="margin:8px 0 0;">No results found.</p>
-        <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm" style="margin-top:12px;">Clear Filters</a>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-</div>
+  .av-table tbody tr {
+    transition: background 0.1s;
+  }
+  .av-table tbody tr:nth-child(even) {
+    background: rgba(0,0,0,0.015);
+  }
+  [data-theme="dark"] .av-table tbody tr:nth-child(even) {
+    background: rgba(255,255,255,0.02);
+  }
+  .av-table tbody tr:hover {
+    background: var(--primary-50);
+  }
+  .av-table tbody td {
+    padding: 7px 14px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 240px;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .av-table tbody td.mono {
+    font-family: 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px;
+  }
+  .av-table tbody td.muted {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .av-table tbody td.right { text-align: right; }
+  .av-table tbody td.center { text-align: center; }
+
+  /* Inline tag */
+  .av-tag {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--bg);
+    color: var(--text-secondary);
+  }
+
+  /* View link */
+  .av-view-link {
+    font-size: 12px;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 400;
+  }
+  .av-view-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Password */
+  .av-pass {
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: default;
+    letter-spacing: 1px;
+  }
+  .av-pass-reveal {
+    display: none;
+    color: var(--text);
+    letter-spacing: 0;
+  }
+  .av-pass-cell:hover .av-pass { display: none; }
+  .av-pass-cell:hover .av-pass-reveal { display: inline; }
+
+  /* Pagination */
+  .av-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-top: 1px solid var(--border-light);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .av-pagination-nav {
+    display: flex;
+    gap: 2px;
+  }
+  .av-pagination-nav a,
+  .av-pagination-nav span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 26px;
+    padding: 0 6px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .av-pagination-nav a:hover {
+    background: var(--bg);
+  }
+  .av-pagination-nav .active {
+    background: var(--primary);
+    color: #fff;
+  }
+  .av-pagination-nav .disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Filters row */
+  .av-filters {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px 10px;
+    flex-wrap: wrap;
+  }
+  .av-filter-select {
+    font-size: 12px;
+    padding: 4px 24px 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-white);
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+  .av-filter-select:focus {
+    border-color: var(--primary);
+  }
+  .av-filter-input {
+    font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg-white);
+    color: var(--text);
+    outline: none;
+    width: 110px;
+  }
+  .av-filter-input:focus {
+    border-color: var(--primary);
+  }
+  .av-filter-input::placeholder { color: var(--text-muted); }
+
+  /* Empty state */
+  .av-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .av-empty p { margin: 8px 0 0; font-size: 13px; }
+</style>
 {% endblock %}
 
-{% block scriptcontent %}
-<script>
-  if (typeof feather !== 'undefined') feather.replace();
-</script>
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="card" style="overflow:hidden;">
+    <!-- Toolbar -->
+    <div class="av-toolbar" style="border-bottom:1px solid var(--border-light);">
+      <div class="av-toolbar-left">
+        <div class="av-segmented">
+          {% set date_opts = [('all','All'),('today','Today'),('week','Week'),('month','Month')] %}
+          {% for val, label in date_opts %}
+          <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=val, type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}" class="{% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}active{% endif %}">{{ label }}</a>
+          {% endfor %}
+        </div>
+        <span class="av-count">{{ stats.total|format_number }} items</span>
+      </div>
+      <div class="av-toolbar-right">
+        <form method="GET" style="margin:0;display:flex;align-items:center;gap:6px;" id="filter-form">
+          <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
+          <div class="av-search">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" name="search" placeholder="Search..." value="{{ filters.search or '' }}">
+          </div>
+        </form>
+        <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="av-btn" id="export-btn">Export</a>
+        <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
+        {% if current_user.can_edit() %}
+        <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Filters (show only if any filter active, or always minimal) -->
+    <form method="GET" class="av-filters" style="padding-top:8px;">
+      <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
+      <input type="hidden" name="search" value="{{ filters.search or '' }}">
+      <select class="av-filter-select" name="type" onchange="this.form.submit()">
+        <option value="">All types</option>
+        {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
+        <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" class="av-filter-input" name="source" placeholder="Source" value="{{ filters.source or '' }}">
+      <input type="text" class="av-filter-input" name="domain" placeholder="Domain" value="{{ filters.domain or '' }}">
+      <button type="submit" class="av-btn" style="font-size:11px;">Apply</button>
+      {% if filters.type or filters.source or filters.domain %}
+      <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=filters.date_filter or '') }}" class="av-btn" style="font-size:11px;color:var(--text-muted);">Clear</a>
+      {% endif %}
+    </form>
+
+    <!-- Table -->
+    {% if breached_creds %}
+    <div style="overflow-x:auto;">
+      <table class="av-table">
+        <thead>
+          <tr>
+            <th style="width:30px;padding-left:16px;">#</th>
+            <th>Username</th>
+            <th>Domain</th>
+            <th>Password</th>
+            <th>Source</th>
+            <th class="center">Type</th>
+            <th class="right" style="padding-right:16px;">Date</th>
+            <th style="width:50px;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for cred in breached_creds %}
+          <tr>
+            <td class="muted" style="padding-left:16px;">{{ loop.index + (pagination.page - 1) * 20 }}</td>
+            <td style="font-weight:500;">{{ cred.username or '—' }}</td>
+            <td class="muted">{{ cred.domain or '—' }}</td>
+            <td class="mono av-pass-cell">{% if cred.password %}<span class="av-pass">•••••</span><span class="av-pass-reveal mono">{{ cred.password }}</span>{% else %}—{% endif %}</td>
+            <td class="muted" style="max-width:160px;">{{ cred.source or '—' }}</td>
+            <td class="center">{% if cred.type %}<span class="av-tag">{{ cred.type }}</span>{% else %}—{% endif %}</td>
+            <td class="muted right" style="padding-right:16px;font-variant-numeric:tabular-nums;">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
+            <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="av-pagination">
+      <span>{{ pagination.page }} of {{ pagination.pages }}</span>
+      <div class="av-pagination-nav">
+        <a href="?page={{ pagination.prev_num or 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" class="{% if not pagination.has_prev %}disabled{% endif %}">&lsaquo;</a>
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+          {% if page_num %}
+            <a href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" class="{% if page_num == pagination.page %}active{% endif %}">{{ page_num }}</a>
+          {% else %}
+            <span class="disabled">…</span>
+          {% endif %}
+        {% endfor %}
+        <a href="?page={{ pagination.next_num or pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}" class="{% if not pagination.has_next %}disabled{% endif %}">&rsaquo;</a>
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="av-empty">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+      <p>No results found</p>
+      <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-btn" style="margin-top:8px;">Clear filters</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
