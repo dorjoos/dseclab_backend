@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid p-0" style="max-width:480px;">
+  <div class="card" style="padding:32px;text-align:center;">
+    <div style="font-size:20px;font-weight:700;margin-bottom:8px;">Enable Two-Factor Authentication</div>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:24px;">Scan the QR code with your authenticator app (Google Authenticator, Authy, etc.)</p>
+
+    <div style="background:var(--bg);border-radius:12px;padding:20px;margin-bottom:20px;display:inline-block;">
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code" style="width:200px;height:200px;">
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Manual entry key</div>
+      <code style="font-size:14px;font-weight:600;background:var(--bg);padding:6px 14px;border-radius:6px;letter-spacing:2px;user-select:all;">{{ secret }}</code>
+    </div>
+
+    <form method="POST" style="max-width:280px;margin:0 auto;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="secret" value="{{ secret }}">
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Verification Code</label>
+        <input type="text" name="token" class="form-control" style="font-size:18px;text-align:center;letter-spacing:8px;padding:12px;" placeholder="000000" maxlength="6" autocomplete="off" required autofocus>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:10px;">Verify & Enable</button>
+    </form>
+
+    <a href="{{ url_for('auth.profile') }}" style="display:block;margin-top:16px;font-size:13px;color:var(--text-muted);">Cancel</a>
+  </div>
+</div>
+{% endblock %}

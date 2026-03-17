@@ -178,7 +178,23 @@ def breached_creds_list():
 @threat_intel.route('/api/timeline', methods=['POST'])
 @login_required
 def timeline_api():
-    """AJAX API: return timeline data for different periods."""
+    """Get breach timeline data
+    ---
+    tags:
+      - Analytics
+    parameters:
+      - in: body
+        name: body
+        schema:
+          type: object
+          properties:
+            period:
+              type: string
+              enum: [7d, week, month]
+    responses:
+      200:
+        description: Timeline labels and data arrays
+    """
     from flask import jsonify
     data = request.get_json(silent=True) or {}
     period = data.get('period', '7d')
@@ -199,7 +215,37 @@ def timeline_api():
 @threat_intel.route('/api/breached-creds/search', methods=['POST'])
 @login_required
 def breached_creds_api():
-    """AJAX API: POST filters, return JSON results from ES."""
+    """Search breached credentials
+    ---
+    tags:
+      - Breached Credentials
+    parameters:
+      - in: body
+        name: body
+        schema:
+          type: object
+          properties:
+            page:
+              type: integer
+              default: 1
+            per_page:
+              type: integer
+              default: 20
+            search:
+              type: string
+            type:
+              type: string
+            source:
+              type: string
+            domain:
+              type: string
+            date_filter:
+              type: string
+              enum: [all, today, week, month]
+    responses:
+      200:
+        description: Paginated search results
+    """
     from flask import jsonify
     data = request.get_json(silent=True) or {}
 
@@ -402,6 +448,24 @@ def breached_creds_delete(doc_id):
 @threat_intel.route('/threat-intelligence/breached-creds/export')
 @login_required
 def breached_creds_export():
+    """Export breached credentials
+    ---
+    tags:
+      - Breached Credentials
+    parameters:
+      - name: format
+        in: query
+        type: string
+        enum: [csv, xlsx, json, pdf]
+        default: csv
+      - name: ids
+        in: query
+        type: string
+        description: Comma-separated ES document IDs for selected export
+    responses:
+      200:
+        description: File download
+    """
     export_format = request.args.get('format', 'csv').lower()
     domain_filters = _get_domain_filters()
 

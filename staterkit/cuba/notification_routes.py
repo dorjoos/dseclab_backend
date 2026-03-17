@@ -14,7 +14,22 @@ notification_bp = Blueprint('notifications', __name__)
 @notification_bp.route('/api/notifications')
 @login_required
 def get_notifications():
-    """Get recent notifications for current user"""
+    """Get user notifications
+    ---
+    tags:
+      - Notifications
+    parameters:
+      - name: limit
+        in: query
+        type: integer
+        default: 5
+      - name: unread_only
+        in: query
+        type: string
+    responses:
+      200:
+        description: Notifications list with unread count
+    """
     try:
         limit = min(max(int(request.args.get('limit', 5)), 1), 50)
         unread_only = request.args.get('unread_only', '').lower() in ('1', 'true', 'yes', 'on')
@@ -53,7 +68,19 @@ def get_notifications():
 @notification_bp.route('/api/notifications/<int:id>/read', methods=['POST'])
 @login_required
 def mark_read(id):
-    """Mark notification as read"""
+    """Mark notification as read
+    ---
+    tags:
+      - Notifications
+    parameters:
+      - name: id
+        in: path
+        type: integer
+        required: true
+    responses:
+      200:
+        description: Success
+    """
     try:
         notification = Notification.query.get_or_404(id)
         
@@ -72,7 +99,14 @@ def mark_read(id):
 @notification_bp.route('/api/notifications/mark-all-read', methods=['POST'])
 @login_required
 def mark_all_read():
-    """Mark all notifications as read"""
+    """Mark all notifications as read
+    ---
+    tags:
+      - Notifications
+    responses:
+      200:
+        description: Success
+    """
     Notification.query.filter_by(
         user_id=current_user.id,
         is_read=False

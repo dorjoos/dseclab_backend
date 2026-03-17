@@ -64,6 +64,8 @@ class User(db.Model, UserMixin):
     last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
+    totp_secret = db.Column(db.String(32), nullable=True)  # TOTP secret for 2FA
+    totp_enabled = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return f"User('{self.username}','{self.email}','{self.role}')"

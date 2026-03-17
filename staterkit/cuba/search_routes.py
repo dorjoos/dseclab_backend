@@ -12,6 +12,20 @@ search_bp = Blueprint('search', __name__)
 @search_bp.route('/api/search')
 @login_required
 def search():
+    """Global search
+    ---
+    tags:
+      - Search
+    parameters:
+      - name: q
+        in: query
+        type: string
+        required: true
+        description: Search query (min 2 chars)
+    responses:
+      200:
+        description: Array of search results
+    """
     query = sanitize_input(request.args.get('q', ''))
     if not query or len(query) < 2:
         return jsonify([])

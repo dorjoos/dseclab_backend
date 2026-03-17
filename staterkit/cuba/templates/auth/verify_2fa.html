@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify 2FA | D-SECLAB</title>
+  <link rel="icon" href="{{ url_for('static', filename='assets/images/favicon.png') }}" type="image/x-icon">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 50%,#f5f3ff 100%);color:#0f172a;padding:20px;}
+    .card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06);padding:40px;width:100%;max-width:380px;text-align:center;}
+    .card img{height:36px;margin-bottom:20px;}
+    .card h1{font-size:20px;font-weight:700;margin-bottom:6px;}
+    .card p{font-size:13px;color:#64748b;margin-bottom:24px;}
+    label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-align:left;}
+    input[type="text"]{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;font-size:20px;font-family:'Inter',sans-serif;outline:none;text-align:center;letter-spacing:8px;}
+    input[type="text"]:focus{border-color:#1a56db;box-shadow:0 0 0 3px rgba(26,86,219,0.08);}
+    .btn{width:100%;padding:11px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;margin-top:16px;}
+    .btn:hover{background:#1347b8;}
+    .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;font-weight:500;}
+    .alert-danger{background:#fef2f2;color:#dc2626;}
+    .back{display:block;margin-top:16px;font-size:13px;color:#94a3b8;text-decoration:none;}
+    .back:hover{color:#1a56db;}
+    @media(prefers-color-scheme:dark){body{background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#1e293b 100%);}.card{background:#1e293b;box-shadow:0 4px 24px rgba(0,0,0,0.3);}h1{color:#e2e8f0;}p{color:#64748b;}label{color:#94a3b8;}input[type="text"]{background:#0f172a;border-color:#334155;color:#e2e8f0;}.back{color:#64748b;}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="{{ url_for('static', filename='assets/images/logo/logo.png') }}" alt="D-SECLAB">
+    <h1>Two-Factor Authentication</h1>
+    <p>Enter the 6-digit code from your authenticator app</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Verification Code</label>
+      <input type="text" name="token" placeholder="000000" maxlength="6" autocomplete="off" required autofocus>
+      <button type="submit" class="btn">Verify</button>
+    </form>
+    <a href="{{ url_for('auth.login') }}" class="back">Back to login</a>
+  </div>
+</body>
+</html>

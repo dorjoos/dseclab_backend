@@ -35,6 +35,20 @@
             <span style="font-size:13px;color:var(--text-muted);">Created</span>
             <span style="font-size:13px;font-weight:500;">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else '—' }}</span>
           </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border-light);">
+            <span style="font-size:13px;color:var(--text-muted);">2FA</span>
+            {% if user.totp_enabled %}
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="av-tag av-tag-success">Enabled</span>
+              <form method="POST" action="{{ url_for('auth.disable_2fa') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;text-decoration:underline;">Disable</button>
+              </form>
+            </div>
+            {% else %}
+            <a href="{{ url_for('auth.setup_2fa') }}" class="av-tag av-tag-blue" style="text-decoration:none;cursor:pointer;">Enable</a>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>

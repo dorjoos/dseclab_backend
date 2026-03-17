@@ -41,6 +41,41 @@ def create_app(config_name=None):
     from .services.elasticsearch_service import es_service
     es_service.init_app(app)
 
+    # Swagger API docs
+    from flasgger import Swagger
+    swagger_config = {
+        "headers": [],
+        "specs": [{
+            "endpoint": "apispec",
+            "route": "/apispec.json",
+        }],
+        "static_url_path": "/flasgger_static",
+        "swagger_ui": True,
+        "specs_route": "/api/docs/",
+        "title": "D-SECLAB API",
+        "description": "Threat Intelligence Platform API",
+        "version": "1.0.0",
+    }
+    swagger_template = {
+        "info": {
+            "title": "D-SECLAB API",
+            "description": "API endpoints for the D-SECLAB Threat Intelligence Platform",
+            "version": "1.0.0",
+        },
+        "securityDefinitions": {
+            "Bearer": {
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header",
+                "description": "JWT token: Bearer <token>"
+            }
+        },
+        "security": [{"Bearer": []}],
+    }
+    Swagger(app, config=swagger_config, template=swagger_template)
+
+    csrf.exempt(app.view_functions.get('flasgger.apispec', lambda: None))
+
     @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf

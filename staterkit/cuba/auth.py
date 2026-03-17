@@ -65,12 +65,19 @@ def login():
                 else:
                     raise
 
+        # Check if 2FA is enabled
+        if user.totp_enabled and user.totp_secret:
+            session["2fa_user_id"] = user.id
+            session["2fa_remember"] = remember
+            session["2fa_next"] = request.args.get("next")
+            return redirect(url_for("auth.verify_2fa"))
+
         login_user(user, remember=remember)
-        
+
         # Log successful login
         log_user_activity("login", user.id, status="success")
         log_audit("login", "user", user.id, f"User {user.username} logged in successfully")
-        
+
         next_url = request.args.get("next")
         if next_url and is_safe_url(next_url):
             return redirect(next_url)
@@ -82,11 +89,28 @@ def login():
 @auth.route("/api/auth/login", methods=["POST"])
 @limiter.limit("10/minute")
 def api_login():
-    """
-    JSON-based login that returns a short-lived JWT access token.
-
-    Request JSON:
-        { "email": "...", "password": "..." }
+    """API Login - get JWT token
+    ---
+    tags:
+      - Authentication
+    parameters:
+      - in: body
+        name: body
+        schema:
+          type: object
+          required:
+            - email
+            - password
+          properties:
+            email:
+              type: string
+            password:
+              type: string
+    responses:
+      200:
+        description: JWT access token
+      401:
+        description: Invalid credentials
     """
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
@@ -287,4 +311,88 @@ def profile():
 
     breadcrumb = {"parent": "User Profile", "child": "Profile"}
     return render_template("auth/profile.html", user=current_user, breadcrumb=breadcrumb)
+
+
+@auth.route("/2fa/setup", methods=["GET", "POST"])
+@login_required
+def setup_2fa():
+    import pyotp
+    import qrcode
+    import io
+    import base64
+
+    if request.method == "POST":
+        # Verify the TOTP code to confirm setup
+        token = request.form.get("token", "").strip()
+        secret = request.form.get("secret", "").strip()
+        if not token or not secret:
+            flash("Please enter the verification code.", "warning")
+            return redirect(url_for("auth.setup_2fa"))
+
+        totp = pyotp.TOTP(secret)
+        if totp.verify(token):
+            current_user.totp_secret = secret
+            current_user.totp_enabled = True
+            db.session.commit()
+            flash("Two-factor authentication enabled successfully.", "success")
+            return redirect(url_for("auth.profile"))
+        else:
+            flash("Invalid verification code. Please try again.", "danger")
+            return redirect(url_for("auth.setup_2fa"))
+
+    # Generate new secret
+    secret = pyotp.random_base32()
+    totp = pyotp.TOTP(secret)
+    uri = totp.provisioning_uri(name=current_user.email, issuer_name="D-SECLAB")
+
+    # Generate QR code as base64
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    qr_b64 = base64.b64encode(buf.getvalue()).decode()
+
+    breadcrumb = {"parent": "Settings", "child": "Two-Factor Authentication"}
+    return render_template("auth/setup_2fa.html", secret=secret, qr_b64=qr_b64, breadcrumb=breadcrumb)
+
+
+@auth.route("/2fa/disable", methods=["POST"])
+@login_required
+def disable_2fa():
+    current_user.totp_secret = None
+    current_user.totp_enabled = False
+    db.session.commit()
+    flash("Two-factor authentication disabled.", "info")
+    return redirect(url_for("auth.profile"))
+
+
+@auth.route("/2fa/verify", methods=["GET", "POST"])
+def verify_2fa():
+    import pyotp
+
+    user_id = session.get("2fa_user_id")
+    if not user_id:
+        return redirect(url_for("auth.login"))
+
+    if request.method == "POST":
+        token = request.form.get("token", "").strip()
+        user = db.session.get(User, user_id)
+        if not user:
+            session.pop("2fa_user_id", None)
+            return redirect(url_for("auth.login"))
+
+        totp = pyotp.TOTP(user.totp_secret)
+        if totp.verify(token):
+            session.pop("2fa_user_id", None)
+            remember = session.pop("2fa_remember", False)
+            login_user(user, remember=remember)
+            log_user_activity("login", user.id, status="success")
+            log_audit("login", "user", user.id, f"User {user.username} logged in with 2FA")
+            next_url = session.pop("2fa_next", None)
+            if next_url and is_safe_url(next_url):
+                return redirect(next_url)
+            return redirect(url_for("main.indexPage"))
+        else:
+            flash("Invalid verification code.", "danger")
+
+    return render_template("auth/verify_2fa.html")
 
