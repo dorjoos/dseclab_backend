@@ -116,8 +116,8 @@
     </div>
     <div class="col-lg-5">
       <div class="card" style="padding:24px;">
-        <div class="an-section">Type Breakdown</div>
-        <div id="type-chart"></div>
+        <div class="an-section">Breach Timeline <span style="font-size:12px;font-weight:400;color:var(--text-muted);margin-left:6px;">Last 90 days</span></div>
+        <div id="timeline-chart"></div>
       </div>
     </div>
   </div>
@@ -175,28 +175,30 @@
 <script>
   var colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'];
 
-  // Type Breakdown — Polar Area chart
-  var typeEl = document.getElementById('type-chart');
-  if (typeEl) {
-    var typeData = {{ by_type|tojson }};
-    var labels = Object.keys(typeData);
-    var vals = Object.values(typeData);
-    new ApexCharts(typeEl, {
-      series: vals,
-      chart: { type: 'polarArea', height: 300, fontFamily: 'Inter, sans-serif' },
-      labels: labels,
-      colors: colors,
-      fill: { opacity: 0.85 },
-      stroke: { width: 2, colors: ['var(--bg-white)'] },
-      legend: { position: 'bottom', fontSize: '13px', fontWeight: 500, markers: { width: 10, height: 10, radius: 3 } },
-      plotOptions: {
-        polarArea: {
-          rings: { strokeWidth: 1, strokeColor: 'var(--border-light)' },
-          spokes: { strokeWidth: 1, connectorColors: 'var(--border-light)' }
+  // Breach Timeline — area chart
+  var tlEl = document.getElementById('timeline-chart');
+  if (tlEl) {
+    var tlLabels = {{ timeline_labels|tojson }};
+    var tlData = {{ timeline_data|tojson }};
+    new ApexCharts(tlEl, {
+      series: [{ name: 'Breaches', data: tlData }],
+      chart: { type: 'area', height: 280, fontFamily: 'Inter, sans-serif', toolbar: { show: false }, sparkline: { enabled: false } },
+      colors: ['#7c3aed'],
+      stroke: { curve: 'smooth', width: 2.5 },
+      fill: {
+        type: 'gradient',
+        gradient: { shadeIntensity: 1, opacityFrom: 0.5, opacityTo: 0.05, stops: [0, 90, 100],
+          colorStops: [
+            { offset: 0, color: '#7c3aed', opacity: 0.4 },
+            { offset: 100, color: '#ec4899', opacity: 0.05 }
+          ]
         }
       },
-      yaxis: { show: false },
-      tooltip: { y: { formatter: function(v) { return v.toLocaleString() + ' records'; } } }
+      dataLabels: { enabled: false },
+      xaxis: { categories: tlLabels, labels: { show: true, rotate: -45, rotateAlways: false, style: { fontSize: '10px', colors: 'var(--text-muted)' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+      yaxis: { labels: { style: { fontSize: '11px', colors: 'var(--text-muted)' }, formatter: function(v) { return v >= 1000 ? (v/1000).toFixed(0) + 'k' : v; } } },
+      grid: { borderColor: 'var(--border-light)', strokeDashArray: 3, xaxis: { lines: { show: false } } },
+      tooltip: { theme: 'light', x: { show: true }, y: { formatter: function(v) { return v.toLocaleString() + ' breaches'; } } }
     }).render();
   }
 

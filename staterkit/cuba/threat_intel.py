@@ -457,7 +457,10 @@ def analysis():
                           total=stats["total"], by_type=stats["by_type"],
                           by_source=stats["by_source"], by_domain=stats["by_domain"],
                           recent=stats["recent"], marked_count=stats["marked_count"],
-                          user_domain=stats["user_domain"], breadcrumb=breadcrumb)
+                          user_domain=stats["user_domain"],
+                          timeline_labels=stats["timeline_labels"],
+                          timeline_data=stats["timeline_data"],
+                          breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/threat-intelligence/reports')
