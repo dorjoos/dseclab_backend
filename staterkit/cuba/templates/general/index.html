@@ -496,11 +496,11 @@
                     </td>
                     <td>
                       <div class="btn-group">
-                        <a href="{{ url_for('threat_intel.breached_creds_view', id=event.id) }}" class="btn btn-sm btn-primary" title="View Details">
+                        <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="btn btn-sm btn-primary" title="View Details">
                           <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                         </a>
                         {% if current_user.can_edit() %}
-                        <a href="{{ url_for('threat_intel.breached_creds_edit', id=event.id) }}" class="btn btn-sm btn-info" title="Edit">
+                        <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=event.es_id) }}" class="btn btn-sm btn-info" title="Edit">
                           <i data-feather="edit" style="width: 14px; height: 14px;"></i>
                         </a>
                         {% endif %}

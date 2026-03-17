@@ -16,7 +16,7 @@
         </div>
         <div class="card-body">
           <div class="card-wrapper border rounded-3">
-          <form class="row g-3" method="POST" action="{% if breached_cred %}{{ url_for('threat_intel.breached_creds_edit', id=breached_cred.id) }}{% else %}{{ url_for('threat_intel.breached_creds_add') }}{% endif %}">
+          <form class="row g-3" method="POST" action="{% if breached_cred %}{{ url_for('threat_intel.breached_creds_edit', doc_id=breached_cred.es_id) }}{% else %}{{ url_for('threat_intel.breached_creds_add') }}{% endif %}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
               <div class="col-md-6">

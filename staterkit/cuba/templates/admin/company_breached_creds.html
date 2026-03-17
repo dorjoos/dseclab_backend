@@ -104,7 +104,7 @@
                     </td>
                     <td>{{ cred.created_at.strftime('%Y-%m-%d') if cred.created_at else '-' }}</td>
                     <td>
-                      <a href="{{ url_for('threat_intel.breached_creds_view', id=cred.id) }}" 
+                      <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}"
                          class="btn btn-primary btn-sm" title="View Details">
                         <i data-feather="eye"></i>
                       </a>
