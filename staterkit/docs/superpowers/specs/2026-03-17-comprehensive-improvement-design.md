@@ -204,7 +204,224 @@ class ProductionConfig(BaseConfig):
 
 ---
 
-## Files Modified
+## 6. Elasticsearch Live Query Integration
+
+### Overview
+Replace local SQLite/PostgreSQL storage for breached credentials with live queries to Elasticsearch.
+
+- **ES Cluster:** `https://localhost:9200` (Elasticsearch 8.x, TLS, basic auth)
+- **Index:** `main` (392,804 documents)
+- **Auth:** Basic auth (`elastic` user)
+
+**Architecture split:**
+- **Elasticsearch:** All breached credential data (search, list, stats, exports). Source of truth for breach data.
+- **SQLite/PostgreSQL:** Users, companies, watchlists, audit logs, notifications, and breach metadata (marks/reviews).
+
+### 6.1 ES Document Schema (from `main` index)
+
+```json
+{
+  "type": "url",
+  "source": "Telegram",
+  "url": "https://accounts.mobicom.mn",
+  "username": "94281723",
+  "password": "mrgmss88L59L219f#@",
+  "domain": "mobicom.mn",
+  "timestamp": "2025-11-30T00:38:22.855026",
+  "date_added": "2025-12-01T...",
+  "file_hash": "...",
+  "file_name": "...",
+  "value": "..."
+}
+```
+
+### 6.2 Field mapping: ES → App
+
+| ES Field | App Usage | Notes |
+|----------|-----------|-------|
+| `_id` | Unique identifier | ES auto-generated, used to link local metadata |
+| `type` | Credential type | `url`, etc. |
+| `source` | Data source | `Telegram`, etc. |
+| `url` | Associated URL | Full URL |
+| `username` | Breached username | May be email, phone, or username |
+| `password` | Breached password | Displayed masked, reveal on click |
+| `domain` | Domain | May be null — extract from `url` or `username` if missing |
+| `timestamp` | When breach occurred | Primary date field |
+| `date_added` | When added to ES | Secondary date |
+| `file_hash` | Source file hash | For provenance tracking |
+| `file_name` | Source file name | For provenance tracking |
+| `value` | Additional value | Context-dependent |
+
+### 6.3 New service: `cuba/services/elasticsearch_service.py`
+
+Create a centralized ES client service:
+
+```python
+class ElasticsearchService:
+    """Handles all Elasticsearch queries for breached credentials."""
+
+    def __init__(self, app=None):
+        self.client = None
+        if app:
+            self.init_app(app)
+
+    def init_app(self, app):
+        """Initialize from Flask app config."""
+        from elasticsearch import Elasticsearch
+        self.client = Elasticsearch(
+            app.config['ELASTICSEARCH_URL'],
+            basic_auth=(
+                app.config['ELASTICSEARCH_USER'],
+                app.config['ELASTICSEARCH_PASSWORD']
+            ),
+            verify_certs=app.config.get('ELASTICSEARCH_VERIFY_CERTS', False),
+            ssl_show_warn=False
+        )
+        self.index = app.config.get('ELASTICSEARCH_INDEX', 'main')
+
+    def search(self, query_text, filters=None, page=1, per_page=20, sort='timestamp:desc'):
+        """Search breached credentials with filters and pagination."""
+        ...
+
+    def get_by_id(self, doc_id):
+        """Get single document by ES _id."""
+        ...
+
+    def get_stats(self, domain_filters=None):
+        """Get aggregated statistics (by type, source, domain, trends)."""
+        ...
+
+    def get_daily_trends(self, days=30, domain_filters=None):
+        """Get daily counts for chart data."""
+        ...
+
+    def export(self, filters=None, domain_filters=None, max_records=10000):
+        """Scroll through all matching records for export."""
+        ...
+
+    def build_domain_filter(self, domains):
+        """Build ES bool query for domain/watchlist matching."""
+        ...
+```
+
+**Key methods explained:**
+
+- `search()` — Uses ES `bool` query with `must`/`filter` clauses. Supports text search across `username`, `domain`, `url`, `source` fields. Pagination via `from`/`size`.
+- `get_stats()` — Uses ES `aggregations` (terms agg on `type.keyword`, `source.keyword`, `domain.keyword`, date histogram on `timestamp`). Single query returns all stats.
+- `build_domain_filter()` — Translates watchlist domains into ES `bool.should` with `wildcard`, `match`, and `term` queries (equivalent of current SQLAlchemy `ilike` logic).
+- `export()` — Uses ES `search_after` or `scroll` API for large exports without loading all into memory.
+
+### 6.4 Local metadata model: `BreachedCredMeta`
+
+Replace `BreachedCredential` model with a lightweight metadata table:
+
+```python
+class BreachedCredMeta(db.Model):
+    """Local metadata for ES breached credentials (marks, reviews)."""
+    id = db.Column(db.Integer, primary_key=True)
+    es_id = db.Column(db.String(200), unique=True, nullable=False, index=True)  # ES _id
+    is_marked = db.Column(db.Boolean, default=False)
+    marked_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    marked_at = db.Column(db.DateTime, nullable=True)
+    notes = db.Column(db.Text, nullable=True)  # Analyst notes
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+```
+
+- When a user marks/reviews a credential, create/update a `BreachedCredMeta` row keyed by `es_id`
+- When listing credentials, batch-fetch metadata for the current page's ES `_id`s
+- The old `BreachedCredential` model is removed
+
+### 6.5 Config additions
+
+```python
+class BaseConfig:
+    ...
+    ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL', 'https://localhost:9200')
+    ELASTICSEARCH_USER = os.environ.get('ELASTICSEARCH_USER', 'elastic')
+    ELASTICSEARCH_PASSWORD = os.environ.get('ELASTICSEARCH_PASSWORD', '')
+    ELASTICSEARCH_INDEX = os.environ.get('ELASTICSEARCH_INDEX', 'main')
+    ELASTICSEARCH_VERIFY_CERTS = os.environ.get('ELASTICSEARCH_VERIFY_CERTS', 'false').lower() == 'true'
+```
+
+### 6.6 Requirements addition
+
+- Add `elasticsearch>=8.0.0` to `requirements.txt`
+
+### 6.7 Route changes
+
+All routes that currently query `BreachedCredential` via SQLAlchemy will be updated to use `ElasticsearchService`:
+
+| Route | Current (SQLAlchemy) | New (ES) |
+|-------|---------------------|----------|
+| Dashboard (`routes.py`) | `BreachedCredential.query.count()`, date grouping | `es.get_stats()`, `es.get_daily_trends()` |
+| Breached creds list (`threat_intel.py`) | `BreachedCredential.query.filter(...)` | `es.search()` with filters |
+| Breached cred detail (`threat_intel.py`) | `BreachedCredential.query.get_or_404(id)` | `es.get_by_id(id)` + `BreachedCredMeta` lookup |
+| Analysis (`threat_intel.py`) | Multiple aggregation queries | `es.get_stats()` with aggregations |
+| Export (`threat_intel.py`) | `query.all()` | `es.export()` with scroll |
+| Search (`search_routes.py`) | `BreachedCredential.query.filter(ilike)` | `es.search()` |
+| Admin company breached creds (`admin_routes.py`) | `BreachedCredential.query.filter(domain)` | `es.search(domain_filters=...)` |
+| Mark/unmark (`threat_intel.py`) | Update `BreachedCredential` row | Update `BreachedCredMeta` row |
+| Add breached cred (`threat_intel.py`) | Insert into SQLite | Index into ES via `es.client.index()` |
+| Edit/delete (`threat_intel.py`) | Update/delete SQLite row | Update/delete ES document |
+
+### 6.8 Domain/watchlist filtering in ES
+
+The current SQLAlchemy `_build_domain_match_query` translates to an ES query like:
+
+```json
+{
+  "bool": {
+    "should": [
+      {"wildcard": {"domain.keyword": {"value": "*example.com*"}}},
+      {"wildcard": {"username.keyword": {"value": "*@example.com"}}},
+      {"wildcard": {"username.keyword": {"value": "*@*.example.com"}}},
+      {"wildcard": {"url": {"value": "*example.com*"}}}
+    ],
+    "minimum_should_match": 1
+  }
+}
+```
+
+This is built by `ElasticsearchService.build_domain_filter()` using the same watchlist domains from `Company.get_match_domains()`.
+
+### 6.9 Pagination with ES
+
+ES uses `from`/`size` for pagination (not SQLAlchemy's `.paginate()`):
+- Create a `ESPagination` helper class that mimics Flask-SQLAlchemy's pagination interface (`items`, `page`, `pages`, `total`, `has_prev`, `has_next`) so templates work without changes.
+
+### 6.10 What gets removed
+
+- `BreachedCredential` model from `models.py`
+- All `_build_domain_match_query` functions (replaced by ES query builder)
+- `apply_breached_domain_filter` from `breached_creds_service.py` (replaced by ES)
+- `build_analysis_stats` rewritten to use ES aggregations
+- SQLite-specific date queries in `routes.py` (replaced by ES date histogram)
+
+---
+
+## Files Modified (updated)
+
+| File | Changes |
+|------|---------|
+| `config.py` | **New** — configuration classes with JWT_SECRET_KEY, rate limit storage, ES config |
+| `cuba/__init__.py` | Use config classes, remove dead code, init ES service |
+| `cuba/models.py` | Add `is_admin_user`, `Company.get_match_domains()`, remove `Todo`, remove `BreachedCredential`, add `BreachedCredMeta`, timezone-aware datetimes |
+| `cuba/routes.py` | Import from security.py, use ES service for dashboard stats |
+| `cuba/auth.py` | Validate `next` URL, rate limiting, disable self-registration by default |
+| `cuba/admin_routes.py` | Remove duplicate functions, use ES for company breached creds, add audit logging, use `is_admin_user` |
+| `cuba/threat_intel.py` | Rewrite to use ES service, fix CSV bug, use `is_admin_user`, password masking |
+| `cuba/security.py` | Use `is_admin_user` property, keep watchlist helpers |
+| `cuba/search_routes.py` | Use ES service for search, add sanitization, use `is_admin_user` |
+| `cuba/api_utils.py` | Add shared `sanitize_input` and `escape_like` utilities |
+| `cuba/audit_helpers.py` | Replace print with logging, use savepoints |
+| `cuba/notification_routes.py` | Generic error messages, replace print with logging |
+| `cuba/services/__init__.py` | **New** — empty package init |
+| `cuba/services/elasticsearch_service.py` | **New** — ES client, search, stats, export, domain filtering, pagination helper |
+| `cuba/services/breached_creds_service.py` | Rewrite: remove SQLAlchemy query builders, keep as thin adapter over ES service |
+| `cuba/services/filters.py` | Keep for non-ES date filters (audit logs, etc.) |
+| `requirements.txt` | Add elasticsearch, psycopg2-binary, flask-limiter; remove Flask-Admin |
+| `.gitignore` | Add pycache, instance, venv, *.db |
+| Templates (multiple) | Pagination selector, loading states, empty states, password masking, flash auto-dismiss, breadcrumb fixes, notification polling interval |
 
 | File | Changes |
 |------|---------|
@@ -234,3 +451,4 @@ class ProductionConfig(BaseConfig):
 - Docker/deployment setup
 - Automated test suite (would be a separate spec)
 - Relationship between existing `migrate_*.py` scripts and Flask-Migrate (separate cleanup task)
+- ES cluster management, scaling, or index lifecycle policies
