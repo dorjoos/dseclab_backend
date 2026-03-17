@@ -444,81 +444,87 @@
     </div>
   </div>
   
-  <!-- Latest Events - Using Cuba Template card classes -->
+  <!-- Latest Events -->
   <div class="row">
     <div class="col-12">
       <div class="card">
-        <div class="card-header">
-          <div class="d-flex justify-content-between align-items-center w-100">
+        <div class="card-header card-no-border">
+          <div class="header-top">
             <h5 class="mb-0">
               <i data-feather="shield" style="width: 20px; height: 20px; margin-right: 8px;"></i>
               Latest Security Events
             </h5>
-            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-sm btn-primary">
-              <i data-feather="list" style="width: 16px; height: 16px; margin-right: 4px;"></i>
+            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm">
+              <i data-feather="external-link" style="width: 14px; height: 14px; margin-right: 4px;"></i>
               View All
             </a>
           </div>
         </div>
-        <div class="card-body p-0">
-          <div class="table-responsive dom-source-data custom-scrollbar">
-            <table class="display table-striped mb-0" style="width:100%">
-              <thead>
+        <div class="card-body pt-0">
+          {% if latest_events %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
                 <tr>
-                  <th>Username</th>
-                  <th>Domain</th>
-                  <th>Type</th>
-                  <th>Date</th>
-                  <th>Source</th>
-                  <th>Actions</th>
+                  <th class="py-3">Username</th>
+                  <th class="py-3">Domain</th>
+                  <th class="py-3">Source</th>
+                  <th class="py-3">Type</th>
+                  <th class="py-3">Date</th>
+                  <th class="py-3 text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {% if latest_events %}
-                  {% for event in latest_events %}
-                  <tr>
-                    <td>
-                      <strong class="text-dark">{{ event.username or '-' }}</strong>
-                    </td>
-                    <td>
-                      <span class="badge badge-light-info">{{ event.domain or '-' }}</span>
-                    </td>
-                    <td>
-                      <span class="badge badge-light-{{ event.type_color }}">
-                        {{ event.type|title if event.type else '-' }}
-                      </span>
-                    </td>
-                    <td class="text-muted">
-                      {{ event.created_at.strftime('%b %d, %Y') if event.created_at else '-' }}
-                    </td>
-                    <td>
-                      <span class="badge badge-light-secondary">{{ event.source or '-' }}</span>
-                    </td>
-                    <td>
-                      <div class="btn-group">
-                        <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="btn btn-sm btn-primary" title="View Details">
-                          <i data-feather="eye" style="width: 14px; height: 14px;"></i>
-                        </a>
-                        {% if current_user.can_edit() %}
-                        <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=event.es_id) }}" class="btn btn-sm btn-info" title="Edit">
-                          <i data-feather="edit" style="width: 14px; height: 14px;"></i>
-                        </a>
-                        {% endif %}
+                {% for event in latest_events %}
+                <tr>
+                  <td class="py-3">
+                    <div class="d-flex align-items-center">
+                      <div class="flex-shrink-0">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                          <i data-feather="user" style="width: 14px; height: 14px;" class="text-muted"></i>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr>
-                    <td colspan="6" class="text-center p-4">
-                      <i data-feather="inbox" style="width: 48px; height: 48px; opacity: 0.3;"></i>
-                      <p class="mb-0 mt-2 text-muted">No security events found</p>
-                    </td>
-                  </tr>
-                {% endif %}
+                      <div class="flex-grow-1 ms-2">
+                        <span class="f-w-500 text-dark">{{ event.username or '-' }}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3">
+                    <span class="badge badge-light-info f-12">{{ event.domain or '-' }}</span>
+                  </td>
+                  <td class="py-3">
+                    <span class="f-w-400 f-12 text-muted">{{ event.source or '-' }}</span>
+                  </td>
+                  <td class="py-3">
+                    <span class="badge badge-light-{{ event.type_color }} f-12">
+                      {{ event.type|title if event.type else '-' }}
+                    </span>
+                  </td>
+                  <td class="py-3">
+                    <span class="text-muted f-12">{{ event.created_at.strftime('%b %d, %Y') if event.created_at else '-' }}</span>
+                  </td>
+                  <td class="py-3 text-end">
+                    <a href="{{ url_for('threat_intel.breached_creds_view', doc_id=event.es_id) }}" class="btn btn-outline-primary btn-sm me-1" title="View Details" style="padding: 4px 8px;">
+                      <i data-feather="eye" style="width: 13px; height: 13px;"></i>
+                    </a>
+                    {% if current_user.can_edit() %}
+                    <a href="{{ url_for('threat_intel.breached_creds_edit', doc_id=event.es_id) }}" class="btn btn-outline-secondary btn-sm" title="Edit" style="padding: 4px 8px;">
+                      <i data-feather="edit-2" style="width: 13px; height: 13px;"></i>
+                    </a>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
               </tbody>
             </table>
           </div>
+          {% else %}
+          <div class="text-center py-5">
+            <i data-feather="inbox" style="width: 48px; height: 48px; opacity: 0.3;"></i>
+            <p class="mb-0 mt-3 text-muted">No security events found</p>
+            <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="btn btn-outline-primary btn-sm mt-2">Add First Record</a>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
