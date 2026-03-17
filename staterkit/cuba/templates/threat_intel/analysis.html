@@ -174,6 +174,7 @@
     <table class="av-table">
       <thead>
         <tr>
+          <th style="width:35px;padding-left:16px;">#</th>
           <th style="padding-left:24px;width:25%;">Username</th>
           <th style="width:15%;">Domain</th>
           <th style="width:20%;">Source</th>
@@ -184,6 +185,7 @@
       <tbody>
         {% for cred in recent %}
         <tr>
+          <td style="padding-left:16px;" class="m">{{ loop.index }}</td>
           <td style="padding-left:24px;font-weight:500;">{{ cred.username or '—' }}</td>
           <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
           <td class="m">{{ cred.source or '—' }}</td>
@@ -191,7 +193,7 @@
           <td class="m r" style="padding-right:24px;">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
         </tr>
         {% endfor %}
-        {% if not recent %}<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">No recent breaches</td></tr>{% endif %}
+        {% if not recent %}<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No recent breaches</td></tr>{% endif %}
       </tbody>
     </table>
   </div>

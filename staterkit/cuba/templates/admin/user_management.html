@@ -13,6 +13,7 @@
       <table class="av-table">
         <thead>
           <tr>
+            <th style="width:35px;padding-left:16px;">#</th>
             <th style="width:20%;padding-left:16px;">Username</th>
             <th style="width:25%;">Email</th>
             <th style="width:12%;">Role</th>
@@ -26,6 +27,7 @@
           {% if users %}
           {% for user in users %}
           <tr>
+            <td style="padding-left:16px;" class="m">{{ loop.index }}</td>
             <td style="padding-left:16px;font-weight:500;">{{ user.username }}</td>
             <td class="m">{{ user.email }}</td>
             <td><span class="av-tag{% if user.role == 'admin' %} av-tag-warning{% endif %}">{{ user.role }}</span></td>
@@ -38,7 +40,7 @@
           </tr>
           {% endfor %}
           {% else %}
-          <tr><td colspan="7" class="av-empty">No users found</td></tr>
+          <tr><td colspan="8" class="av-empty">No users found</td></tr>
           {% endif %}
         </tbody>
       </table>

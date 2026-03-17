@@ -22,6 +22,7 @@
       <table class="av-table">
         <thead>
           <tr>
+            <th style="width:35px;padding-left:16px;">#</th>
             <th style="width:14%;padding-left:16px;">Action</th>
             <th style="width:12%;">Resource</th>
             <th style="width:30%;">Description</th>
@@ -34,6 +35,7 @@
           {% if audit_logs %}
           {% for log in audit_logs %}
           <tr>
+            <td style="padding-left:16px;" class="m">{{ loop.index }}</td>
             <td style="padding-left:16px;"><span class="av-tag">{{ log.action_type }}</span></td>
             <td class="m">{{ log.resource_type }}</td>
             <td style="max-width:300px;">{{ log.description }}</td>
@@ -43,7 +45,7 @@
           </tr>
           {% endfor %}
           {% else %}
-          <tr><td colspan="6" class="av-empty">No audit logs</td></tr>
+          <tr><td colspan="7" class="av-empty">No audit logs</td></tr>
           {% endif %}
         </tbody>
       </table>

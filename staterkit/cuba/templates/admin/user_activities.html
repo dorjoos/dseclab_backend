@@ -15,6 +15,7 @@
       <table class="av-table">
         <thead>
           <tr>
+            <th style="width:35px;padding-left:16px;">#</th>
             <th style="width:18%;padding-left:16px;">Activity</th>
             <th style="width:18%;">User</th>
             <th style="width:14%;">IP Address</th>
@@ -27,6 +28,7 @@
           {% if activities %}
           {% for act in activities %}
           <tr>
+            <td style="padding-left:16px;" class="m">{{ loop.index }}</td>
             <td style="padding-left:16px;"><span class="av-tag">{{ act.activity_type }}</span></td>
             <td class="m">{{ act.user.username if act.user else '—' }}</td>
             <td class="m" style="font-family:'SF Mono',monospace;font-size:12px;">{{ act.ip_address or '—' }}</td>
@@ -36,7 +38,7 @@
           </tr>
           {% endfor %}
           {% else %}
-          <tr><td colspan="6" class="av-empty">No activities</td></tr>
+          <tr><td colspan="7" class="av-empty">No activities</td></tr>
           {% endif %}
         </tbody>
       </table>

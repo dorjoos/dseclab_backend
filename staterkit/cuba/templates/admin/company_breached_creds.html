@@ -10,6 +10,7 @@
       <table class="av-table">
         <thead>
           <tr>
+            <th style="width:35px;padding-left:16px;">#</th>
             <th style="padding-left:16px;">Username</th>
             <th>Domain</th>
             <th>Source</th>
@@ -21,6 +22,7 @@
         <tbody>
           {% for cred in breached_creds %}
           <tr>
+            <td style="padding-left:16px;" class="m">{{ loop.index }}</td>
             <td style="padding-left:16px;font-weight:500;">{{ cred.username or '—' }}</td>
             <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
             <td class="m">{{ cred.source or '—' }}</td>
@@ -29,7 +31,7 @@
             <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
           </tr>
           {% endfor %}
-          {% if not breached_creds %}<tr><td colspan="6" class="av-empty">No breached credentials for this company</td></tr>{% endif %}
+          {% if not breached_creds %}<tr><td colspan="7" class="av-empty">No breached credentials for this company</td></tr>{% endif %}
         </tbody>
       </table>
     </div>
