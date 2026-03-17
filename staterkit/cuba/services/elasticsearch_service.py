@@ -316,6 +316,13 @@ class ElasticsearchService:
         try:
             query = self._build_query(domain_filters=domain_filters)
             gte = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+            # Add date range to the query itself
+            if "bool" not in query:
+                query = {"bool": {"filter": [{"range": {"timestamp": {"gte": gte}}}]}}
+            elif "filter" in query["bool"]:
+                query["bool"]["filter"].append({"range": {"timestamp": {"gte": gte}}})
+            else:
+                query["bool"]["filter"] = [{"range": {"timestamp": {"gte": gte}}}]
             body = {
                 "query": query,
                 "size": 0,
@@ -324,20 +331,22 @@ class ElasticsearchService:
                         "date_histogram": {
                             "field": "timestamp",
                             "calendar_interval": "day",
-                            "format": "EEE",
+                            "format": "yyyy-MM-dd",
                             "min_doc_count": 0,
-                            "extended_bounds": {
-                                "min": gte,
-                                "max": datetime.utcnow().strftime("%Y-%m-%d"),
-                            },
                         }
                     }
                 },
-                "post_filter": {"range": {"timestamp": {"gte": gte}}},
             }
             resp = self.es.search(index=self.index, body=body)
             buckets = resp["aggregations"]["daily"]["buckets"]
-            labels = [b["key_as_string"] for b in buckets]
+            day_names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+            labels = []
+            for b in buckets:
+                try:
+                    dt = datetime.strptime(b["key_as_string"], "%Y-%m-%d")
+                    labels.append(day_names[dt.weekday()] + " " + b["key_as_string"][5:])
+                except Exception:
+                    labels.append(b["key_as_string"][:10])
             data = [b["doc_count"] for b in buckets]
             return labels, data
         except Exception:
@@ -390,7 +399,7 @@ class ElasticsearchService:
                         "date_histogram": {
                             "field": "timestamp",
                             "calendar_interval": "month",
-                            "format": "yyyy-MM",
+                            "format": "yyyy-MM-dd",
                             "min_doc_count": 0,
                             "extended_bounds": {
                                 "min": gte,
@@ -403,7 +412,15 @@ class ElasticsearchService:
             }
             resp = self.es.search(index=self.index, body=body)
             buckets = resp["aggregations"]["monthly"]["buckets"]
-            labels = [b["key_as_string"] for b in buckets]
+            # Convert to short month names: Jan, Feb...
+            month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            labels = []
+            for b in buckets:
+                try:
+                    dt = datetime.strptime(b["key_as_string"][:10], "%Y-%m-%d")
+                    labels.append(month_names[dt.month - 1] + " " + str(dt.year)[2:])
+                except Exception:
+                    labels.append(b["key_as_string"][:7])
             data = [b["doc_count"] for b in buckets]
             return labels, data
         except Exception:
