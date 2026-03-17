@@ -1,137 +1,172 @@
 {% extends "base.html" %}
+
+{% block css %}
+<style>
+  .an-big { font-size:36px; font-weight:700; letter-spacing:-0.03em; line-height:1; }
+  .an-label { font-size:12px; font-weight:500; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px; }
+  .an-bar-row { display:flex; align-items:center; gap:10px; padding:8px 0; }
+  .an-bar-name { font-size:13px; font-weight:500; min-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .an-bar-track { flex:1; height:6px; background:var(--border-light); border-radius:3px; overflow:hidden; }
+  .an-bar-fill { height:100%; border-radius:3px; transition:width 0.4s ease; }
+  .an-bar-val { font-size:12px; color:var(--text-muted); min-width:60px; text-align:right; font-variant-numeric:tabular-nums; }
+  .an-domain-item { display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border-light); }
+  .an-domain-item:last-child { border-bottom:none; }
+  .an-domain-rank { font-size:12px; color:var(--text-muted); width:24px; font-weight:600; }
+  .an-domain-name { font-size:13px; font-weight:500; color:var(--primary); flex:1; margin:0 10px; }
+  .an-domain-count { font-size:13px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid p-0">
-  <!-- Stats -->
+
+  <!-- Hero stat -->
   <div class="row g-3 mb-4">
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background:#eff4ff;">
-          <svg style="color:#1a56db;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ total|format_number }}</div>
-          <div class="dsec-stat-label">Total Breaches</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background:#fef2f2;">
-          <svg style="color:#dc2626;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ by_type.get('stealer', 0)|format_number }}</div>
-          <div class="dsec-stat-label">Stealer Type</div>
+    <div class="col-lg-4">
+      <div class="card" style="padding:28px 24px;">
+        <div class="an-big">{{ total|format_number }}</div>
+        <div class="an-label">Total Breached Credentials</div>
+        <div style="margin-top:16px;display:flex;gap:16px;">
+          <div>
+            <span style="font-size:20px;font-weight:700;">{{ by_source|length }}</span>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">sources</span>
+          </div>
+          <div>
+            <span style="font-size:20px;font-weight:700;">{{ by_domain|length }}</span>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">domains</span>
+          </div>
+          <div>
+            <span style="font-size:20px;font-weight:700;">{{ by_type|length }}</span>
+            <span style="font-size:12px;color:var(--text-muted);margin-left:4px;">types</span>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background:#fffbeb;">
-          <svg style="color:#d97706;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ by_type.get('malware', 0)|format_number }}</div>
-          <div class="dsec-stat-label">Malware Type</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-3 col-sm-6">
-      <div class="dsec-stat-card">
-        <div class="dsec-stat-icon" style="background:#ecfdf5;">
-          <svg style="color:#059669;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        </div>
-        <div>
-          <div class="dsec-stat-value">{{ marked_count|format_number }}</div>
-          <div class="dsec-stat-label">Marked Items</div>
-        </div>
+    <div class="col-lg-8">
+      <div class="card" style="padding:20px 24px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Source Distribution</div>
+        <div id="source-chart"></div>
       </div>
     </div>
   </div>
 
-  <!-- Distribution tables -->
+  <!-- Charts row -->
   <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:600;">By Type</div>
-        <table class="av-table">
-          <tbody>
-            {% for type_name, count in by_type.items() %}
-            <tr>
-              <td style="font-weight:500;">{{ type_name }}</td>
-              <td class="r m">{{ count|format_number }}</td>
-            </tr>
-            {% endfor %}
-            {% if not by_type %}<tr><td colspan="2" class="m" style="text-align:center;padding:20px;">No data</td></tr>{% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:600;">By Source</div>
-        <table class="av-table">
-          <tbody>
-            {% for src, count in by_source.items() %}
-            <tr>
-              <td><span class="av-domain">{{ src }}</span></td>
-              <td class="r m">{{ count|format_number }}</td>
-            </tr>
-            {% endfor %}
-            {% if not by_source %}<tr><td colspan="2" class="m" style="text-align:center;padding:20px;">No data</td></tr>{% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card">
-        <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);font-size:14px;font-weight:600;">Top Domains</div>
-        <table class="av-table">
-          <tbody>
-            {% for dom, count in by_domain.items() %}
-            <tr>
-              <td><span class="av-domain">{{ dom }}</span></td>
-              <td class="r m">{{ count|format_number }}</td>
-            </tr>
-            {% endfor %}
-            {% if not by_domain %}<tr><td colspan="2" class="m" style="text-align:center;padding:20px;">No data</td></tr>{% endif %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Recent -->
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-light);">
-      <span style="font-size:14px;font-weight:600;">Recent Breaches</span>
-      <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-view-link">View all</a>
-    </div>
-    <table class="av-table">
-      <thead>
-        <tr>
-          <th style="padding-left:16px;">Username</th>
-          <th>Domain</th>
-          <th>Source</th>
-          <th>Type</th>
-          <th class="r">Date</th>
-          <th style="width:50px;"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cred in recent %}
-        <tr>
-          <td style="padding-left:16px;font-weight:500;">{{ cred.username or '—' }}</td>
-          <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
-          <td class="m">{{ cred.source or '—' }}</td>
-          <td><span class="av-tag">{{ cred.type or '—' }}</span></td>
-          <td class="m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
-          <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
-        </tr>
+    <div class="col-lg-6">
+      <div class="card" style="padding:20px 24px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:16px;">By Source</div>
+        {% set max_source = by_source.values()|max if by_source else 1 %}
+        {% for src, count in by_source.items() %}
+        <div class="an-bar-row">
+          <div class="an-bar-name">{{ src }}</div>
+          <div class="an-bar-track">
+            <div class="an-bar-fill" style="width:{{ (count / max_source * 100)|round }}%;background:var(--primary);"></div>
+          </div>
+          <div class="an-bar-val">{{ count|format_number }}</div>
+        </div>
         {% endfor %}
-        {% if not recent %}<tr><td colspan="6" class="av-empty" style="padding:30px;">No recent breaches</td></tr>{% endif %}
-      </tbody>
-    </table>
+        {% if not by_source %}<div style="text-align:center;padding:20px;color:var(--text-muted);">No data</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card" style="padding:20px 24px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:16px;">Top Domains</div>
+        {% for dom, count in by_domain.items() %}
+        <div class="an-domain-item">
+          <span class="an-domain-rank">{{ loop.index }}</span>
+          <span class="an-domain-name">{{ dom }}</span>
+          <span class="an-domain-count">{{ count|format_number }}</span>
+        </div>
+        {% endfor %}
+        {% if not by_domain %}<div style="text-align:center;padding:20px;color:var(--text-muted);">No data</div>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Type distribution + recent -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="card" style="padding:20px 24px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">By Type</div>
+        <div id="type-chart"></div>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border-light);">
+          <span style="font-size:14px;font-weight:600;">Recent Breaches</span>
+          <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-view-link">View all</a>
+        </div>
+        <table class="av-table">
+          <thead>
+            <tr>
+              <th style="padding-left:20px;">Username</th>
+              <th>Domain</th>
+              <th>Source</th>
+              <th class="c">Type</th>
+              <th class="r" style="padding-right:20px;">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cred in recent %}
+            <tr>
+              <td style="padding-left:20px;font-weight:500;">{{ cred.username or '—' }}</td>
+              <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
+              <td class="m">{{ cred.source or '—' }}</td>
+              <td class="c"><span class="av-tag">{{ cred.type or '—' }}</span></td>
+              <td class="m r" style="padding-right:20px;">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
+            </tr>
+            {% endfor %}
+            {% if not recent %}<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No data</td></tr>{% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script src="{{ url_for('static', filename='assets/js/chart/apex-chart/apex-chart.js') }}"></script>
+<script>
+  var primary = '#1a56db';
+  var colors = ['#1a56db','#0891b2','#d97706','#059669','#dc2626','#7c3aed','#475569'];
+
+  // Source donut
+  var srcEl = document.getElementById('source-chart');
+  if (srcEl) {
+    var srcData = {{ by_source|tojson }};
+    var srcLabels = Object.keys(srcData);
+    var srcVals = Object.values(srcData);
+    new ApexCharts(srcEl, {
+      series: srcVals,
+      chart: { type:'donut', height:180, fontFamily:'Inter,sans-serif' },
+      labels: srcLabels,
+      colors: colors,
+      plotOptions: { pie: { donut: { size:'60%' } } },
+      legend: { position:'right', fontSize:'12px', markers:{ width:8, height:8 } },
+      dataLabels: { enabled:false },
+      tooltip: { y: { formatter: function(v) { return v.toLocaleString(); } } }
+    }).render();
+  }
+
+  // Type donut
+  var typeEl = document.getElementById('type-chart');
+  if (typeEl) {
+    var typeData = {{ by_type|tojson }};
+    var typeLabels = Object.keys(typeData);
+    var typeVals = Object.values(typeData);
+    new ApexCharts(typeEl, {
+      series: typeVals,
+      chart: { type:'donut', height:220, fontFamily:'Inter,sans-serif' },
+      labels: typeLabels,
+      colors: colors,
+      plotOptions: { pie: { donut: { size:'55%', labels: { show:true, total: { show:true, label:'Total', formatter:function(w) { return w.globals.seriesTotals.reduce(function(a,b){return a+b;},0).toLocaleString(); } } } } } },
+      legend: { position:'bottom', fontSize:'12px' },
+      dataLabels: { enabled:false }
+    }).render();
+  }
+
+  if (typeof feather !== 'undefined') feather.replace();
+</script>
 {% endblock %}
