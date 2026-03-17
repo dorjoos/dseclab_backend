@@ -149,14 +149,10 @@ def breached_creds_list():
         'date_filter': date_filter
     }
 
-    breadcrumb = {"parent": "Threat Intelligence", "child": "Breached Credentials",
-                  "description": "View and manage breached credentials"}
-
     return render_template('threat_intel/breached_creds_list.html',
                           breached_creds=pagination.items,
                           pagination=pagination,
                           stats=stats,
-                          breadcrumb=breadcrumb,
                           filters=filter_dict)
 
 

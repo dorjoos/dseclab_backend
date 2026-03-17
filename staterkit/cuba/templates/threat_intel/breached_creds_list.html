@@ -3,78 +3,52 @@
 {% block content %}
 <div class="container-fluid p-0">
 
-  <!-- Top bar: title + actions -->
-  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
-    <div>
-      <p style="color:var(--text-muted); font-size:13px; margin:0;">
-        {{ stats.total|format_number }} total records{% if filters.search %} matching "{{ filters.search }}"{% endif %}
-      </p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-      {% if current_user.can_edit() %}
-      <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="btn btn-primary btn-sm">
-        <i data-feather="plus" style="width:14px;height:14px;"></i> Add New
-      </a>
-      {% endif %}
-      <a href="{{ url_for('threat_intel.analysis') }}" class="btn btn-outline-primary btn-sm">
-        <i data-feather="bar-chart-2" style="width:14px;height:14px;"></i> Analysis
-      </a>
-      <a href="{{ url_for('threat_intel.reports') }}" class="btn btn-outline-primary btn-sm">
-        <i data-feather="file-text" style="width:14px;height:14px;"></i> Reports
-      </a>
-      <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="btn btn-outline-primary btn-sm" id="export-btn">
-        <i data-feather="download" style="width:14px;height:14px;"></i> Export
-      </a>
-    </div>
-  </div>
+  <!-- Toolbar: everything in one compact bar -->
+  <div class="card mb-3">
+    <div class="card-body" style="padding:12px 20px;">
+      <form method="GET" id="filter-form" style="margin:0;">
+        <!-- Row 1: Date pills + search + actions -->
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+          <!-- Date pills -->
+          <div class="d-flex align-items-center gap-1">
+            {% set date_options = [('today', 'Today'), ('week', 'Week'), ('month', 'Month'), ('all', 'All')] %}
+            {% for val, label in date_options %}
+            <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=val, type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
+               style="padding:4px 12px; font-size:12px; font-weight:500; border-radius:4px; text-decoration:none; transition:all 0.15s;
+               {% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}background:var(--primary);color:#fff;{% else %}background:var(--bg);color:var(--text-secondary);border:1px solid var(--border);{% endif %}">
+              {{ label }}
+            </a>
+            {% endfor %}
+            <span style="margin:0 8px;color:var(--border);">|</span>
+            <span style="font-size:12px;color:var(--text-muted);">{{ stats.total|format_number }} records</span>
+          </div>
 
-  <!-- Filters Card -->
-  <div class="card mb-4">
-    <div class="card-body" style="padding:16px 20px;">
-      <!-- Date filter pills -->
-      <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
-        <span style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">Period</span>
-        <div class="d-flex gap-1">
-          {% set date_options = [('today', 'Today'), ('week', 'This Week'), ('month', 'This Month'), ('all', 'All Time')] %}
-          {% for val, label in date_options %}
-          <a href="{{ url_for('threat_intel.breached_creds_list', date_filter=val, type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '') }}"
-             style="padding:5px 14px; font-size:12px; font-weight:500; border-radius:20px; text-decoration:none; transition:all 0.15s;
-             {% if filters.date_filter == val or (val == 'all' and not filters.date_filter) %}background:var(--primary);color:#fff;{% else %}background:var(--bg);color:var(--text-secondary);{% endif %}">
-            {{ label }}
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- Filter inputs -->
-      <form method="GET" id="filter-form">
-        <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
-        <div class="d-flex gap-3 align-items-end flex-wrap">
-          <div style="min-width:140px;">
-            <label class="form-label" style="margin-bottom:2px;">Type</label>
-            <select class="form-select form-select-sm" name="type">
-              <option value="">All Types</option>
-              {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
-              <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div style="min-width:160px;">
-            <label class="form-label" style="margin-bottom:2px;">Source</label>
-            <input type="text" class="form-control form-control-sm" name="source" placeholder="e.g. Telegram" value="{{ filters.source or '' }}">
-          </div>
-          <div style="min-width:160px;">
-            <label class="form-label" style="margin-bottom:2px;">Domain</label>
-            <input type="text" class="form-control form-control-sm" name="domain" placeholder="e.g. example.mn" value="{{ filters.domain or '' }}">
-          </div>
-          <div style="min-width:200px;">
-            <label class="form-label" style="margin-bottom:2px;">Search</label>
-            <input type="text" class="form-control form-control-sm" name="search" placeholder="Username, domain, source..." value="{{ filters.search or '' }}">
-          </div>
+          <!-- Actions -->
           <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-            <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm">Clear</a>
+            {% if current_user.can_edit() %}
+            <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="btn btn-primary btn-sm" style="padding:4px 12px;font-size:12px;">+ Add</a>
+            {% endif %}
+            <a href="{{ url_for('threat_intel.breached_creds_export', type=filters.type or '', source=filters.source or '', domain=filters.domain or '', search=filters.search or '', date_filter=filters.date_filter or '') }}" class="btn btn-outline-primary btn-sm" style="padding:4px 12px;font-size:12px;" id="export-btn">Export</a>
+            <a href="{{ url_for('threat_intel.analysis') }}" class="btn btn-outline-primary btn-sm" style="padding:4px 12px;font-size:12px;">Analysis</a>
           </div>
+        </div>
+
+        <!-- Row 2: Filters (compact, inline) -->
+        <div class="d-flex align-items-center gap-2 mt-2 flex-wrap">
+          <input type="hidden" name="date_filter" value="{{ filters.date_filter }}">
+          <select class="form-select form-select-sm" name="type" style="width:auto;min-width:110px;font-size:12px;padding:4px 28px 4px 8px;">
+            <option value="">All Types</option>
+            {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
+            <option value="{{ t }}" {% if filters.type == t %}selected{% endif %}>{{ t|title }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" class="form-control form-control-sm" name="source" placeholder="Source" value="{{ filters.source or '' }}" style="width:120px;font-size:12px;padding:4px 8px;">
+          <input type="text" class="form-control form-control-sm" name="domain" placeholder="Domain" value="{{ filters.domain or '' }}" style="width:120px;font-size:12px;padding:4px 8px;">
+          <input type="text" class="form-control form-control-sm" name="search" placeholder="Search..." value="{{ filters.search or '' }}" style="width:160px;font-size:12px;padding:4px 8px;">
+          <button type="submit" class="btn btn-primary btn-sm" style="padding:4px 12px;font-size:12px;">Go</button>
+          {% if filters.search or filters.type or filters.source or filters.domain %}
+          <a href="{{ url_for('threat_intel.breached_creds_list') }}" style="font-size:12px;color:var(--text-muted);text-decoration:none;">Clear</a>
+          {% endif %}
         </div>
       </form>
     </div>
@@ -143,32 +117,26 @@
 
       <!-- Pagination -->
       {% if pagination.pages > 1 %}
-      <div style="padding:16px 20px; border-top:1px solid var(--border-light); display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:12px; color:var(--text-muted);">
-          Page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total|format_number }} results)
+      <div style="padding:10px 20px; border-top:1px solid var(--border-light); display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; color:var(--text-muted);">
+          {{ pagination.page }}/{{ pagination.pages }} &middot; {{ pagination.total|format_number }} total
         </span>
         <nav>
-          <ul class="pagination mb-0">
+          <ul class="pagination mb-0" style="gap:2px;">
             <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-              <a class="page-link" href="?page=1{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&laquo;</a>
-            </li>
-            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-              <a class="page-link" href="?page={{ pagination.prev_num or 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&lsaquo;</a>
+              <a class="page-link" style="padding:4px 8px;font-size:12px;" href="?page={{ pagination.prev_num or 1 }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&lsaquo;</a>
             </li>
             {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
               {% if page_num %}
                 <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
-                  <a class="page-link" href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">{{ page_num }}</a>
+                  <a class="page-link" style="padding:4px 8px;font-size:12px;" href="?page={{ page_num }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">{{ page_num }}</a>
                 </li>
               {% else %}
-                <li class="page-item disabled"><span class="page-link">...</span></li>
+                <li class="page-item disabled"><span class="page-link" style="padding:4px 8px;font-size:12px;">...</span></li>
               {% endif %}
             {% endfor %}
             <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-              <a class="page-link" href="?page={{ pagination.next_num or pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&rsaquo;</a>
-            </li>
-            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-              <a class="page-link" href="?page={{ pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&raquo;</a>
+              <a class="page-link" style="padding:4px 8px;font-size:12px;" href="?page={{ pagination.next_num or pagination.pages }}{% if filters.search %}&search={{ filters.search }}{% endif %}{% if filters.type %}&type={{ filters.type }}{% endif %}{% if filters.source %}&source={{ filters.source }}{% endif %}{% if filters.domain %}&domain={{ filters.domain }}{% endif %}{% if filters.date_filter %}&date_filter={{ filters.date_filter }}{% endif %}">&rsaquo;</a>
             </li>
           </ul>
         </nav>
@@ -176,10 +144,9 @@
       {% endif %}
 
       {% else %}
-      <!-- Empty State -->
       <div class="dsec-empty">
         <i data-feather="shield-off"></i>
-        <p style="margin:8px 0 0;">No breached credentials found matching your filters.</p>
+        <p style="margin:8px 0 0;">No results found.</p>
         <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm" style="margin-top:12px;">Clear Filters</a>
       </div>
       {% endif %}
