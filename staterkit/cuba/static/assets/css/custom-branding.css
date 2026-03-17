@@ -942,8 +942,8 @@ body {
 .av-table tbody tr:nth-child(even) { background:rgba(0,0,0,0.015); }
 [data-theme="dark"] .av-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.02); }
 .av-table tbody tr:hover { background:var(--primary-50); }
-.av-table tbody td { padding:10px 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-bottom:1px solid var(--border-light); }
-.av-table tbody td.m { color:var(--text-muted); }
+.av-table tbody td { padding:10px 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-bottom:1px solid var(--border-light); color:var(--text); }
+.av-table tbody td.m { color:var(--text-secondary); }
 .av-table tbody td.r { text-align:right; }
 .av-table tbody td.c { text-align:center; }
 .av-domain { color:var(--primary); font-weight:500; }
