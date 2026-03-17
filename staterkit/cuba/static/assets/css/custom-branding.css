@@ -947,7 +947,7 @@ body {
 .av-table tbody td.r { text-align:right; }
 .av-table tbody td.c { text-align:center; }
 .av-domain { color:var(--primary); font-weight:500; }
-.av-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:500; background:var(--bg); color:var(--text-secondary); }
+.av-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:600; background:var(--primary-light); color:var(--primary); }
 .av-tag-danger { background:#fef2f2; color:#dc2626; }
 .av-tag-success { background:#ecfdf5; color:#059669; }
 .av-tag-warning { background:#fffbeb; color:#92400e; }
