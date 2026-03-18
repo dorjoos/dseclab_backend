@@ -287,7 +287,8 @@
 
     var body = document.createElement('div');
     if (!cfg.noHeader) body.className = 'dash-widget-body';
-    cfg.render(body);
+    // Store render function — will be called AFTER widget is in DOM
+    w._renderBody = function() { cfg.render(body); };
     w.appendChild(body);
 
     w.addEventListener('dragstart', function(e) { w.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); });
@@ -297,7 +298,15 @@
 
   function renderDashboard() {
     grid.textContent = '';
-    getLayout().forEach(function(id) { var w = createWidget(id); if (w) grid.appendChild(w); });
+    var widgetEls = [];
+    getLayout().forEach(function(id) {
+      var w = createWidget(id);
+      if (w) { grid.appendChild(w); widgetEls.push(w); }
+    });
+    // Render charts after all widgets are in DOM (so they have correct width)
+    requestAnimationFrame(function() {
+      widgetEls.forEach(function(w) { if (w._renderBody) { w._renderBody(); delete w._renderBody; } });
+    });
     updatePicker();
     setupDragDrop();
   }
@@ -310,7 +319,7 @@
         var btn = document.createElement('button');
         btn.className = 'dash-customize-btn';
         btn.textContent = '+ ' + widgets[id].title;
-        btn.addEventListener('click', function() { var w=createWidget(id); if(w){grid.appendChild(w);saveLayout();updatePicker();setupDragDrop();} });
+        btn.addEventListener('click', function() { var w=createWidget(id); if(w){grid.appendChild(w);requestAnimationFrame(function(){if(w._renderBody){w._renderBody();delete w._renderBody;}});saveLayout();updatePicker();setupDragDrop();} });
         picker.appendChild(btn);
       }
     });
@@ -348,6 +357,20 @@
 
   renderDashboard();
   if (typeof feather !== 'undefined') feather.replace();
+
+  // Reflow charts on window resize
+  var resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      document.querySelectorAll('.apexcharts-canvas').forEach(function(c) {
+        var parent = c.closest('.dash-widget-body');
+        if (parent && parent.__apexChart) {
+          parent.__apexChart.updateOptions({}, false, false, false);
+        }
+      });
+    }, 250);
+  });
 })();
 </script>
 {% endblock %}
