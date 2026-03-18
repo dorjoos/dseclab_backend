@@ -93,16 +93,17 @@
         '<svg style="color:#059669;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
         '<svg style="color:#dc2626;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>'
       ];
+      body.style.padding = '0';
       var row = document.createElement('div');
-      row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);';
+      row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;';
       stats.forEach(function(s, i) {
         var cell = document.createElement('div');
         cell.className = 'stat-cell';
-        if (i < 3) cell.style.borderRight = '1px solid var(--border-light)';
+        cell.style.cssText = 'background:' + s.bg + ';border-radius:12px;padding:20px;position:relative;overflow:hidden;';
         cell.insertAdjacentHTML('beforeend',
           svgBgs[i] +
-          '<div class="stat-icon" style="background:' + s.bg + ';">' + svgIcons[i] + '</div>' +
-          '<div class="stat-val">' + s.value + '</div>' +
+          '<div class="stat-icon" style="background:rgba(255,255,255,0.7);backdrop-filter:blur(4px);">' + svgIcons[i] + '</div>' +
+          '<div class="stat-val" style="color:' + s.color + ';">' + s.value + '</div>' +
           '<div class="stat-label">' + s.label + '</div>'
         );
         row.appendChild(cell);
