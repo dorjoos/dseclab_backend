@@ -22,6 +22,9 @@
       <a href="{{ url_for('threat_intel.reports') }}" class="dsec-nav-item {% if request.endpoint == 'threat_intel.reports' %}active{% endif %}">
         <i data-feather="file-text"></i> Reports
       </a>
+      <a href="{{ url_for('threat_intel.breach_summary') }}" class="dsec-nav-item {% if request.endpoint == 'threat_intel.breach_summary' %}active{% endif %}">
+        <i data-feather="file-text"></i> Executive Summary
+      </a>
     </div>
 
     {% if current_user.is_authenticated and current_user.is_admin_user %}

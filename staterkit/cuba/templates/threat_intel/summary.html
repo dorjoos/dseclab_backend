@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block css %}
+<style>
+  .sum-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border-radius: 16px;
+    padding: 36px;
+    color: #fff;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .sum-hero::before { content:''; position:absolute; top:-50px; right:-50px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.03); }
+  .sum-hero::after { content:''; position:absolute; bottom:-80px; right:100px; width:250px; height:250px; border-radius:50%; background:rgba(255,255,255,0.02); }
+  .sum-risk-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .sum-finding {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg-white); transition: all 0.2s;
+  }
+  .sum-finding:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .sum-finding-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sum-rec {
+    display: flex; align-items: flex-start; gap: 12px; padding: 12px 0;
+  }
+  .sum-rec-num {
+    width: 24px; height: 24px; border-radius: 50%; background: var(--primary);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  @media print {
+    .dsec-sidebar, .dsec-header, .dsec-footer { display: none !important; }
+    .dsec-main { margin-left: 0 !important; }
+    .sum-hero { background: #1e293b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0" style="max-width:900px;">
+  <!-- Hero -->
+  <div class="sum-hero">
+    <div style="position:relative;z-index:1;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;">
+        <div>
+          <div style="font-size:12px;opacity:0.6;text-transform:uppercase;letter-spacing:0.06em;">D-SECLAB Threat Intelligence</div>
+          <div style="font-size:28px;font-weight:800;margin-top:8px;letter-spacing:-0.03em;">{{ summary.title }}</div>
+          <div style="font-size:13px;opacity:0.6;margin-top:6px;">Generated {{ summary.generated_at }}</div>
+        </div>
+        <div>
+          <div class="sum-risk-badge" style="background:{{ summary.risk_color }}20;color:{{ summary.risk_color }};">
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ summary.risk_color }};"></span>
+            {{ summary.risk_level }} risk
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:32px;margin-top:24px;">
+        <div><div style="font-size:28px;font-weight:800;">{{ summary.stats.total|format_number }}</div><div style="font-size:11px;opacity:0.6;text-transform:uppercase;margin-top:2px;">Credentials</div></div>
+        <div><div style="font-size:28px;font-weight:800;">{{ summary.stats.sources }}</div><div style="font-size:11px;opacity:0.6;text-transform:uppercase;margin-top:2px;">Sources</div></div>
+        <div><div style="font-size:28px;font-weight:800;">{{ summary.stats.domains }}</div><div style="font-size:11px;opacity:0.6;text-transform:uppercase;margin-top:2px;">Domains</div></div>
+        <div><div style="font-size:28px;font-weight:800;text-transform:capitalize;">{{ summary.stats.trend }}</div><div style="font-size:11px;opacity:0.6;text-transform:uppercase;margin-top:2px;">Trend</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary text -->
+  <div class="card" style="padding:28px;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:12px;">Overview</div>
+    <p style="font-size:14px;line-height:1.7;color:var(--text-secondary);">{{ summary.summary }}</p>
+  </div>
+
+  <!-- Key Findings -->
+  <div class="card" style="padding:28px;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">Key Findings</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+      {% for f in summary.key_findings %}
+      <div class="sum-finding">
+        <div class="sum-finding-icon" style="background:{{ f.color }}10;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{ f.color }}" stroke-width="2">
+            {% if f.icon == 'shield' %}<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            {% elif f.icon == 'alert-triangle' %}<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+            {% elif f.icon == 'globe' %}<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            {% elif f.icon == 'trending-up' %}<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
+            {% elif f.icon == 'trending-down' %}<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>
+            {% elif f.icon == 'layers' %}<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+            {% else %}<circle cx="12" cy="12" r="10"/>
+            {% endif %}
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600;">{{ f.title }}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{ f.desc }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="card" style="padding:28px;margin-bottom:16px;">
+    <div style="font-size:16px;font-weight:700;margin-bottom:16px;">Recommendations</div>
+    {% for r in summary.recommendations %}
+    <div class="sum-rec" {% if not loop.last %}style="border-bottom:1px solid var(--border-light);"{% endif %}>
+      <div class="sum-rec-num">{{ loop.index }}</div>
+      <div style="font-size:14px;color:var(--text);padding-top:2px;">{{ r }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Actions -->
+  <div style="display:flex;justify-content:center;gap:12px;margin-bottom:20px;">
+    <button onclick="window.print()" class="btn btn-outline-primary btn-sm" style="padding:8px 20px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print Report
+    </button>
+    <a href="{{ url_for('threat_intel.breached_creds_export', format='pdf') }}" class="btn btn-primary btn-sm" style="padding:8px 20px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export Full Data (PDF)
+    </a>
+  </div>
+</div>
+{% endblock %}

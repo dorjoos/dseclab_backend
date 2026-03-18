@@ -616,6 +616,22 @@ def analysis():
                           breadcrumb=breadcrumb)
 
 
+@threat_intel.route('/threat-intelligence/summary')
+@login_required
+def breach_summary():
+    """AI-generated executive breach summary."""
+    from .services.ai_summary import generate_executive_summary
+
+    domain_filters = _get_domain_filters()
+    stats = es_service.get_stats(domain_filters=domain_filters)
+    tl_labels, tl_data = es_service.get_monthly_trends(months=6, domain_filters=domain_filters)
+
+    summary = generate_executive_summary(stats, tl_labels, tl_data)
+
+    breadcrumb = {"parent": "Threat Intelligence", "child": "Executive Summary"}
+    return render_template('threat_intel/summary.html', summary=summary, breadcrumb=breadcrumb)
+
+
 @threat_intel.route('/threat-intelligence/reports')
 @login_required
 def reports():
