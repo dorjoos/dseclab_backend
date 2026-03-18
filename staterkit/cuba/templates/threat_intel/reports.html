@@ -138,7 +138,6 @@
     {% if schedules %}
     {% for s in schedules %}
     <div class="rp-card">
-      <div style="width:8px;height:8px;border-radius:50;flex-shrink:0;{% if s.is_active %}background:#059669;box-shadow:0 0 6px #05966940;{% else %}background:var(--border);{% endif %}"></div>
       <div class="rp-info">
         <div class="rp-name">{{ s.name }}</div>
         <div class="rp-meta">
@@ -209,7 +208,6 @@
     {% if alerts %}
     {% for a in alerts %}
     <div class="rp-card">
-      <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{% if a.is_active %}background:#dc2626;box-shadow:0 0 6px #dc262640;{% else %}background:var(--border);{% endif %}"></div>
       <div class="rp-info">
         <div class="rp-name">{{ a.name }}</div>
         <div class="rp-meta">
