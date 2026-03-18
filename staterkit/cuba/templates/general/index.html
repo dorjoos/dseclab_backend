@@ -62,13 +62,27 @@
   var widgets = {
     welcome: { title: 'Welcome', size: 'dash-w-12', noHeader: true, render: function(body) {
       body.className = 'welcome-body';
-      body.style.cssText = 'background:linear-gradient(135deg,#1a56db 0%,#4f46e5 40%,#7c3aed 70%,#a855f7 100%);padding:32px;color:#fff;border-radius:12px;';
+      body.style.cssText = 'background:linear-gradient(135deg,#1a56db 0%,#4f46e5 40%,#7c3aed 70%,#a855f7 100%);padding:32px;color:#fff;border-radius:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;';
       body.insertAdjacentHTML('beforeend',
-        '<div class="welcome-title">Welcome back, {{ current_user.username }}</div>' +
-        '<div class="welcome-sub">Threat Intelligence Dashboard &mdash; D-sec Lab</div>' +
-        '<div class="welcome-meta">' +
-          '<div><div class="welcome-meta-val">{{ total_leaks|format_number }}</div><div class="welcome-meta-item">Total Records</div></div>' +
-          '<div><div class="welcome-meta-val">{{ latest_events|length }}</div><div class="welcome-meta-item">Recent Events</div></div>' +
+        '<div style="position:relative;z-index:1;">' +
+          '<div class="welcome-title">Welcome back, {{ current_user.username }}</div>' +
+          '<div class="welcome-sub">Threat Intelligence Dashboard &mdash; D-sec Lab</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:32px;position:relative;z-index:1;">' +
+          '<div style="text-align:center;">' +
+            '<div style="font-size:36px;font-weight:800;letter-spacing:-0.03em;line-height:1;">{{ total_leaks|format_number }}</div>' +
+            '<div style="font-size:12px;opacity:0.7;margin-top:6px;text-transform:uppercase;letter-spacing:0.06em;">Total Records</div>' +
+          '</div>' +
+          '<div style="width:1px;background:rgba(255,255,255,0.2);"></div>' +
+          '<div style="text-align:center;">' +
+            '<div style="font-size:36px;font-weight:800;letter-spacing:-0.03em;line-height:1;">{{ latest_events|length }}</div>' +
+            '<div style="font-size:12px;opacity:0.7;margin-top:6px;text-transform:uppercase;letter-spacing:0.06em;">Recent Events</div>' +
+          '</div>' +
+          '<div style="width:1px;background:rgba(255,255,255,0.2);"></div>' +
+          '<div style="text-align:center;">' +
+            '<div style="font-size:36px;font-weight:800;letter-spacing:-0.03em;line-height:1;">{{ (category_distribution|length) }}</div>' +
+            '<div style="font-size:12px;opacity:0.7;margin-top:6px;text-transform:uppercase;letter-spacing:0.06em;">Sources</div>' +
+          '</div>' +
         '</div>'
       );
     }},
