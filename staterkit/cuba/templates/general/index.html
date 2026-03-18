@@ -214,7 +214,7 @@
         typeTag.style.cssText = 'font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:' + color + ';';
         typeTag.textContent = type;
         var dateEl = document.createElement('span');
-        dateEl.style.cssText = 'font-size:11px;color:var(--text-muted);';
+        dateEl.style.cssText = 'font-size:11px;color:var(--text-secondary);font-weight:500;';
         dateEl.textContent = {{ (event.created_at.strftime("%b %d") if event.created_at else "\u2014")|tojson }};
         right.appendChild(typeTag);
         right.appendChild(dateEl);
@@ -224,7 +224,7 @@
 
         // Source inline with top row
         var srcTag = document.createElement('span');
-        srcTag.style.cssText = 'font-size:11px;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;';
+        srcTag.style.cssText = 'font-size:11px;color:var(--text-secondary);font-weight:500;background:var(--bg);padding:2px 6px;border-radius:4px;';
         srcTag.textContent = {{ (event.source or "\u2014")|tojson }};
         right.insertBefore(srcTag, typeTag);
 
