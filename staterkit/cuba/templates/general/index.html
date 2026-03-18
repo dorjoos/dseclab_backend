@@ -222,11 +222,11 @@
         top.appendChild(right);
         card.appendChild(top);
 
-        // Bottom row: source
-        var bottom = document.createElement('div');
-        bottom.style.cssText = 'font-size:12px;color:var(--text-muted);margin-top:4px;';
-        bottom.textContent = 'Source: ' + {{ (event.source or "\u2014")|tojson }};
-        card.appendChild(bottom);
+        // Source inline with top row
+        var srcTag = document.createElement('span');
+        srcTag.style.cssText = 'font-size:11px;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;';
+        srcTag.textContent = {{ (event.source or "\u2014")|tojson }};
+        right.insertBefore(srcTag, typeTag);
 
         item.appendChild(card);
         body.appendChild(item);
