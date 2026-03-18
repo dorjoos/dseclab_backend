@@ -704,7 +704,7 @@ def add_alert():
 
     if not name or not condition_value:
         flash('Alert name and condition are required.', 'warning')
-        return redirect(url_for('threat_intel.reports'))
+        return redirect(url_for('threat_intel.reports') + '#alerts')
 
     alert = AlertRule(
         name=name, condition_type=condition_type, condition_value=condition_value,
@@ -714,7 +714,7 @@ def add_alert():
     db.session.add(alert)
     db.session.commit()
     flash(f'Alert rule "{name}" created.', 'success')
-    return redirect(url_for('threat_intel.reports'))
+    return redirect(url_for('threat_intel.reports') + '#alerts')
 
 
 @threat_intel.route('/threat-intelligence/reports/alert/<int:aid>/toggle', methods=['POST'])
@@ -724,11 +724,11 @@ def toggle_alert(aid):
     alert = AlertRule.query.get_or_404(aid)
     if alert.created_by != current_user.id and not current_user.is_admin_user:
         flash('Access denied.', 'danger')
-        return redirect(url_for('threat_intel.reports'))
+        return redirect(url_for('threat_intel.reports') + '#alerts')
     alert.is_active = not alert.is_active
     db.session.commit()
     flash(f'Alert {"enabled" if alert.is_active else "disabled"}.', 'info')
-    return redirect(url_for('threat_intel.reports'))
+    return redirect(url_for('threat_intel.reports') + '#alerts')
 
 
 @threat_intel.route('/threat-intelligence/reports/alert/<int:aid>/delete', methods=['POST'])
@@ -738,11 +738,11 @@ def delete_alert(aid):
     alert = AlertRule.query.get_or_404(aid)
     if alert.created_by != current_user.id and not current_user.is_admin_user:
         flash('Access denied.', 'danger')
-        return redirect(url_for('threat_intel.reports'))
+        return redirect(url_for('threat_intel.reports') + '#alerts')
     db.session.delete(alert)
     db.session.commit()
     flash('Alert rule deleted.', 'info')
-    return redirect(url_for('threat_intel.reports'))
+    return redirect(url_for('threat_intel.reports') + '#alerts')
 
 
 @threat_intel.route('/threat-intelligence/reports/generate', methods=['POST'])
