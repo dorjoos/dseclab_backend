@@ -10,14 +10,10 @@
 
   /* Stat card enhancements */
   .stat-cell { padding:20px;position:relative;overflow:hidden; }
-  .stat-cell::after { content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.06; }
-  .stat-cell:nth-child(1)::after { background:#1a56db; }
-  .stat-cell:nth-child(2)::after { background:#d97706; }
-  .stat-cell:nth-child(3)::after { background:#059669; }
-  .stat-cell:nth-child(4)::after { background:#dc2626; }
-  .stat-icon { width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px; }
-  .stat-val { font-size:28px;font-weight:800;letter-spacing:-0.03em;line-height:1; }
-  .stat-label { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:6px; }
+  .stat-cell .stat-bg-svg { position:absolute;top:-10px;right:-10px;width:100px;height:100px;opacity:0.07;pointer-events:none; }
+  .stat-icon { width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px; }
+  .stat-val { font-size:28px;font-weight:800;letter-spacing:-0.03em;line-height:1;position:relative;z-index:1; }
+  .stat-label { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:6px;position:relative;z-index:1; }
 
   /* Welcome widget */
   .welcome-body { position:relative;overflow:hidden; }
@@ -80,11 +76,23 @@
     stats: { title: 'Key Metrics', size: 'dash-w-12', render: function(body) {
       body.style.padding = '0';
       var stats = {{ [
-        {'label':'Total Leaks','value':total_leaks|format_number,'color':'#1a56db','bg':'#eff4ff','icon':'shield'},
-        {'label':consumer_change_text+' Leaks','value':consumer_leaks|format_number,'color':'#d97706','bg':'#fef3c7','icon':'alert-triangle'},
-        {'label':corporate_change_text+' Leaks','value':corporate_leaks|format_number,'color':'#059669','bg':'#ecfdf5','icon':'activity'},
-        {'label':'Infected IPs','value':infected_ips_count|format_number,'color':'#dc2626','bg':'#fef2f2','icon':'server'}
+        {'label':'Total Leaks','value':total_leaks|format_number,'color':'#1a56db','bg':'#eff4ff'},
+        {'label':consumer_change_text+' Leaks','value':consumer_leaks|format_number,'color':'#d97706','bg':'#fef3c7'},
+        {'label':corporate_change_text+' Leaks','value':corporate_leaks|format_number,'color':'#059669','bg':'#ecfdf5'},
+        {'label':'Infected IPs','value':infected_ips_count|format_number,'color':'#dc2626','bg':'#fef2f2'}
       ]|tojson }};
+      var svgBgs = [
+        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="none" stroke="#1a56db" stroke-width="3"/><circle cx="50" cy="50" r="30" fill="none" stroke="#1a56db" stroke-width="2"/><circle cx="50" cy="50" r="15" fill="#1a56db" opacity="0.3"/><path d="M50 5 L50 95 M5 50 L95 50" stroke="#1a56db" stroke-width="1" opacity="0.3"/></svg>',
+        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,5 95,30 95,70 50,95 5,70 5,30" fill="none" stroke="#d97706" stroke-width="2.5"/><polygon points="50,20 80,37 80,63 50,80 20,63 20,37" fill="#d97706" opacity="0.15"/><circle cx="50" cy="50" r="8" fill="#d97706" opacity="0.4"/></svg>',
+        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="80" height="80" rx="12" fill="none" stroke="#059669" stroke-width="2.5"/><rect x="25" y="25" width="50" height="50" rx="8" fill="#059669" opacity="0.12"/><line x1="10" y1="50" x2="90" y2="50" stroke="#059669" stroke-width="1.5" opacity="0.3"/><line x1="50" y1="10" x2="50" y2="90" stroke="#059669" stroke-width="1.5" opacity="0.3"/><circle cx="50" cy="50" r="6" fill="#059669" opacity="0.4"/></svg>',
+        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 5 L95 50 L50 95 L5 50 Z" fill="none" stroke="#dc2626" stroke-width="2.5"/><path d="M50 25 L75 50 L50 75 L25 50 Z" fill="#dc2626" opacity="0.12"/><circle cx="50" cy="50" r="10" fill="none" stroke="#dc2626" stroke-width="2"/><circle cx="50" cy="50" r="4" fill="#dc2626" opacity="0.5"/></svg>'
+      ];
+      var svgIcons = [
+        '<svg style="color:#1a56db;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        '<svg style="color:#d97706;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        '<svg style="color:#059669;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+        '<svg style="color:#dc2626;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>'
+      ];
       var row = document.createElement('div');
       row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);';
       stats.forEach(function(s, i) {
@@ -92,9 +100,8 @@
         cell.className = 'stat-cell';
         if (i < 3) cell.style.borderRight = '1px solid var(--border-light)';
         cell.insertAdjacentHTML('beforeend',
-          '<div class="stat-icon" style="background:' + s.bg + ';">' +
-            '<svg style="color:' + s.color + ';width:18px;height:18px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>' +
-          '</div>' +
+          svgBgs[i] +
+          '<div class="stat-icon" style="background:' + s.bg + ';">' + svgIcons[i] + '</div>' +
           '<div class="stat-val">' + s.value + '</div>' +
           '<div class="stat-label">' + s.label + '</div>'
         );
