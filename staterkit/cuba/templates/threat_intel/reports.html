@@ -137,25 +137,40 @@
 
     {% if schedules %}
     {% for s in schedules %}
-    <div class="rp-card">
-      <div class="rp-info">
-        <div class="rp-name">{{ s.name }}</div>
-        <div class="rp-meta">
-          <span class="av-tag av-tag-purple">{{ s.frequency }}</span>
-          <span class="av-tag av-tag-blue">{{ s.format|upper }}</span>
-          {% if s.filters %}<span style="font-weight:500;">{{ s.filters }}</span>{% endif %}
-          {% if s.email_to %}<span>→ {{ s.email_to }}</span>{% endif %}
-          {% if s.last_run %}<span>Last: {{ s.last_run.strftime('%b %d') }}</span>{% endif %}
+    {% set freq_colors = {'daily':'#d97706','weekly':'#4f46e5','monthly':'#059669'} %}
+    {% set freq_bgs = {'daily':'#fffbeb','weekly':'#eff4ff','monthly':'#ecfdf5'} %}
+    {% set fc = freq_colors.get(s.frequency, '#4f46e5') %}
+    {% set fb = freq_bgs.get(s.frequency, '#eff4ff') %}
+    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='{{ fc }}';this.style.boxShadow='0 4px 12px {{ fc }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <!-- Frequency icon -->
+      <div style="width:48px;height:48px;border-radius:12px;background:{{ fb }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ fc }}" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;font-weight:600;">{{ s.name }}</span>
+          {% if s.is_active %}<span style="font-size:10px;font-weight:700;color:#059669;background:#ecfdf5;padding:2px 6px;border-radius:4px;">ACTIVE</span>{% else %}<span style="font-size:10px;font-weight:700;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;">PAUSED</span>{% endif %}
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-weight:600;color:{{ fc }};">{{ s.frequency|title }}</span>
+          <span>&middot;</span>
+          <span>{{ s.format|upper }}</span>
+          {% if s.email_to %}<span>&middot; → {{ s.email_to }}</span>{% endif %}
+          {% if s.last_run %}<span>&middot; Last: {{ s.last_run.strftime('%b %d') }}</span>{% endif %}
         </div>
       </div>
-      <div class="rp-actions">
+      <!-- Actions -->
+      <div style="display:flex;gap:6px;flex-shrink:0;">
         <form method="POST" action="{{ url_for('threat_intel.toggle_schedule', sid=s.id) }}" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="rp-toggle {% if s.is_active %}on{% else %}off{% endif %}" title="Toggle"></button>
+          <button type="submit" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;transition:all 0.15s;{% if s.is_active %}background:var(--bg);border:1px solid var(--border);color:var(--text-secondary);{% else %}background:{{ fc }};border:1px solid {{ fc }};color:#fff;{% endif %}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            {% if s.is_active %}Pause{% else %}Enable{% endif %}
+          </button>
         </form>
         <form method="POST" action="{{ url_for('threat_intel.delete_schedule', sid=s.id) }}" style="display:inline;" data-confirm="Delete this schedule?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;">&times;</button>
+          <button type="submit" style="padding:7px 10px;font-size:14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">&times;</button>
         </form>
       </div>
     </div>
@@ -207,24 +222,44 @@
 
     {% if alerts %}
     {% for a in alerts %}
-    <div class="rp-card">
-      <div class="rp-info">
-        <div class="rp-name">{{ a.name }}</div>
-        <div class="rp-meta">
-          <span class="av-tag av-tag-red">{{ a.condition_type }}</span>
-          <span style="font-weight:500;">{{ a.condition_value }}</span>
-          <span class="av-tag av-tag-teal">{{ a.notify_method }}</span>
-          {% if a.trigger_count > 0 %}<span>Triggered {{ a.trigger_count }}x</span>{% endif %}
+    {% set cond_colors = {'domain_match':'#4f46e5','new_breach':'#dc2626','threshold':'#d97706'} %}
+    {% set cond_bgs = {'domain_match':'#eff4ff','new_breach':'#fef2f2','threshold':'#fffbeb'} %}
+    {% set cond_icons = {'domain_match':'<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>','new_breach':'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>','threshold':'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'} %}
+    {% set cc = cond_colors.get(a.condition_type, '#4f46e5') %}
+    {% set cb = cond_bgs.get(a.condition_type, '#eff4ff') %}
+    {% set ci = cond_icons.get(a.condition_type, '<circle cx="12" cy="12" r="10"/>') %}
+    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='{{ cc }}';this.style.boxShadow='0 4px 12px {{ cc }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <!-- Condition icon -->
+      <div style="width:48px;height:48px;border-radius:12px;background:{{ cb }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ cc }}" stroke-width="2">{{ ci }}</svg>
+      </div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:14px;font-weight:600;">{{ a.name }}</span>
+          {% if a.is_active %}<span style="font-size:10px;font-weight:700;color:#dc2626;background:#fef2f2;padding:2px 6px;border-radius:4px;">ACTIVE</span>{% else %}<span style="font-size:10px;font-weight:700;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;">PAUSED</span>{% endif %}
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-weight:600;color:{{ cc }};">{{ a.condition_type|replace('_',' ')|title }}</span>
+          <span>&middot;</span>
+          <span style="font-weight:500;color:var(--text);">{{ a.condition_value }}</span>
+          <span>&middot;</span>
+          <span>via {{ a.notify_method }}</span>
+          {% if a.trigger_count > 0 %}<span>&middot; Fired {{ a.trigger_count }}x</span>{% endif %}
+          {% if a.last_triggered %}<span>&middot; Last: {{ a.last_triggered.strftime('%b %d') }}</span>{% endif %}
         </div>
       </div>
-      <div class="rp-actions">
+      <!-- Actions -->
+      <div style="display:flex;gap:6px;flex-shrink:0;">
         <form method="POST" action="{{ url_for('threat_intel.toggle_alert', aid=a.id) }}" style="display:inline;">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" class="rp-toggle {% if a.is_active %}on{% else %}off{% endif %}" title="Toggle"></button>
+          <button type="submit" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;transition:all 0.15s;{% if a.is_active %}background:var(--bg);border:1px solid var(--border);color:var(--text-secondary);{% else %}background:{{ cc }};border:1px solid {{ cc }};color:#fff;{% endif %}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+            {% if a.is_active %}Pause{% else %}Enable{% endif %}
+          </button>
         </form>
         <form method="POST" action="{{ url_for('threat_intel.delete_alert', aid=a.id) }}" style="display:inline;" data-confirm="Delete this alert rule?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;">&times;</button>
+          <button type="submit" style="padding:7px 10px;font-size:14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">&times;</button>
         </form>
       </div>
     </div>
