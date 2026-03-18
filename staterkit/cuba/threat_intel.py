@@ -616,6 +616,52 @@ def analysis():
                           breadcrumb=breadcrumb)
 
 
+@threat_intel.route('/threat-intelligence/ransomware')
+@login_required
+def ransomware_dashboard():
+    """Ransomware threat monitoring dashboard."""
+    # Mock data — replace with real ES index or API later
+    mock_groups = [
+        {'name': 'LockBit 3.0', 'victims': 127, 'last_seen': '2026-03-18', 'status': 'active', 'color': '#dc2626'},
+        {'name': 'BlackCat/ALPHV', 'victims': 89, 'last_seen': '2026-03-17', 'status': 'active', 'color': '#d97706'},
+        {'name': 'Cl0p', 'victims': 64, 'last_seen': '2026-03-15', 'status': 'active', 'color': '#7c3aed'},
+        {'name': 'Play', 'victims': 52, 'last_seen': '2026-03-16', 'status': 'active', 'color': '#4f46e5'},
+        {'name': 'Royal', 'victims': 41, 'last_seen': '2026-03-10', 'status': 'active', 'color': '#0891b2'},
+        {'name': 'BianLian', 'victims': 33, 'last_seen': '2026-03-12', 'status': 'active', 'color': '#059669'},
+        {'name': 'Medusa', 'victims': 28, 'last_seen': '2026-03-14', 'status': 'active', 'color': '#ec4899'},
+        {'name': 'Akira', 'victims': 22, 'last_seen': '2026-03-11', 'status': 'active', 'color': '#f59e0b'},
+    ]
+
+    mock_recent = [
+        {'group': 'LockBit 3.0', 'victim': 'GlobalTech Industries', 'country': 'US', 'sector': 'Technology', 'date': '2026-03-18', 'data_size': '2.5 TB'},
+        {'group': 'BlackCat/ALPHV', 'victim': 'Nordic Healthcare', 'country': 'SE', 'sector': 'Healthcare', 'date': '2026-03-17', 'data_size': '800 GB'},
+        {'group': 'Cl0p', 'victim': 'EuroBank AG', 'country': 'DE', 'sector': 'Banking', 'date': '2026-03-17', 'data_size': '1.2 TB'},
+        {'group': 'Play', 'victim': 'Pacific Logistics', 'country': 'AU', 'sector': 'Logistics', 'date': '2026-03-16', 'data_size': '450 GB'},
+        {'group': 'LockBit 3.0', 'victim': 'MN Telecom', 'country': 'MN', 'sector': 'Telecom', 'date': '2026-03-16', 'data_size': '3.1 TB'},
+        {'group': 'Royal', 'victim': 'Capitol Education', 'country': 'US', 'sector': 'Education', 'date': '2026-03-15', 'data_size': '600 GB'},
+        {'group': 'Medusa', 'victim': 'AsiaPharma Corp', 'country': 'SG', 'sector': 'Healthcare', 'date': '2026-03-15', 'data_size': '900 GB'},
+        {'group': 'BlackCat/ALPHV', 'victim': 'CityGov Municipal', 'country': 'US', 'sector': 'Government', 'date': '2026-03-14', 'data_size': '1.8 TB'},
+        {'group': 'Akira', 'victim': 'RetailMax Chain', 'country': 'UK', 'sector': 'Retail', 'date': '2026-03-14', 'data_size': '350 GB'},
+        {'group': 'BianLian', 'victim': 'KhanBank Mongolia', 'country': 'MN', 'sector': 'Banking', 'date': '2026-03-13', 'data_size': '2.0 TB'},
+    ]
+
+    mock_stats = {
+        'total_attacks': 456,
+        'active_groups': 8,
+        'countries_affected': 42,
+        'data_leaked_tb': 128.5,
+        'attacks_this_month': 34,
+        'sectors': {'Technology': 89, 'Healthcare': 72, 'Banking': 65, 'Government': 54, 'Education': 43, 'Retail': 38, 'Logistics': 31, 'Telecom': 28, 'Manufacturing': 22, 'Other': 14},
+        'monthly_trend': [12, 18, 24, 15, 28, 34, 22, 38, 41, 29, 35, 34],
+        'monthly_labels': ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'],
+    }
+
+    breadcrumb = {"parent": "Threat Intelligence", "child": "Ransomware"}
+    return render_template('threat_intel/ransomware.html',
+                          groups=mock_groups, recent=mock_recent, stats=mock_stats,
+                          breadcrumb=breadcrumb)
+
+
 @threat_intel.route('/threat-intelligence/summary')
 @login_required
 def breach_summary():

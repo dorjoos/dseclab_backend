@@ -25,6 +25,9 @@
       <a href="{{ url_for('threat_intel.breach_summary') }}" class="dsec-nav-item {% if request.endpoint == 'threat_intel.breach_summary' %}active{% endif %}">
         <i data-feather="file-text"></i> Executive Summary
       </a>
+      <a href="{{ url_for('threat_intel.ransomware_dashboard') }}" class="dsec-nav-item {% if request.endpoint == 'threat_intel.ransomware_dashboard' %}active{% endif %}">
+        <i data-feather="lock"></i> Ransomware
+      </a>
     </div>
 
     {% if current_user.is_authenticated and current_user.is_admin_user %}
