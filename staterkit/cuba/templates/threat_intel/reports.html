@@ -54,6 +54,37 @@
     </form>
   </div>
 
+  <!-- Stats bar -->
+  <div style="display:flex;gap:24px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:#eff4ff;display:flex;align-items:center;justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a56db" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">{{ schedules|selectattr('is_active')|list|length }}</div>
+        <div style="font-size:11px;color:var(--text-secondary);">Active Schedules</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:#fef2f2;display:flex;align-items:center;justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">{{ alerts|selectattr('is_active')|list|length }}</div>
+        <div style="font-size:11px;color:var(--text-secondary);">Active Alerts</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div>
+        <div style="font-size:18px;font-weight:700;">{{ history|length }}</div>
+        <div style="font-size:11px;color:var(--text-secondary);">Reports Generated</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Tabs -->
   <div class="reports-tabs">
     <button class="reports-tab active" onclick="switchTab('schedules')">Scheduled Reports</button>
@@ -88,6 +119,10 @@
               <option value="xlsx">Excel</option>
             </select>
           </div>
+          <div class="rp-form-field">
+            <label>Day/Time</label>
+            <input type="text" name="cron_hint" placeholder="e.g. Mon 09:00" style="width:110px;">
+          </div>
           <div class="rp-form-field" style="flex:1;">
             <label>Email To (optional)</label>
             <input type="text" name="email_to" placeholder="user@company.com">
@@ -106,6 +141,7 @@
         <div class="rp-meta">
           <span class="av-tag av-tag-purple">{{ s.frequency }}</span>
           <span class="av-tag av-tag-blue">{{ s.format|upper }}</span>
+          {% if s.filters %}<span style="font-weight:500;">{{ s.filters }}</span>{% endif %}
           {% if s.email_to %}<span>→ {{ s.email_to }}</span>{% endif %}
           {% if s.last_run %}<span>Last: {{ s.last_run.strftime('%b %d') }}</span>{% endif %}
         </div>
@@ -209,13 +245,14 @@
         <div class="rp-name">{{ h.name }}</div>
         <div class="rp-meta">
           <span class="av-tag av-tag-blue">{{ h.format|upper }}</span>
-          <span>{{ h.record_count|format_number }} records</span>
+          <span>{{ h.record_count|format_number }} records{% if h.file_size %} &middot; {{ (h.file_size / 1024)|round(1) }}KB{% endif %}</span>
           <span class="history-status history-{{ h.status }}">{{ h.status }}</span>
           <span>{{ h.created_at.strftime('%b %d, %H:%M') if h.created_at else '' }}</span>
           {% if h.source == 'scheduled' %}<span class="av-tag av-tag-purple">auto</span>{% endif %}
         </div>
       </div>
       <div class="rp-actions">
+        <button class="av-btn" style="font-size:12px;" onclick="previewReport()">Preview</button>
         <a href="{{ url_for('threat_intel.breached_creds_export', format=h.format) }}" class="av-btn" style="font-size:12px;">Download</a>
       </div>
     </div>
@@ -225,6 +262,19 @@
     {% endif %}
   </div>
 </div>
+
+  <!-- Preview Modal -->
+  <div id="preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:var(--bg-white);border-radius:12px;width:90%;max-width:800px;max-height:80vh;overflow:auto;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);">
+        <span style="font-size:15px;font-weight:600;">Report Preview</span>
+        <button onclick="document.getElementById('preview-modal').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);">&times;</button>
+      </div>
+      <div id="preview-content" style="padding:20px;">
+        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading preview...</div>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block scriptcontent %}
@@ -234,6 +284,62 @@ function switchTab(name) {
   document.querySelectorAll('.reports-panel').forEach(function(p) { p.classList.remove('active'); });
   event.target.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+}
+
+function previewReport() {
+  var modal = document.getElementById('preview-modal');
+  var content = document.getElementById('preview-content');
+  modal.style.display = 'flex';
+  content.textContent = '';
+  var loading = document.createElement('div');
+  loading.style.cssText = 'text-align:center;padding:20px;color:var(--text-muted);';
+  loading.textContent = 'Loading preview...';
+  content.appendChild(loading);
+
+  fetch('/api/breached-creds/search', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
+    body: JSON.stringify({ page: 1, per_page: 5 })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    content.textContent = '';
+    if (!data.rows || !data.rows.length) {
+      content.textContent = 'No data to preview';
+      return;
+    }
+    var info = document.createElement('div');
+    info.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-bottom:12px;';
+    info.textContent = 'Showing first 5 of ' + data.total.toLocaleString() + ' records';
+    content.appendChild(info);
+
+    var tbl = document.createElement('table');
+    tbl.className = 'av-table';
+    tbl.style.tableLayout = 'auto';
+    var thead = document.createElement('thead');
+    var tr0 = document.createElement('tr');
+    ['Username','Domain','Source','Type','Date'].forEach(function(h){
+      var th = document.createElement('th');
+      th.textContent = h;
+      tr0.appendChild(th);
+    });
+    thead.appendChild(tr0);
+    tbl.appendChild(thead);
+    var tbody = document.createElement('tbody');
+    data.rows.forEach(function(row){
+      var tr = document.createElement('tr');
+      [row.username,row.domain,row.source,row.type,row.date].forEach(function(v){
+        var td = document.createElement('td');
+        td.textContent = v || '\u2014';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    content.appendChild(tbl);
+  })
+  .catch(function(){ content.textContent = 'Error loading preview'; });
 }
 </script>
 {% endblock %}

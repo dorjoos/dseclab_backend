@@ -23,6 +23,14 @@ class BaseConfig:
     ELASTICSEARCH_INDEX = os.environ.get('ELASTICSEARCH_INDEX', 'main')
     ELASTICSEARCH_VERIFY_CERTS = os.environ.get('ELASTICSEARCH_VERIFY_CERTS', 'false').lower() == 'true'
 
+    # Email (SMTP)
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', '')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@dseclab.com')
+
     # Feature flags
     ALLOW_SELF_REGISTRATION = os.environ.get('ALLOW_SELF_REGISTRATION', 'false').lower() == 'true'
 

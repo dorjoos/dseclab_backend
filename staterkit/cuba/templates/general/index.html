@@ -240,6 +240,45 @@
       {% endif %}
     }},
 
+    report_activity: { title: 'Report Activity', size: 'dash-w-6', render: function(body) {
+      body.style.cssText = 'display:flex;flex-direction:column;gap:12px;';
+      var items = [
+        {label:'Scheduled Reports', val:'Active', color:'#059669', bg:'#ecfdf5'},
+        {label:'Alert Rules', val:'Monitoring', color:'#dc2626', bg:'#fef2f2'},
+        {label:'Last Generated', val:'Recently', color:'#4f46e5', bg:'#eff4ff'},
+      ];
+      items.forEach(function(item) {
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;transition:all 0.15s;';
+        row.addEventListener('mouseover',function(){this.style.borderColor=item.color;});
+        row.addEventListener('mouseout',function(){this.style.borderColor='var(--border)';});
+        var dot = document.createElement('div');
+        dot.style.cssText = 'width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:'+item.bg+';flex-shrink:0;';
+        var dotInner = document.createElement('div');
+        dotInner.style.cssText = 'width:8px;height:8px;border-radius:50%;background:'+item.color+';';
+        dot.appendChild(dotInner);
+        var info = document.createElement('div');
+        info.style.flex = '1';
+        var lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:13px;font-weight:500;';
+        lbl.textContent = item.label;
+        var val = document.createElement('div');
+        val.style.cssText = 'font-size:11px;color:var(--text-secondary);';
+        val.textContent = item.val;
+        info.appendChild(lbl);
+        info.appendChild(val);
+        row.appendChild(dot);
+        row.appendChild(info);
+        body.appendChild(row);
+      });
+      var link = document.createElement('a');
+      link.href = '/threat-intelligence/reports';
+      link.className = 'av-view-link';
+      link.style.cssText = 'font-size:12px;text-align:center;display:block;padding-top:4px;';
+      link.textContent = 'Open Reports Hub \u2192';
+      body.appendChild(link);
+    }},
+
     type_chart: { title: 'Type Distribution', size: 'dash-w-6', render: function(body) {
       var el = document.createElement('div');
       body.appendChild(el);
