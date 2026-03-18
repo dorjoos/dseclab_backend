@@ -89,36 +89,28 @@
 
     stats: { title: 'Key Metrics', size: 'dash-w-12', render: function(body) {
       body.style.padding = '0';
-      var stats = {{ [
-        {'label':'Total Leaks','value':total_leaks|format_number,'color':'#1a56db','bg':'#eff4ff'},
-        {'label':consumer_change_text+' Leaks','value':consumer_leaks|format_number,'color':'#d97706','bg':'#fef3c7'},
-        {'label':corporate_change_text+' Leaks','value':corporate_leaks|format_number,'color':'#059669','bg':'#ecfdf5'},
-        {'label':'Infected IPs','value':infected_ips_count|format_number,'color':'#dc2626','bg':'#fef2f2'}
-      ]|tojson }};
-      var svgBgs = [
-        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="45" fill="none" stroke="#1a56db" stroke-width="3"/><circle cx="50" cy="50" r="30" fill="none" stroke="#1a56db" stroke-width="2"/><circle cx="50" cy="50" r="15" fill="#1a56db" opacity="0.3"/><path d="M50 5 L50 95 M5 50 L95 50" stroke="#1a56db" stroke-width="1" opacity="0.3"/></svg>',
-        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,5 95,30 95,70 50,95 5,70 5,30" fill="none" stroke="#d97706" stroke-width="2.5"/><polygon points="50,20 80,37 80,63 50,80 20,63 20,37" fill="#d97706" opacity="0.15"/><circle cx="50" cy="50" r="8" fill="#d97706" opacity="0.4"/></svg>',
-        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="10" width="80" height="80" rx="12" fill="none" stroke="#059669" stroke-width="2.5"/><rect x="25" y="25" width="50" height="50" rx="8" fill="#059669" opacity="0.12"/><line x1="10" y1="50" x2="90" y2="50" stroke="#059669" stroke-width="1.5" opacity="0.3"/><line x1="50" y1="10" x2="50" y2="90" stroke="#059669" stroke-width="1.5" opacity="0.3"/><circle cx="50" cy="50" r="6" fill="#059669" opacity="0.4"/></svg>',
-        '<svg class="stat-bg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path d="M50 5 L95 50 L50 95 L5 50 Z" fill="none" stroke="#dc2626" stroke-width="2.5"/><path d="M50 25 L75 50 L50 75 L25 50 Z" fill="#dc2626" opacity="0.12"/><circle cx="50" cy="50" r="10" fill="none" stroke="#dc2626" stroke-width="2"/><circle cx="50" cy="50" r="4" fill="#dc2626" opacity="0.5"/></svg>'
+      var cards = [
+        {label:'Total Leaks',value:{{ total_leaks|format_number|tojson }},grad:'linear-gradient(135deg,#1a56db,#4f46e5)',icon:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'},
+        {label:{{ (consumer_change_text + ' Leaks')|tojson }},value:{{ consumer_leaks|format_number|tojson }},grad:'linear-gradient(135deg,#d97706,#f59e0b)',icon:'<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'},
+        {label:{{ (corporate_change_text + ' Leaks')|tojson }},value:{{ corporate_leaks|format_number|tojson }},grad:'linear-gradient(135deg,#059669,#0891b2)',icon:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'},
+        {label:'Infected IPs',value:{{ infected_ips_count|format_number|tojson }},grad:'linear-gradient(135deg,#dc2626,#e11d48)',icon:'<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>'}
       ];
-      var svgIcons = [
-        '<svg style="color:#1a56db;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
-        '<svg style="color:#d97706;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-        '<svg style="color:#059669;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
-        '<svg style="color:#dc2626;width:20px;height:20px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>'
-      ];
-      body.style.padding = '0';
       var row = document.createElement('div');
       row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:16px;';
-      stats.forEach(function(s, i) {
+      cards.forEach(function(c) {
         var cell = document.createElement('div');
-        cell.className = 'stat-cell';
-        cell.style.cssText = 'background:' + s.bg + ';border-radius:12px;padding:20px;position:relative;overflow:hidden;';
+        cell.style.cssText = 'background:'+c.grad+';border-radius:14px;padding:20px;position:relative;overflow:hidden;color:#fff;';
         cell.insertAdjacentHTML('beforeend',
-          svgBgs[i] +
-          '<div class="stat-icon" style="background:rgba(255,255,255,0.7);backdrop-filter:blur(4px);">' + svgIcons[i] + '</div>' +
-          '<div class="stat-val" style="color:' + s.color + ';">' + s.value + '</div>' +
-          '<div class="stat-label">' + s.label + '</div>'
+          '<div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.12);"></div>' +
+          '<div style="position:absolute;bottom:-25px;right:30px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>' +
+          '<div style="position:absolute;top:30px;right:50px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>' +
+          '<div style="position:relative;z-index:1;">' +
+            '<div style="width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:12px;">' +
+              '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">' + c.icon + '</svg>' +
+            '</div>' +
+            '<div style="font-size:28px;font-weight:800;letter-spacing:-0.03em;line-height:1;">' + c.value + '</div>' +
+            '<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;margin-top:6px;">' + c.label + '</div>' +
+          '</div>'
         );
         row.appendChild(cell);
       });
