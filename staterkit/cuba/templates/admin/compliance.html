@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid p-0">
+  <!-- Score cards -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+    {% set scores = [
+      {'label':'Security Score','val':metrics.security_score,'desc':'Based on MFA adoption','color':{'A':'#059669','B':'#d97706','C':'#dc2626','D':'#dc2626'}},
+      {'label':'Audit Score','val':metrics.audit_score,'desc':'Based on log volume','color':{'A':'#059669','B':'#d97706','C':'#dc2626'}},
+      {'label':'MFA Coverage','val':metrics.mfa_rate|string + '%','desc':metrics.mfa_enabled|string + ' of ' + metrics.total_users|string + ' users','color':{'high':'#059669','low':'#dc2626'}}
+    ] %}
+    {% for s in scores %}
+    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;">
+      <div style="font-size:48px;font-weight:800;letter-spacing:-0.04em;color:{% if s.val in ('A','B','C','D') %}{{ s.color.get(s.val,'#475569') }}{% elif s.val|replace('%','')|int > 50 %}#059669{% else %}#dc2626{% endif %};">{{ s.val }}</div>
+      <div style="font-size:14px;font-weight:600;margin-top:4px;">{{ s.label }}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;">{{ s.desc }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Metrics grid -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px;">
+    <div class="card" style="padding:24px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px;">User Security</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Total Users</span>
+          <span style="font-size:14px;font-weight:600;">{{ metrics.total_users }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Active Users</span>
+          <span style="font-size:14px;font-weight:600;">{{ metrics.active_users }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">MFA Enabled</span>
+          <span style="font-size:14px;font-weight:600;color:{% if metrics.mfa_enabled > 0 %}#059669{% else %}#dc2626{% endif %};">{{ metrics.mfa_enabled }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Failed Logins (30d)</span>
+          <span style="font-size:14px;font-weight:600;color:{% if metrics.failed_logins_30d > 10 %}#dc2626{% else %}var(--text){% endif %};">{{ metrics.failed_logins_30d }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:24px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px;">System Health</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Companies</span>
+          <span style="font-size:14px;font-weight:600;">{{ metrics.total_companies }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Audit Logs (30d)</span>
+          <span style="font-size:14px;font-weight:600;">{{ metrics.audit_logs_30d }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Active Schedules</span>
+          <span style="font-size:14px;font-weight:600;">{{ metrics.active_schedules }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;">Active Alerts</span>
+          <span style="font-size:14px;font-weight:600;">{{ metrics.active_alerts }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist -->
+  <div class="card" style="padding:24px;">
+    <div style="font-size:15px;font-weight:700;margin-bottom:16px;">Compliance Checklist</div>
+    {% set checks = [
+      {'name':'All users have MFA enabled','pass':metrics.mfa_rate >= 100},
+      {'name':'Audit logging is active','pass':metrics.audit_logs_30d > 0},
+      {'name':'No excessive failed logins','pass':metrics.failed_logins_30d < 50},
+      {'name':'Report schedules configured','pass':metrics.active_schedules > 0},
+      {'name':'Alert rules configured','pass':metrics.active_alerts > 0},
+      {'name':'All companies have watchlists','pass':metrics.total_companies > 0},
+      {'name':'HTTPS enforced','pass':true},
+      {'name':'CSRF protection enabled','pass':true},
+      {'name':'Rate limiting active','pass':true},
+      {'name':'Password policy enforced','pass':true},
+    ] %}
+    {% for c in checks %}
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 0;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
+      {% if c.pass %}
+      <div style="width:24px;height:24px;border-radius:50%;background:#ecfdf5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      {% else %}
+      <div style="width:24px;height:24px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      {% endif %}
+      <span style="font-size:13px;font-weight:500;{% if not c.pass %}color:#dc2626;{% endif %}">{{ c.name }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

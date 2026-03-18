@@ -105,6 +105,21 @@
             <input type="checkbox" name="is_active" id="is_active" {% if not user or user.is_active %}checked{% endif %} style="accent-color:#1a56db;width:16px;height:16px;">
             <label for="is_active" style="font-size:13px;margin:0;">Active account</label>
           </div>
+          {% if user %}
+          <div style="margin-bottom:16px;border-top:1px solid var(--border);padding-top:16px;">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;">Permissions</label>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;">
+              {% set all_perms = ['view','analyze','export','manage_users','manage_companies','manage_alerts','manage_reports'] %}
+              {% set user_perms = user.get_permissions() %}
+              {% for p in all_perms %}
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" name="permissions" value="{{ p }}" {% if p in user_perms %}checked{% endif %} style="accent-color:#1a56db;width:15px;height:15px;">
+                {{ p|replace('_',' ')|title }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
           <div style="display:flex;justify-content:flex-end;gap:8px;">
             <a href="{{ url_for('admin.user_management') }}" class="btn btn-outline-primary btn-sm" style="padding:8px 20px;">Cancel</a>
             <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 20px;">{% if user %}Update User{% else %}Create User{% endif %}</button>

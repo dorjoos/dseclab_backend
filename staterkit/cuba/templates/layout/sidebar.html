@@ -39,6 +39,9 @@
       <a href="{{ url_for('admin.user_activities') }}" class="dsec-nav-item {% if request.endpoint == 'admin.user_activities' %}active{% endif %}">
         <i data-feather="clock"></i> User Activity
       </a>
+      <a href="{{ url_for('admin.compliance_dashboard') }}" class="dsec-nav-item {% if request.endpoint == 'admin.compliance_dashboard' %}active{% endif %}">
+        <i data-feather="check-square"></i> Compliance
+      </a>
     </div>
     {% endif %}
 

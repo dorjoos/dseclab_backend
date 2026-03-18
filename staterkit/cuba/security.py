@@ -21,6 +21,22 @@ def admin_required(f):
     return decorated_function
 
 
+def permission_required(perm):
+    """Decorator to require a specific permission."""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash("Please login.", "warning")
+                return redirect(url_for("auth.login"))
+            if not current_user.has_permission(perm):
+                flash("You don't have permission for this action.", "danger")
+                return redirect(url_for("main.indexPage"))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 def get_user_company_domain():
     """Get company domain for current user, None for admins."""
     if not current_user.is_authenticated:

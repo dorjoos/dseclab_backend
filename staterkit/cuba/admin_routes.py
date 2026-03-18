@@ -216,7 +216,11 @@ def edit_user(user_id):
         user.company_id = company_id if company_id else None
         user.is_active = is_active
         user.updated_at = datetime.utcnow()
-        
+
+        # Permissions
+        permissions = request.form.getlist('permissions')
+        user.permissions = ','.join(permissions)
+
         # Update password if provided
         if new_password:
             is_valid, error_msg = validate_password(new_password)
@@ -672,4 +676,40 @@ def user_activities():
                          pagination=pagination,
                          activity_types=[a[0] for a in activity_types],
                          breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/compliance')
+@login_required
+@admin_required
+def compliance_dashboard():
+    """Compliance status dashboard."""
+    from .models import User, Company, AuditLog, UserActivity, ScheduledReport, AlertRule
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    thirty_days_ago = now - timedelta(days=30)
+
+    # Compliance metrics
+    metrics = {
+        'total_users': User.query.count(),
+        'active_users': User.query.filter_by(is_active=True).count(),
+        'mfa_enabled': User.query.filter_by(totp_enabled=True).count(),
+        'total_companies': Company.query.count(),
+        'audit_logs_30d': AuditLog.query.filter(AuditLog.created_at >= thirty_days_ago).count(),
+        'failed_logins_30d': UserActivity.query.filter(
+            UserActivity.activity_type == 'login_failed',
+            UserActivity.created_at >= thirty_days_ago
+        ).count(),
+        'active_schedules': ScheduledReport.query.filter_by(is_active=True).count() if hasattr(ScheduledReport, 'query') else 0,
+        'active_alerts': AlertRule.query.filter_by(is_active=True).count() if hasattr(AlertRule, 'query') else 0,
+    }
+
+    # Calculate scores
+    mfa_rate = (metrics['mfa_enabled'] / max(metrics['total_users'], 1)) * 100
+    metrics['mfa_rate'] = round(mfa_rate)
+    metrics['audit_score'] = 'A' if metrics['audit_logs_30d'] > 100 else 'B' if metrics['audit_logs_30d'] > 20 else 'C'
+    metrics['security_score'] = 'A' if mfa_rate > 80 else 'B' if mfa_rate > 50 else 'C' if mfa_rate > 20 else 'D'
+
+    breadcrumb = {"parent": "Admin", "child": "Compliance"}
+    return render_template('admin/compliance.html', metrics=metrics, breadcrumb=breadcrumb)
 

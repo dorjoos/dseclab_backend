@@ -46,7 +46,7 @@ def log_audit(action_type, resource_type, resource_id=None, description="",
         db.session.rollback()
 
 
-def log_user_activity(activity_type, user_id=None, status="success", failure_reason=None):
+def log_user_activity(activity_type, user_id=None, status="success", failure_reason=None, location=None):
     """Log user activity using a savepoint."""
     try:
         if user_id is None and current_user.is_authenticated:
@@ -56,6 +56,7 @@ def log_user_activity(activity_type, user_id=None, status="success", failure_rea
             activity_type=activity_type,
             ip_address=get_client_ip(),
             user_agent=get_user_agent(),
+            location=location,
             status=status,
             failure_reason=failure_reason
         )

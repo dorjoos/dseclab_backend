@@ -286,7 +286,7 @@ def breached_creds_api():
             'es_id': cred.es_id,
             'username': cred.username or '',
             'domain': cred.domain or '',
-            'password': '********' if cred.password else '',
+            'password': '********' if cred.password else '',  # Always masked in list API
             'source': cred.source or '',
             'type': cred.type or '',
             'date': cred.created_at.strftime('%b %d') if cred.created_at else '',

@@ -31,6 +31,13 @@ class BaseConfig:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', '')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@dseclab.com')
 
+    # Data masking rules per role
+    DATA_MASKING = {
+        'member': ['password'],  # Members see masked passwords
+        'analyst': [],           # Analysts see everything
+        'admin': [],             # Admins see everything
+    }
+
     # Feature flags
     ALLOW_SELF_REGISTRATION = os.environ.get('ALLOW_SELF_REGISTRATION', 'false').lower() == 'true'
 

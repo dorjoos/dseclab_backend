@@ -19,6 +19,7 @@
             <th style="width:18%;padding-left:16px;">Activity</th>
             <th style="width:18%;">User</th>
             <th style="width:14%;">IP Address</th>
+            <th style="width:14%;">Location</th>
             <th style="width:10%;" class="c">Status</th>
             <th style="width:18%;">Reason</th>
             <th style="width:14%;" class="r">Date</th>
@@ -32,13 +33,14 @@
             <td style="padding-left:16px;"><span class="av-tag {% if act.activity_type == 'login' %}av-tag-green{% elif 'failed' in act.activity_type %}av-tag-red{% elif act.activity_type == 'logout' %}av-tag-blue{% else %}av-tag-purple{% endif %}">{{ act.activity_type }}</span></td>
             <td class="m">{{ act.user.username if act.user else '—' }}</td>
             <td class="m" style="font-family:'SF Mono',monospace;font-size:12px;">{{ act.ip_address or '—' }}</td>
+            <td class="m">{{ act.location or '—' }}</td>
             <td class="c">{% if act.status == 'success' %}<span class="av-tag av-tag-success">OK</span>{% else %}<span class="av-tag av-tag-danger">{{ act.status }}</span>{% endif %}</td>
             <td class="m">{{ act.failure_reason or '—' }}</td>
             <td class="m r">{{ act.created_at.strftime('%b %d %H:%M') if act.created_at else '-' }}</td>
           </tr>
           {% endfor %}
           {% else %}
-          <tr><td colspan="7" class="av-empty">No activities</td></tr>
+          <tr><td colspan="8" class="av-empty">No activities</td></tr>
           {% endif %}
         </tbody>
       </table>

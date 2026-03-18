@@ -74,8 +74,18 @@ def login():
 
         login_user(user, remember=remember)
 
+        # Geo lookup for login location
+        try:
+            from .services.geo_service import get_location, format_location
+            from .audit_helpers import get_client_ip
+            ip = get_client_ip()
+            geo = get_location(ip)
+            location_str = format_location(geo) if geo else None
+        except Exception:
+            location_str = None
+
         # Log successful login
-        log_user_activity("login", user.id, status="success")
+        log_user_activity("login", user.id, status="success", location=location_str)
         log_audit("login", "user", user.id, f"User {user.username} logged in successfully")
 
         next_url = request.args.get("next")
@@ -385,7 +395,18 @@ def verify_2fa():
             session.pop("2fa_user_id", None)
             remember = session.pop("2fa_remember", False)
             login_user(user, remember=remember)
-            log_user_activity("login", user.id, status="success")
+
+            # Geo lookup for login location
+            try:
+                from .services.geo_service import get_location, format_location
+                from .audit_helpers import get_client_ip
+                ip = get_client_ip()
+                geo = get_location(ip)
+                _2fa_location = format_location(geo) if geo else None
+            except Exception:
+                _2fa_location = None
+
+            log_user_activity("login", user.id, status="success", location=_2fa_location)
             log_audit("login", "user", user.id, f"User {user.username} logged in with 2FA")
             next_url = session.pop("2fa_next", None)
             if next_url and is_safe_url(next_url):

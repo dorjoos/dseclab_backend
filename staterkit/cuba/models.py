@@ -66,6 +66,7 @@ class User(db.Model, UserMixin):
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     totp_secret = db.Column(db.String(32), nullable=True)  # TOTP secret for 2FA
     totp_enabled = db.Column(db.Boolean, default=False)
+    permissions = db.Column(db.String(500), default='')  # comma-separated: view,analyze,export,manage_users,manage_companies,manage_alerts
 
     def __repr__(self):
         return f"User('{self.username}','{self.email}','{self.role}')"
@@ -85,6 +86,18 @@ class User(db.Model, UserMixin):
 
     def can_delete(self) -> bool:
         return self.is_admin_user
+
+    def has_permission(self, perm):
+        """Check if user has a specific permission."""
+        if self.is_admin_user:
+            return True  # Admins have all permissions
+        return perm in (self.permissions or '').split(',')
+
+    def get_permissions(self):
+        """Get list of permissions."""
+        if self.is_admin_user:
+            return ['view', 'analyze', 'export', 'manage_users', 'manage_companies', 'manage_alerts', 'manage_reports']
+        return [p.strip() for p in (self.permissions or '').split(',') if p.strip()]
 
     def can_mark(self) -> bool:
         return True
