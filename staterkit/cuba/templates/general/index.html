@@ -1,23 +1,57 @@
 {% extends "base.html" %}
 
+{% block css %}
+<style>
+  .dash-toolbar { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px; }
+  .dash-toolbar-hint { font-size:12px;color:var(--text-muted); }
+  .dash-toolbar-actions { display:flex;gap:6px; }
+  .dash-customize-btn { font-size:12px;font-weight:500;color:var(--text-secondary);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 12px;cursor:pointer;transition:all 0.15s; }
+  .dash-customize-btn:hover { border-color:var(--primary);color:var(--primary); }
+
+  /* Stat card enhancements */
+  .stat-cell { padding:20px;position:relative;overflow:hidden; }
+  .stat-cell::after { content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.06; }
+  .stat-cell:nth-child(1)::after { background:#1a56db; }
+  .stat-cell:nth-child(2)::after { background:#d97706; }
+  .stat-cell:nth-child(3)::after { background:#059669; }
+  .stat-cell:nth-child(4)::after { background:#dc2626; }
+  .stat-icon { width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px; }
+  .stat-val { font-size:28px;font-weight:800;letter-spacing:-0.03em;line-height:1; }
+  .stat-label { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:6px; }
+
+  /* Welcome widget */
+  .welcome-body { position:relative;overflow:hidden; }
+  .welcome-body::before { content:'';position:absolute;top:-30%;right:-5%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,0.08); }
+  .welcome-body::after { content:'';position:absolute;bottom:-40%;right:15%;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.05); }
+  .welcome-title { font-size:22px;font-weight:800;position:relative;z-index:1; }
+  .welcome-sub { font-size:14px;opacity:0.85;margin-top:6px;position:relative;z-index:1; }
+  .welcome-meta { display:flex;gap:20px;margin-top:16px;position:relative;z-index:1; }
+  .welcome-meta-item { font-size:12px;opacity:0.7; }
+  .welcome-meta-val { font-weight:700;font-size:14px;opacity:1; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid p-0">
-  <!-- Dashboard toolbar -->
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-    <div style="font-size:13px;color:var(--text-muted);">Drag widgets to rearrange. Layout saves automatically.</div>
-    <div style="display:flex;gap:8px;">
-      <button class="av-btn" id="add-widget-btn" onclick="document.getElementById('widget-picker').style.display=document.getElementById('widget-picker').style.display==='none'?'block':'none'">+ Add Widget</button>
-      <button class="av-btn" style="color:var(--text-muted);" onclick="resetDashboard()">Reset</button>
+  <!-- Toolbar -->
+  <div class="dash-toolbar">
+    <div class="dash-toolbar-hint">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Drag to rearrange &middot; Layout auto-saves
+    </div>
+    <div class="dash-toolbar-actions">
+      <button class="dash-customize-btn" onclick="document.getElementById('widget-picker').style.display=document.getElementById('widget-picker').style.display==='none'?'block':'none'">+ Add Widget</button>
+      <button class="dash-customize-btn" onclick="resetDashboard()">Reset</button>
     </div>
   </div>
 
-  <!-- Widget picker dropdown -->
-  <div id="widget-picker" style="display:none;background:var(--bg-white);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
-    <div style="font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Available Widgets</div>
+  <!-- Widget picker -->
+  <div id="widget-picker" style="display:none;background:var(--bg-white);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.08);">
+    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;">Available Widgets</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;" id="widget-options"></div>
   </div>
 
-  <!-- Dashboard grid -->
+  <!-- Grid -->
   <div class="dash-grid" id="dash-grid"></div>
 </div>
 {% endblock %}
@@ -28,176 +62,166 @@
 (function() {
   var grid = document.getElementById('dash-grid');
   var picker = document.getElementById('widget-options');
-  var primaryColor = '#1a56db';
 
-  // Widget registry
   var widgets = {
-    welcome: { title: 'Welcome', size: 'dash-w-12', render: function(body) {
-      body.style.cssText = 'background:linear-gradient(135deg,#1a56db,#7c3aed,#ec4899);padding:28px;color:#fff;border-radius:0 0 12px 12px;';
-      var h = document.createElement('div');
-      h.style.cssText = 'font-size:20px;font-weight:700;';
-      h.textContent = 'Welcome to D-sec Lab';
-      var p = document.createElement('div');
-      p.style.cssText = 'font-size:13px;opacity:0.8;margin-top:4px;';
-      p.textContent = 'Threat Intelligence Dashboard';
-      body.appendChild(h);
-      body.appendChild(p);
+    welcome: { title: 'Welcome', size: 'dash-w-12', noHeader: true, render: function(body) {
+      body.className = 'welcome-body';
+      body.style.cssText = 'background:linear-gradient(135deg,#1a56db 0%,#4f46e5 40%,#7c3aed 70%,#a855f7 100%);padding:32px;color:#fff;border-radius:12px;';
+      body.insertAdjacentHTML('beforeend',
+        '<div class="welcome-title">Welcome back, {{ current_user.username }}</div>' +
+        '<div class="welcome-sub">Threat Intelligence Dashboard &mdash; D-sec Lab</div>' +
+        '<div class="welcome-meta">' +
+          '<div><div class="welcome-meta-val">{{ total_leaks|format_number }}</div><div class="welcome-meta-item">Total Records</div></div>' +
+          '<div><div class="welcome-meta-val">{{ latest_events|length }}</div><div class="welcome-meta-item">Recent Events</div></div>' +
+        '</div>'
+      );
     }},
-    stats: { title: 'Statistics', size: 'dash-w-12', render: function(body) {
+
+    stats: { title: 'Key Metrics', size: 'dash-w-12', render: function(body) {
       body.style.padding = '0';
-      var row = document.createElement('div');
-      row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:0;';
       var stats = {{ [
-        {'label':'Total Leaks','value':total_leaks|format_number,'color':'#1a56db','bg':'#eff4ff'},
-        {'label':consumer_change_text+' Leaks','value':consumer_leaks|format_number,'color':'#d97706','bg':'#fef3c7'},
-        {'label':corporate_change_text+' Leaks','value':corporate_leaks|format_number,'color':'#059669','bg':'#ecfdf5'},
-        {'label':'Infected IPs','value':infected_ips_count|format_number,'color':'#dc2626','bg':'#fef2f2'}
+        {'label':'Total Leaks','value':total_leaks|format_number,'color':'#1a56db','bg':'#eff4ff','icon':'shield'},
+        {'label':consumer_change_text+' Leaks','value':consumer_leaks|format_number,'color':'#d97706','bg':'#fef3c7','icon':'alert-triangle'},
+        {'label':corporate_change_text+' Leaks','value':corporate_leaks|format_number,'color':'#059669','bg':'#ecfdf5','icon':'activity'},
+        {'label':'Infected IPs','value':infected_ips_count|format_number,'color':'#dc2626','bg':'#fef2f2','icon':'server'}
       ]|tojson }};
+      var row = document.createElement('div');
+      row.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);';
       stats.forEach(function(s, i) {
         var cell = document.createElement('div');
-        cell.style.cssText = 'padding:20px;' + (i < 3 ? 'border-right:1px solid var(--border-light);' : '');
-        cell.textContent = '';
-        var val = document.createElement('div');
-        val.style.cssText = 'font-size:24px;font-weight:700;letter-spacing:-0.02em;';
-        val.textContent = s.value;
-        var lbl = document.createElement('div');
-        lbl.style.cssText = 'font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-top:4px;';
-        lbl.textContent = s.label;
-        cell.appendChild(val);
-        cell.appendChild(lbl);
+        cell.className = 'stat-cell';
+        if (i < 3) cell.style.borderRight = '1px solid var(--border-light)';
+        cell.insertAdjacentHTML('beforeend',
+          '<div class="stat-icon" style="background:' + s.bg + ';">' +
+            '<svg style="color:' + s.color + ';width:18px;height:18px;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>' +
+          '</div>' +
+          '<div class="stat-val">' + s.value + '</div>' +
+          '<div class="stat-label">' + s.label + '</div>'
+        );
         row.appendChild(cell);
       });
       body.appendChild(row);
     }},
-    trends: { title: 'Leak Trends', size: 'dash-w-8', render: function(body) {
+
+    trends: { title: 'Leak Trends', size: 'dash-w-8', subtitle: 'Last 12 weeks', render: function(body) {
       var el = document.createElement('div');
-      el.id = 'chart-trends-' + Date.now();
       body.appendChild(el);
       new ApexCharts(el, {
         series: [{ name: 'Leaks', data: {{ chart_data|tojson }} }],
-        chart: { type:'area', height:260, toolbar:{show:false}, fontFamily:'Inter,sans-serif' },
-        colors: [primaryColor], stroke:{curve:'smooth',width:2},
-        fill: {type:'gradient',gradient:{shadeIntensity:1,opacityFrom:0.4,opacityTo:0.05}},
-        dataLabels:{enabled:false},
-        xaxis: {categories:{{ chart_labels|tojson }},labels:{style:{fontSize:'10px',colors:'var(--text-muted)'}}},
-        yaxis: {labels:{style:{fontSize:'10px',colors:'var(--text-muted)'},formatter:function(v){return v>=1000?(v/1000).toFixed(0)+'k':Math.floor(v);}}},
-        grid:{borderColor:'var(--border-light)',strokeDashArray:3},
-        tooltip:{theme:'light'}
+        chart: { type:'area', height:280, toolbar:{show:false}, fontFamily:'Inter,sans-serif' },
+        colors: ['#4f46e5'],
+        stroke: { curve:'smooth', width:2.5 },
+        fill: { type:'gradient', gradient:{ shadeIntensity:1, opacityFrom:0.45, opacityTo:0.02, colorStops:[{offset:0,color:'#4f46e5',opacity:0.4},{offset:100,color:'#a855f7',opacity:0.02}] }},
+        dataLabels: { enabled:false },
+        xaxis: { categories:{{ chart_labels|tojson }}, labels:{style:{fontSize:'10px',colors:'var(--text-muted)'}}, axisBorder:{show:false}, axisTicks:{show:false} },
+        yaxis: { labels:{style:{fontSize:'10px',colors:'var(--text-muted)'}, formatter:function(v){return v>=1000?(v/1000).toFixed(0)+'k':Math.floor(v);}} },
+        grid: { borderColor:'var(--border-light)', strokeDashArray:3, xaxis:{lines:{show:false}} },
+        tooltip: { theme:'light', y:{formatter:function(v){return v.toLocaleString()+' breaches'}} }
       }).render();
     }},
+
     distribution: { title: 'Source Distribution', size: 'dash-w-4', render: function(body) {
       var el = document.createElement('div');
-      el.id = 'chart-dist-' + Date.now();
       body.appendChild(el);
       var catData = {{ category_distribution|tojson }};
       new ApexCharts(el, {
-        series: Object.values(catData), chart:{type:'donut',height:240,fontFamily:'Inter,sans-serif'},
-        labels: Object.keys(catData), colors:['#1a56db','#0891b2','#d97706','#059669','#dc2626'],
-        plotOptions:{pie:{donut:{size:'65%'}}}, legend:{position:'bottom',fontSize:'11px'},
-        dataLabels:{enabled:true,formatter:function(v){return Math.round(v)+'%';},style:{fontSize:'10px'}}
+        series: Object.values(catData),
+        chart: { type:'donut', height:260, fontFamily:'Inter,sans-serif' },
+        labels: Object.keys(catData),
+        colors: ['#4f46e5','#0891b2','#d97706','#059669','#dc2626','#ec4899'],
+        plotOptions: { pie:{donut:{size:'62%', labels:{show:true, total:{show:true,label:'Total',fontSize:'11px',fontWeight:500,color:'var(--text-muted)',formatter:function(w){return w.globals.seriesTotals.reduce(function(a,b){return a+b},0).toLocaleString();}},value:{fontSize:'18px',fontWeight:700,color:'var(--text)'}}}} },
+        legend: { position:'bottom', fontSize:'11px', markers:{width:8,height:8,radius:2} },
+        dataLabels: { enabled:false },
+        stroke: { width:2, colors:['var(--bg-white)'] }
       }).render();
     }},
-    events: { title: 'Latest Events', size: 'dash-w-12', render: function(body) {
+
+    events: { title: 'Latest Events', size: 'dash-w-12', action: {text:'View All', href:'/threat-intelligence/breached-creds'}, render: function(body) {
       body.style.padding = '0';
       var tbl = document.createElement('table');
       tbl.className = 'av-table';
       tbl.style.tableLayout = 'fixed';
       var theadRow = document.createElement('thead');
       var tr0 = document.createElement('tr');
-      var cols = [
-        {text:'Username',style:'padding-left:16px;width:25%'},
-        {text:'Domain',style:'width:15%'},
-        {text:'Source',style:'width:20%'},
-        {text:'Type',style:'width:10%',cls:'c'},
-        {text:'Date',style:'width:10%'},
-        {text:'',style:'width:50px'}
-      ];
-      cols.forEach(function(c) {
+      [{t:'Username',s:'padding-left:16px;width:25%'},{t:'Domain',s:'width:15%'},{t:'Source',s:'width:20%'},{t:'Type',s:'width:10%',c:'c'},{t:'Date',s:'width:10%'},{t:'',s:'width:50px'}].forEach(function(c){
         var th = document.createElement('th');
-        th.style.cssText = c.style;
-        th.textContent = c.text;
-        if (c.cls) th.className = c.cls;
+        th.style.cssText = c.s;
+        th.textContent = c.t;
+        if (c.c) th.className = c.c;
         tr0.appendChild(th);
       });
       theadRow.appendChild(tr0);
       tbl.appendChild(theadRow);
       var tb = document.createElement('tbody');
       {% for event in latest_events %}
-      (function() {
+      (function(){
         var tr = document.createElement('tr');
-        var td1 = document.createElement('td');
-        td1.style.cssText = 'padding-left:16px;font-weight:500';
-        td1.textContent = {{ (event.username or "\u2014")|tojson }};
-        var td2 = document.createElement('td');
-        var sp2 = document.createElement('span');
-        sp2.className = 'av-domain';
-        sp2.textContent = {{ (event.domain or "\u2014")|tojson }};
-        td2.appendChild(sp2);
-        var td3 = document.createElement('td');
-        td3.className = 'm';
-        td3.textContent = {{ (event.source or "\u2014")|tojson }};
-        var td4 = document.createElement('td');
-        td4.className = 'c';
-        var sp4 = document.createElement('span');
-        sp4.className = 'av-tag av-tag-blue';
-        sp4.textContent = {{ (event.type or "\u2014")|tojson }};
-        td4.appendChild(sp4);
-        var td5 = document.createElement('td');
-        td5.className = 'm';
-        td5.textContent = {{ (event.created_at.strftime("%b %d") if event.created_at else "\u2014")|tojson }};
-        var td6 = document.createElement('td');
-        var a6 = document.createElement('a');
-        a6.href = '/threat-intelligence/breached-creds/' + {{ event.es_id|tojson }};
-        a6.className = 'av-view-link';
-        a6.textContent = 'View';
-        td6.appendChild(a6);
-        tr.appendChild(td1);
-        tr.appendChild(td2);
-        tr.appendChild(td3);
-        tr.appendChild(td4);
-        tr.appendChild(td5);
-        tr.appendChild(td6);
+        var cells = [
+          {v:{{ (event.username or "\u2014")|tojson }},s:'padding-left:16px;font-weight:500'},
+          {v:{{ (event.domain or "\u2014")|tojson }},cls:'av-domain',wrap:true},
+          {v:{{ (event.source or "\u2014")|tojson }},c:'m'},
+          {v:{{ (event.type or "\u2014")|tojson }},cls:'av-tag av-tag-blue',wrap:true,c:'c'},
+          {v:{{ (event.created_at.strftime("%b %d") if event.created_at else "\u2014")|tojson }},c:'m'},
+          {link:'/threat-intelligence/breached-creds/'+{{ event.es_id|tojson }},v:'View'}
+        ];
+        cells.forEach(function(c){
+          var td = document.createElement('td');
+          if (c.s) td.style.cssText = c.s;
+          if (c.c) td.className = c.c;
+          if (c.link) {
+            var a = document.createElement('a');
+            a.href = c.link;
+            a.className = 'av-view-link';
+            a.textContent = c.v;
+            td.appendChild(a);
+          } else if (c.wrap) {
+            var sp = document.createElement('span');
+            sp.className = c.cls;
+            sp.textContent = c.v;
+            td.appendChild(sp);
+          } else {
+            td.textContent = c.v;
+          }
+          tr.appendChild(td);
+        });
         tb.appendChild(tr);
       })();
       {% endfor %}
       {% if not latest_events %}
       var emptyTr = document.createElement('tr');
       var emptyTd = document.createElement('td');
-      emptyTd.setAttribute('colspan', '6');
-      emptyTd.style.cssText = 'text-align:center;padding:30px;color:var(--text-muted)';
-      emptyTd.textContent = 'No events';
+      emptyTd.setAttribute('colspan','6');
+      emptyTd.style.cssText = 'text-align:center;padding:40px;color:var(--text-muted)';
+      emptyTd.textContent = 'No events yet';
       emptyTr.appendChild(emptyTd);
       tb.appendChild(emptyTr);
       {% endif %}
       tbl.appendChild(tb);
       body.appendChild(tbl);
     }},
+
     type_chart: { title: 'Type Distribution', size: 'dash-w-6', render: function(body) {
       var el = document.createElement('div');
-      el.id = 'chart-type-' + Date.now();
       body.appendChild(el);
       var typeData = {{ type_chart_data|tojson }};
-      var labels = Object.keys(typeData).map(function(l){return l.charAt(0).toUpperCase()+l.slice(1);});
       new ApexCharts(el, {
         series:[{name:'Leaks',data:Object.values(typeData)}],
-        chart:{type:'bar',height:220,toolbar:{show:false},fontFamily:'Inter,sans-serif'},
-        colors:[primaryColor], plotOptions:{bar:{borderRadius:4,columnWidth:'50%'}},
+        chart:{type:'bar',height:240,toolbar:{show:false},fontFamily:'Inter,sans-serif'},
+        colors:['#4f46e5'],
+        plotOptions:{bar:{borderRadius:6,columnWidth:'55%',distributed:false}},
+        fill:{type:'gradient',gradient:{shade:'light',type:'vertical',shadeIntensity:0.2,opacityFrom:1,opacityTo:0.85}},
         dataLabels:{enabled:false},
-        xaxis:{categories:labels,labels:{style:{fontSize:'11px',colors:'var(--text-muted)'}}},
+        xaxis:{categories:Object.keys(typeData).map(function(l){return l.charAt(0).toUpperCase()+l.slice(1)}),labels:{style:{fontSize:'11px',colors:'var(--text-muted)'}}},
         yaxis:{labels:{style:{fontSize:'10px',colors:'var(--text-muted)'}}},
         grid:{borderColor:'var(--border-light)',strokeDashArray:3}
       }).render();
     }},
   };
 
-  // Default layout
   var defaultLayout = ['welcome','stats','trends','distribution','events'];
 
   function getLayout() {
-    try {
-      var saved = localStorage.getItem('dsec-dashboard-layout');
-      if (saved) return JSON.parse(saved);
-    } catch(e) {}
+    try { var s = localStorage.getItem('dsec-dashboard-layout'); if (s) return JSON.parse(s); } catch(e) {}
     return defaultLayout.slice();
   }
 
@@ -215,53 +239,57 @@
     w.setAttribute('data-widget', id);
     w.draggable = true;
 
-    var header = document.createElement('div');
-    header.className = 'dash-widget-header';
-    var titleSpan = document.createElement('span');
-    titleSpan.textContent = cfg.title;
-    var controls = document.createElement('div');
-    controls.style.cssText = 'display:flex;align-items:center;gap:4px;';
-    var dragHandle = document.createElement('span');
-    dragHandle.className = 'dash-drag-handle';
-    dragHandle.textContent = '\u2261';
-    var closeBtn = document.createElement('button');
-    closeBtn.className = 'dash-widget-close';
-    closeBtn.textContent = '\u00d7';
-    closeBtn.addEventListener('click', function() { w.remove(); saveLayout(); updatePicker(); });
-    controls.appendChild(dragHandle);
-    controls.appendChild(closeBtn);
-    header.appendChild(titleSpan);
-    header.appendChild(controls);
+    if (!cfg.noHeader) {
+      var header = document.createElement('div');
+      header.className = 'dash-widget-header';
+      var left = document.createElement('div');
+      left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+      var dragHandle = document.createElement('span');
+      dragHandle.className = 'dash-drag-handle';
+      dragHandle.textContent = '\u2261';
+      var titleSpan = document.createElement('span');
+      titleSpan.textContent = cfg.title;
+      left.appendChild(dragHandle);
+      left.appendChild(titleSpan);
+      if (cfg.subtitle) {
+        var sub = document.createElement('span');
+        sub.style.cssText = 'font-size:11px;font-weight:400;color:var(--text-muted);margin-left:6px;';
+        sub.textContent = cfg.subtitle;
+        left.appendChild(sub);
+      }
+      var right = document.createElement('div');
+      right.style.cssText = 'display:flex;align-items:center;gap:6px;';
+      if (cfg.action) {
+        var actLink = document.createElement('a');
+        actLink.href = cfg.action.href;
+        actLink.className = 'av-view-link';
+        actLink.style.fontSize = '12px';
+        actLink.textContent = cfg.action.text;
+        right.appendChild(actLink);
+      }
+      var closeBtn = document.createElement('button');
+      closeBtn.className = 'dash-widget-close';
+      closeBtn.textContent = '\u00d7';
+      closeBtn.addEventListener('click', function() { w.remove(); saveLayout(); updatePicker(); });
+      right.appendChild(closeBtn);
+      header.appendChild(left);
+      header.appendChild(right);
+      w.appendChild(header);
+    }
 
     var body = document.createElement('div');
-    body.className = 'dash-widget-body';
+    if (!cfg.noHeader) body.className = 'dash-widget-body';
     cfg.render(body);
-
-    w.appendChild(header);
     w.appendChild(body);
 
-    // Drag events
-    w.addEventListener('dragstart', function(e) {
-      w.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', id);
-    });
-    w.addEventListener('dragend', function() {
-      w.classList.remove('dragging');
-      grid.querySelectorAll('.dash-placeholder').forEach(function(p) { p.remove(); });
-      saveLayout();
-    });
-
+    w.addEventListener('dragstart', function(e) { w.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',id); });
+    w.addEventListener('dragend', function() { w.classList.remove('dragging'); saveLayout(); });
     return w;
   }
 
   function renderDashboard() {
     grid.textContent = '';
-    var layout = getLayout();
-    layout.forEach(function(id) {
-      var w = createWidget(id);
-      if (w) grid.appendChild(w);
-    });
+    getLayout().forEach(function(id) { var w = createWidget(id); if (w) grid.appendChild(w); });
     updatePicker();
     setupDragDrop();
   }
@@ -272,21 +300,16 @@
     Object.keys(widgets).forEach(function(id) {
       if (current.indexOf(id) === -1) {
         var btn = document.createElement('button');
-        btn.style.cssText = 'padding:6px 14px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);cursor:pointer;transition:all 0.15s;';
+        btn.className = 'dash-customize-btn';
         btn.textContent = '+ ' + widgets[id].title;
-        btn.addEventListener('click', function() {
-          var w = createWidget(id);
-          if (w) { grid.appendChild(w); saveLayout(); updatePicker(); setupDragDrop(); }
-        });
-        btn.addEventListener('mouseover', function() { this.style.borderColor='var(--primary)'; this.style.color='var(--primary)'; });
-        btn.addEventListener('mouseout', function() { this.style.borderColor='var(--border)'; this.style.color='var(--text)'; });
+        btn.addEventListener('click', function() { var w=createWidget(id); if(w){grid.appendChild(w);saveLayout();updatePicker();setupDragDrop();} });
         picker.appendChild(btn);
       }
     });
     if (!picker.children.length) {
       var msg = document.createElement('span');
       msg.style.cssText = 'font-size:12px;color:var(--text-muted);';
-      msg.textContent = 'All widgets are on the dashboard';
+      msg.textContent = 'All widgets added';
       picker.appendChild(msg);
     }
   }
@@ -294,36 +317,27 @@
   function setupDragDrop() {
     grid.addEventListener('dragover', function(e) {
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
       var dragging = grid.querySelector('.dragging');
-      var afterEl = getDragAfterElement(grid, e.clientY);
-      if (afterEl) {
-        grid.insertBefore(dragging, afterEl);
-      } else {
-        grid.appendChild(dragging);
-      }
+      if (!dragging) return;
+      var after = getDragAfter(grid, e.clientY);
+      if (after) grid.insertBefore(dragging, after); else grid.appendChild(dragging);
     });
   }
 
-  function getDragAfterElement(container, y) {
-    var elements = Array.from(container.querySelectorAll('.dash-widget:not(.dragging)'));
-    return elements.reduce(function(closest, child) {
-      var box = child.getBoundingClientRect();
-      var offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { offset: offset, element: child };
-      }
-      return closest;
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  function getDragAfter(container, y) {
+    return Array.from(container.querySelectorAll('.dash-widget:not(.dragging)')).reduce(function(cl, ch) {
+      var b = ch.getBoundingClientRect();
+      var o = y - b.top - b.height/2;
+      return (o < 0 && o > cl.offset) ? {offset:o,element:ch} : cl;
+    }, {offset:Number.NEGATIVE_INFINITY}).element;
   }
 
   window.resetDashboard = function() {
     localStorage.removeItem('dsec-dashboard-layout');
     renderDashboard();
-    if (typeof showToast === 'function') showToast('Dashboard reset to default', 'info');
+    if (typeof showToast==='function') showToast('Dashboard reset','info');
   };
 
-  // Init
   renderDashboard();
   if (typeof feather !== 'undefined') feather.replace();
 })();
