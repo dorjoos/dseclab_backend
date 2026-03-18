@@ -32,11 +32,6 @@
   }
   .an-hero-stat:not(:last-child) { border-right: 1px solid var(--border-light); }
   .an-hero-stat:hover { background: var(--bg); }
-  .an-hero-stat-icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 10px;
-  }
   .an-hero-stat-val { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
   .an-hero-stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 4px; }
 
@@ -95,30 +90,18 @@
     </div>
     <div class="an-hero-stats">
       <div class="an-hero-stat">
-        <div class="an-hero-stat-icon" style="background:#eff4ff;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-        </div>
         <div class="an-hero-stat-val" style="color:#4f46e5;">{{ by_source|length }}</div>
         <div class="an-hero-stat-label">Sources</div>
       </div>
       <div class="an-hero-stat">
-        <div class="an-hero-stat-icon" style="background:#fef3c7;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        </div>
         <div class="an-hero-stat-val" style="color:#d97706;">{{ by_domain|length }}</div>
         <div class="an-hero-stat-label">Domains</div>
       </div>
       <div class="an-hero-stat">
-        <div class="an-hero-stat-icon" style="background:#ecfdf5;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        </div>
         <div class="an-hero-stat-val" style="color:#059669;">{{ by_type|length }}</div>
         <div class="an-hero-stat-label">Types</div>
       </div>
       <div class="an-hero-stat">
-        <div class="an-hero-stat-icon" style="background:#fef2f2;">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-        </div>
         <div class="an-hero-stat-val" style="color:#dc2626;">{{ marked_count }}</div>
         <div class="an-hero-stat-label">Marked</div>
       </div>
