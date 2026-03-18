@@ -1,52 +1,239 @@
 {% extends "base.html" %}
+{% block css %}
+<style>
+  .reports-tabs { display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px; }
+  .reports-tab { padding:10px 20px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;background:none;border-top:none;border-left:none;border-right:none; }
+  .reports-tab:hover { color:var(--text); }
+  .reports-tab.active { color:var(--primary);border-bottom-color:var(--primary); }
+  .reports-panel { display:none; }
+  .reports-panel.active { display:block; }
+  .rp-card { background:var(--bg-white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:all 0.15s; }
+  .rp-card:hover { border-color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+  .rp-info { flex:1;min-width:0; }
+  .rp-name { font-size:14px;font-weight:600; }
+  .rp-meta { font-size:12px;color:var(--text-secondary);margin-top:2px;display:flex;gap:8px;align-items:center; }
+  .rp-actions { display:flex;gap:6px;flex-shrink:0; }
+  .rp-toggle { width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background 0.2s; }
+  .rp-toggle.on { background:var(--primary); }
+  .rp-toggle.off { background:var(--border); }
+  .rp-toggle::after { content:'';position:absolute;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  .rp-toggle.on::after { left:20px; }
+  .rp-toggle.off::after { left:2px; }
+  .rp-empty { text-align:center;padding:40px;color:var(--text-muted);font-size:14px; }
+  .rp-form { background:var(--bg);border-radius:10px;padding:20px;margin-bottom:20px; }
+  .rp-form-title { font-size:14px;font-weight:600;margin-bottom:14px; }
+  .rp-form-row { display:flex;gap:10px;flex-wrap:wrap;align-items:end; }
+  .rp-form-field { display:flex;flex-direction:column;gap:4px; }
+  .rp-form-field label { font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em; }
+  .rp-form-field input, .rp-form-field select { font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none; }
+  .rp-form-field input:focus, .rp-form-field select:focus { border-color:var(--primary); }
+  .history-status { font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px; }
+  .history-completed { background:#ecfdf5;color:#059669; }
+  .history-failed { background:#fef2f2;color:#dc2626; }
+  .history-pending { background:#fffbeb;color:#92400e; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid p-0">
-  <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-light);">
-      <span style="font-size:13px;color:var(--text-muted);">Report generated {{ report_date.strftime('%b %d, %Y %H:%M UTC') if report_date else '' }}</span>
-      <a href="{{ url_for('threat_intel.breached_creds_export') }}" class="btn btn-outline-primary btn-sm" style="font-size:13px;">Export</a>
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div>
+      <h1 style="font-size:22px;font-weight:700;margin:0;">Reports Hub</h1>
+      <p style="font-size:13px;color:var(--text-secondary);margin:4px 0 0;">Manage scheduled reports, alert rules, and download history</p>
     </div>
-    <div style="overflow-x:auto;">
-      <table class="av-table">
-        <thead>
-          <tr>
-            <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
-            <th style="padding-left:16px;">Username</th>
-            <th>Domain</th>
-            <th>Source</th>
-            <th class="c">Type</th>
-            <th class="r">Date</th>
-            <th style="width:50px;"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for cred in breached_creds %}
-          <tr>
-            <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;font-weight:500;">{{ cred.username or '—' }}</td>
-            <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
-            <td class="m">{{ cred.source or '—' }}</td>
-            <td class="c"><span class="av-tag av-tag-blue">{{ cred.type or '—' }}</span></td>
-            <td class="m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
-            <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
-          </tr>
-          {% endfor %}
-          {% if not breached_creds %}<tr><td colspan="7" class="av-empty">No records</td></tr>{% endif %}
-        </tbody>
-      </table>
+    <form method="POST" action="{{ url_for('threat_intel.generate_report') }}" style="display:flex;gap:6px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <select name="format" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);">
+        <option value="csv">CSV</option>
+        <option value="xlsx">Excel</option>
+        <option value="json">JSON</option>
+        <option value="pdf">PDF</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm" style="padding:6px 16px;">Generate Now</button>
+    </form>
+  </div>
+
+  <!-- Tabs -->
+  <div class="reports-tabs">
+    <button class="reports-tab active" onclick="switchTab('schedules')">Scheduled Reports</button>
+    <button class="reports-tab" onclick="switchTab('alerts')">Alert Rules</button>
+    <button class="reports-tab" onclick="switchTab('history')">Report History</button>
+  </div>
+
+  <!-- Scheduled Reports Panel -->
+  <div id="panel-schedules" class="reports-panel active">
+    <div class="rp-form">
+      <div class="rp-form-title">+ New Scheduled Report</div>
+      <form method="POST" action="{{ url_for('threat_intel.add_schedule') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="rp-form-row">
+          <div class="rp-form-field" style="flex:1;">
+            <label>Report Name</label>
+            <input type="text" name="name" placeholder="e.g. Weekly Breach Summary" required>
+          </div>
+          <div class="rp-form-field">
+            <label>Frequency</label>
+            <select name="frequency">
+              <option value="daily">Daily</option>
+              <option value="weekly" selected>Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <div class="rp-form-field">
+            <label>Format</label>
+            <select name="format">
+              <option value="pdf">PDF</option>
+              <option value="csv">CSV</option>
+              <option value="xlsx">Excel</option>
+            </select>
+          </div>
+          <div class="rp-form-field" style="flex:1;">
+            <label>Email To (optional)</label>
+            <input type="text" name="email_to" placeholder="user@company.com">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="padding:7px 16px;align-self:end;">Create</button>
+        </div>
+      </form>
     </div>
-    {% if pagination and pagination.pages > 1 %}
-    <div class="av-pag">
-      <span>{{ pagination.page }} of {{ pagination.pages }}</span>
-      <div class="av-pag-nav">
-        <a class="{% if not pagination.has_prev %}dis{% endif %}" href="?page={{ pagination.prev_num or 1 }}">&lsaquo;</a>
-        {% for p in range(1, pagination.pages + 1) %}{% if p <= 10 %}
-        <a class="{% if p == pagination.page %}act{% endif %}" href="?page={{ p }}">{{ p }}</a>
-        {% endif %}{% endfor %}
-        <a class="{% if not pagination.has_next %}dis{% endif %}" href="?page={{ pagination.next_num or pagination.pages }}">&rsaquo;</a>
+
+    {% if schedules %}
+    {% for s in schedules %}
+    <div class="rp-card">
+      <div style="width:8px;height:8px;border-radius:50;flex-shrink:0;{% if s.is_active %}background:#059669;box-shadow:0 0 6px #05966940;{% else %}background:var(--border);{% endif %}"></div>
+      <div class="rp-info">
+        <div class="rp-name">{{ s.name }}</div>
+        <div class="rp-meta">
+          <span class="av-tag av-tag-purple">{{ s.frequency }}</span>
+          <span class="av-tag av-tag-blue">{{ s.format|upper }}</span>
+          {% if s.email_to %}<span>→ {{ s.email_to }}</span>{% endif %}
+          {% if s.last_run %}<span>Last: {{ s.last_run.strftime('%b %d') }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="rp-actions">
+        <form method="POST" action="{{ url_for('threat_intel.toggle_schedule', sid=s.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="rp-toggle {% if s.is_active %}on{% else %}off{% endif %}" title="Toggle"></button>
+        </form>
+        <form method="POST" action="{{ url_for('threat_intel.delete_schedule', sid=s.id) }}" style="display:inline;" data-confirm="Delete this schedule?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;">&times;</button>
+        </form>
       </div>
     </div>
+    {% endfor %}
+    {% else %}
+    <div class="rp-empty">No scheduled reports yet. Create one above.</div>
+    {% endif %}
+  </div>
+
+  <!-- Alert Rules Panel -->
+  <div id="panel-alerts" class="reports-panel">
+    <div class="rp-form">
+      <div class="rp-form-title">+ New Alert Rule</div>
+      <form method="POST" action="{{ url_for('threat_intel.add_alert') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="rp-form-row">
+          <div class="rp-form-field" style="flex:1;">
+            <label>Alert Name</label>
+            <input type="text" name="name" placeholder="e.g. New breach for khanbank.com" required>
+          </div>
+          <div class="rp-form-field">
+            <label>Condition</label>
+            <select name="condition_type">
+              <option value="domain_match">Domain Match</option>
+              <option value="new_breach">Any New Breach</option>
+              <option value="threshold">Threshold (count/day)</option>
+            </select>
+          </div>
+          <div class="rp-form-field" style="flex:1;">
+            <label>Value</label>
+            <input type="text" name="condition_value" placeholder="e.g. khanbank.com or 100" required>
+          </div>
+          <div class="rp-form-field">
+            <label>Notify Via</label>
+            <select name="notify_method">
+              <option value="in_app">In-App</option>
+              <option value="email">Email</option>
+              <option value="webhook">Webhook</option>
+            </select>
+          </div>
+          <div class="rp-form-field" style="flex:1;">
+            <label>Target (optional)</label>
+            <input type="text" name="notify_target" placeholder="email or webhook URL">
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="padding:7px 16px;align-self:end;">Create</button>
+        </div>
+      </form>
+    </div>
+
+    {% if alerts %}
+    {% for a in alerts %}
+    <div class="rp-card">
+      <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{% if a.is_active %}background:#dc2626;box-shadow:0 0 6px #dc262640;{% else %}background:var(--border);{% endif %}"></div>
+      <div class="rp-info">
+        <div class="rp-name">{{ a.name }}</div>
+        <div class="rp-meta">
+          <span class="av-tag av-tag-red">{{ a.condition_type }}</span>
+          <span style="font-weight:500;">{{ a.condition_value }}</span>
+          <span class="av-tag av-tag-teal">{{ a.notify_method }}</span>
+          {% if a.trigger_count > 0 %}<span>Triggered {{ a.trigger_count }}x</span>{% endif %}
+        </div>
+      </div>
+      <div class="rp-actions">
+        <form method="POST" action="{{ url_for('threat_intel.toggle_alert', aid=a.id) }}" style="display:inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="rp-toggle {% if a.is_active %}on{% else %}off{% endif %}" title="Toggle"></button>
+        </form>
+        <form method="POST" action="{{ url_for('threat_intel.delete_alert', aid=a.id) }}" style="display:inline;" data-confirm="Delete this alert rule?">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:4px;">&times;</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="rp-empty">No alert rules yet. Create one above.</div>
+    {% endif %}
+  </div>
+
+  <!-- Report History Panel -->
+  <div id="panel-history" class="reports-panel">
+    {% if history %}
+    {% for h in history %}
+    <div class="rp-card">
+      <div style="width:36px;height:36px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div class="rp-info">
+        <div class="rp-name">{{ h.name }}</div>
+        <div class="rp-meta">
+          <span class="av-tag av-tag-blue">{{ h.format|upper }}</span>
+          <span>{{ h.record_count|format_number }} records</span>
+          <span class="history-status history-{{ h.status }}">{{ h.status }}</span>
+          <span>{{ h.created_at.strftime('%b %d, %H:%M') if h.created_at else '' }}</span>
+          {% if h.source == 'scheduled' %}<span class="av-tag av-tag-purple">auto</span>{% endif %}
+        </div>
+      </div>
+      <div class="rp-actions">
+        <a href="{{ url_for('threat_intel.breached_creds_export', format=h.format) }}" class="av-btn" style="font-size:12px;">Download</a>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="rp-empty">No reports generated yet. Click "Generate Now" to create one.</div>
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scriptcontent %}
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.reports-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.reports-panel').forEach(function(p) { p.classList.remove('active'); });
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+</script>
 {% endblock %}

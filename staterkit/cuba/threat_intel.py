@@ -612,15 +612,147 @@ def analysis():
 @threat_intel.route('/threat-intelligence/reports')
 @login_required
 def reports():
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    domain_filters = _get_domain_filters()
+    from .models import ScheduledReport, AlertRule, ReportHistory
 
-    pagination = es_service.search(domain_filters=domain_filters, page=page, per_page=per_page)
-    _attach_metadata(pagination.items)
+    schedules = ScheduledReport.query.filter_by(created_by=current_user.id).order_by(ScheduledReport.created_at.desc()).all()
+    if current_user.is_admin_user:
+        schedules = ScheduledReport.query.order_by(ScheduledReport.created_at.desc()).all()
+
+    alerts = AlertRule.query.filter_by(created_by=current_user.id).order_by(AlertRule.created_at.desc()).all()
+    if current_user.is_admin_user:
+        alerts = AlertRule.query.order_by(AlertRule.created_at.desc()).all()
+
+    history = ReportHistory.query.filter_by(generated_by=current_user.id).order_by(ReportHistory.created_at.desc()).limit(20).all()
+    if current_user.is_admin_user:
+        history = ReportHistory.query.order_by(ReportHistory.created_at.desc()).limit(20).all()
 
     breadcrumb = {"parent": "Threat Intelligence", "child": "Reports"}
     return render_template('threat_intel/reports.html',
-                          breached_creds=pagination.items, pagination=pagination,
-                          user_domain=get_user_company_domain(),
-                          report_date=datetime.now(timezone.utc), breadcrumb=breadcrumb)
+                          schedules=schedules, alerts=alerts, history=history,
+                          breadcrumb=breadcrumb)
+
+
+@threat_intel.route('/threat-intelligence/reports/schedule/add', methods=['POST'])
+@login_required
+def add_schedule():
+    from .models import ScheduledReport
+    name = sanitize_input(request.form.get('name', ''))
+    frequency = request.form.get('frequency', 'weekly')
+    fmt = request.form.get('format', 'pdf')
+    email_to = sanitize_input(request.form.get('email_to', ''))
+
+    if not name:
+        flash('Report name is required.', 'warning')
+        return redirect(url_for('threat_intel.reports'))
+
+    schedule = ScheduledReport(
+        name=name, frequency=frequency, format=fmt,
+        email_to=email_to or None, created_by=current_user.id, is_active=True
+    )
+    db.session.add(schedule)
+    db.session.commit()
+    flash(f'Scheduled report "{name}" created.', 'success')
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/schedule/<int:sid>/toggle', methods=['POST'])
+@login_required
+def toggle_schedule(sid):
+    from .models import ScheduledReport
+    schedule = ScheduledReport.query.get_or_404(sid)
+    if schedule.created_by != current_user.id and not current_user.is_admin_user:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.reports'))
+    schedule.is_active = not schedule.is_active
+    db.session.commit()
+    flash(f'Schedule {"enabled" if schedule.is_active else "disabled"}.', 'info')
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/schedule/<int:sid>/delete', methods=['POST'])
+@login_required
+def delete_schedule(sid):
+    from .models import ScheduledReport
+    schedule = ScheduledReport.query.get_or_404(sid)
+    if schedule.created_by != current_user.id and not current_user.is_admin_user:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.reports'))
+    db.session.delete(schedule)
+    db.session.commit()
+    flash('Schedule deleted.', 'info')
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/alert/add', methods=['POST'])
+@login_required
+def add_alert():
+    from .models import AlertRule
+    name = sanitize_input(request.form.get('name', ''))
+    condition_type = request.form.get('condition_type', 'new_breach')
+    condition_value = sanitize_input(request.form.get('condition_value', ''))
+    notify_method = request.form.get('notify_method', 'in_app')
+    notify_target = sanitize_input(request.form.get('notify_target', ''))
+
+    if not name or not condition_value:
+        flash('Alert name and condition are required.', 'warning')
+        return redirect(url_for('threat_intel.reports'))
+
+    alert = AlertRule(
+        name=name, condition_type=condition_type, condition_value=condition_value,
+        notify_method=notify_method, notify_target=notify_target or None,
+        created_by=current_user.id, is_active=True
+    )
+    db.session.add(alert)
+    db.session.commit()
+    flash(f'Alert rule "{name}" created.', 'success')
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/alert/<int:aid>/toggle', methods=['POST'])
+@login_required
+def toggle_alert(aid):
+    from .models import AlertRule
+    alert = AlertRule.query.get_or_404(aid)
+    if alert.created_by != current_user.id and not current_user.is_admin_user:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.reports'))
+    alert.is_active = not alert.is_active
+    db.session.commit()
+    flash(f'Alert {"enabled" if alert.is_active else "disabled"}.', 'info')
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/alert/<int:aid>/delete', methods=['POST'])
+@login_required
+def delete_alert(aid):
+    from .models import AlertRule
+    alert = AlertRule.query.get_or_404(aid)
+    if alert.created_by != current_user.id and not current_user.is_admin_user:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.reports'))
+    db.session.delete(alert)
+    db.session.commit()
+    flash('Alert rule deleted.', 'info')
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/generate', methods=['POST'])
+@login_required
+def generate_report():
+    """Generate a report now and save to history."""
+    from .models import ReportHistory
+    fmt = request.form.get('format', 'csv')
+
+    domain_filters = _get_domain_filters()
+    creds = es_service.export(domain_filters=domain_filters, max_records=5000)
+
+    history = ReportHistory(
+        name=f'Breach Report {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M")}',
+        format=fmt, record_count=len(creds), status='completed',
+        source='manual', generated_by=current_user.id
+    )
+    db.session.add(history)
+    db.session.commit()
+
+    # Redirect to actual export
+    return redirect(url_for('threat_intel.breached_creds_export', format=fmt))

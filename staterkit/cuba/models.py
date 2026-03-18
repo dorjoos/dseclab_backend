@@ -178,3 +178,63 @@ class UserActivity(db.Model):
 
     def __repr__(self):
         return f"UserActivity('{self.activity_type}', '{self.user_id}', '{self.status}')"
+
+
+class ScheduledReport(db.Model):
+    """Scheduled automatic report generation."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    frequency = db.Column(db.String(20), nullable=False)  # daily, weekly, monthly
+    format = db.Column(db.String(10), default='pdf')  # csv, xlsx, pdf, json
+    filters = db.Column(db.Text, nullable=True)  # JSON filters
+    email_to = db.Column(db.String(500), nullable=True)  # comma-separated emails
+    is_active = db.Column(db.Boolean, default=True)
+    last_run = db.Column(db.DateTime, nullable=True)
+    next_run = db.Column(db.DateTime, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f"ScheduledReport('{self.name}', '{self.frequency}')"
+
+
+class AlertRule(db.Model):
+    """Alert rules for breach monitoring."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    condition_type = db.Column(db.String(50), nullable=False)  # new_breach, threshold, domain_match
+    condition_value = db.Column(db.String(500), nullable=False)  # domain pattern, threshold number, etc.
+    notify_method = db.Column(db.String(20), default='in_app')  # in_app, email, webhook
+    notify_target = db.Column(db.String(500), nullable=True)  # email or webhook URL
+    is_active = db.Column(db.Boolean, default=True)
+    trigger_count = db.Column(db.Integer, default=0)
+    last_triggered = db.Column(db.DateTime, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    creator = db.relationship('User', foreign_keys=[created_by])
+
+    def __repr__(self):
+        return f"AlertRule('{self.name}', '{self.condition_type}')"
+
+
+class ReportHistory(db.Model):
+    """Generated report history for download."""
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    format = db.Column(db.String(10), nullable=False)
+    file_size = db.Column(db.Integer, default=0)  # bytes
+    record_count = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='completed')  # pending, generating, completed, failed
+    source = db.Column(db.String(50), default='manual')  # manual, scheduled
+    schedule_id = db.Column(db.Integer, db.ForeignKey('scheduled_report.id'), nullable=True)
+    generated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    generator = db.relationship('User', foreign_keys=[generated_by])
+    schedule = db.relationship('ScheduledReport', foreign_keys=[schedule_id])
+
+    def __repr__(self):
+        return f"ReportHistory('{self.name}', '{self.status}')"
