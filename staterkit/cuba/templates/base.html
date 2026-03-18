@@ -28,17 +28,6 @@
     <div class="dsec-main">
       {% include "layout/header.html" %}
 
-      <!-- Live Threat Ticker -->
-      <div class="dsec-ticker" id="threat-ticker">
-        <div class="dsec-ticker-label">
-          <span class="dsec-ticker-dot"></span>
-          LIVE
-        </div>
-        <div class="dsec-ticker-track">
-          <div class="dsec-ticker-scroll" id="ticker-scroll"></div>
-        </div>
-      </div>
-
       <div class="dsec-content">
         {% include 'layout/breadcrumb.html' %}
 
@@ -165,6 +154,12 @@
   </script>
   <!-- Toast container -->
   <div class="dsec-toast-container" id="toast-container"></div>
+  <!-- Live Threat Ticker (bottom right) -->
+  <div class="dsec-ticker" id="threat-ticker">
+    <div class="dsec-ticker-track">
+      <div class="dsec-ticker-scroll" id="ticker-scroll"></div>
+    </div>
+  </div>
   <!-- SocketIO for real-time updates -->
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <script>
