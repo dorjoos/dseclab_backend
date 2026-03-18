@@ -240,23 +240,48 @@
   <div id="panel-history" class="reports-panel">
     {% if history %}
     {% for h in history %}
-    <div class="rp-card">
-      <div style="width:36px;height:36px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    {% set fmt_colors = {'csv':'#059669','xlsx':'#1a56db','json':'#d97706','pdf':'#dc2626'} %}
+    {% set fmt_bgs = {'csv':'#ecfdf5','xlsx':'#eff4ff','json':'#fffbeb','pdf':'#fef2f2'} %}
+    {% set fmt_color = fmt_colors.get(h.format, '#4f46e5') %}
+    {% set fmt_bg = fmt_bgs.get(h.format, '#eff4ff') %}
+    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='{{ fmt_color }}';this.style.boxShadow='0 4px 12px {{ fmt_color }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <!-- Format badge -->
+      <div style="width:48px;height:48px;border-radius:12px;background:{{ fmt_bg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <span style="font-size:13px;font-weight:800;color:{{ fmt_color }};text-transform:uppercase;">{{ h.format }}</span>
       </div>
-      <div class="rp-info">
-        <div class="rp-name">{{ h.name }}</div>
-        <div class="rp-meta">
-          <span class="av-tag av-tag-blue">{{ h.format|upper }}</span>
-          <span>{{ h.record_count|format_number }} records{% if h.file_size %} &middot; {{ (h.file_size / 1024)|round(1) }}KB{% endif %}</span>
-          <span class="history-status history-{{ h.status }}">{{ h.status }}</span>
-          <span>{{ h.created_at.strftime('%b %d, %H:%M') if h.created_at else '' }}</span>
-          {% if h.source == 'scheduled' %}<span class="av-tag av-tag-purple">auto</span>{% endif %}
+      <!-- Info -->
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;">{{ h.name }}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span>{{ h.record_count|format_number }} records</span>
+          {% if h.file_size %}<span>&middot; {{ (h.file_size / 1024)|round(1) }}KB</span>{% endif %}
+          <span>&middot; {{ h.created_at.strftime('%b %d, %H:%M') if h.created_at else '' }}</span>
+          {% if h.source == 'scheduled' %}<span class="av-tag av-tag-purple" style="font-size:10px;">AUTO</span>{% endif %}
         </div>
       </div>
-      <div class="rp-actions">
-        <button class="av-btn" style="font-size:12px;" onclick="previewReport()">Preview</button>
-        <a href="{{ url_for('threat_intel.breached_creds_export', format=h.format) }}" class="av-btn" style="font-size:12px;">Download</a>
+      <!-- Status -->
+      <div style="flex-shrink:0;">
+        {% if h.status == 'completed' %}
+        <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#059669;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Ready
+        </span>
+        {% elif h.status == 'failed' %}
+        <span style="font-size:12px;font-weight:600;color:#dc2626;">Failed</span>
+        {% else %}
+        <span style="font-size:12px;font-weight:600;color:#d97706;">{{ h.status }}</span>
+        {% endif %}
+      </div>
+      <!-- Buttons -->
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="previewReport()" style="padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <a href="{{ url_for('threat_intel.breached_creds_export', format=h.format) }}" style="display:inline-flex;align-items:center;gap:4px;padding:8px 14px;font-size:12px;font-weight:600;color:#fff;background:{{ fmt_color }};border-radius:8px;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </a>
       </div>
     </div>
     {% endfor %}
