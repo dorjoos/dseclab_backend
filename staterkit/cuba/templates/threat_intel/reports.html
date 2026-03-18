@@ -42,16 +42,6 @@
       <h1 style="font-size:22px;font-weight:700;margin:0;">Reports Hub</h1>
       <p style="font-size:13px;color:var(--text-secondary);margin:4px 0 0;">Manage scheduled reports, alert rules, and download history</p>
     </div>
-    <form method="POST" action="{{ url_for('threat_intel.generate_report') }}" style="display:flex;gap:6px;">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <select name="format" style="font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);">
-        <option value="csv">CSV</option>
-        <option value="xlsx">Excel</option>
-        <option value="json">JSON</option>
-        <option value="pdf">PDF</option>
-      </select>
-      <button type="submit" class="btn btn-primary btn-sm" style="padding:6px 16px;">Generate Now</button>
-    </form>
   </div>
 
   <!-- Stats cards -->
