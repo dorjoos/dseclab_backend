@@ -154,76 +154,9 @@
   </script>
   <!-- Toast container -->
   <div class="dsec-toast-container" id="toast-container"></div>
-  <!-- Live Threat Ticker (bottom right) -->
-  <div class="dsec-ticker" id="threat-ticker">
-    <div class="dsec-ticker-track">
-      <div class="dsec-ticker-scroll" id="ticker-scroll"></div>
-    </div>
-  </div>
   <!-- SocketIO for real-time updates -->
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <script>
-    // Threat ticker
-    var tickerScroll = document.getElementById('ticker-scroll');
-    var tickerColors = {'url':'#4f46e5','stealer':'#dc2626','malware':'#d97706','combolist':'#059669','breach':'#0891b2'};
-
-    function addTickerItem(data) {
-      if (!tickerScroll) return;
-      var item = document.createElement('span');
-      item.className = 'dsec-ticker-item';
-      var dot = document.createElement('span');
-      dot.className = 'dsec-ticker-item-dot';
-      dot.style.background = tickerColors[data.type] || '#4f46e5';
-      var user = document.createElement('span');
-      user.className = 'dsec-ticker-item-user';
-      user.textContent = data.username || 'unknown';
-      item.appendChild(dot);
-      item.appendChild(user);
-      if (data.domain) {
-        var domain = document.createElement('span');
-        domain.className = 'dsec-ticker-item-domain';
-        domain.textContent = data.domain;
-        item.appendChild(domain);
-      }
-      if (data.source) {
-        var src = document.createElement('span');
-        src.textContent = data.source;
-        item.appendChild(src);
-      }
-      if (data.time) {
-        var time = document.createElement('span');
-        time.className = 'dsec-ticker-item-time';
-        time.textContent = data.time;
-        item.appendChild(time);
-      }
-      var sep = document.createElement('span');
-      sep.className = 'dsec-ticker-sep';
-      sep.textContent = '\u2022';
-      tickerScroll.appendChild(item);
-      tickerScroll.appendChild(sep);
-    }
-
-    // Load initial ticker data
-    fetch('/api/breached-creds/search', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
-      body: JSON.stringify({ page: 1, per_page: 20, date_filter: 'week' })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.rows) {
-        data.rows.forEach(function(row) {
-          addTickerItem({ username: row.username, domain: row.domain, source: row.source, type: row.type, time: row.date });
-        });
-        // Duplicate for seamless loop
-        data.rows.forEach(function(row) {
-          addTickerItem({ username: row.username, domain: row.domain, source: row.source, type: row.type, time: row.date });
-        });
-      }
-    })
-    .catch(function() {});
-
     // WebSocket real-time
     var socket = null;
     try {
@@ -233,11 +166,7 @@
         if (typeof showToast === 'function') {
           showToast('New breach: ' + (data.username || data.domain || 'Unknown'), 'warning');
         }
-        addTickerItem(data);
         if (typeof load === 'function') load();
-      });
-      socket.on('stats_update', function(data) {
-        console.log('Stats updated', data);
       });
     } catch(e) { console.log('WS not available'); }
   </script>
