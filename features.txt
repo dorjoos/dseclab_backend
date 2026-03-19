@@ -1,0 +1,73 @@
+Dashboard & Visualization:
+  1. World map — plot breached credentials by country/region on an interactive map
+  2. Risk heatmap — calendar heatmap showing breach intensity per day (like GitHub contributions)
+  3. Live threat ticker — scrolling banner showing real-time incoming breaches
+  4. Company health score — A-F grade per company based on breach exposure
+  5. Comparison view — compare two companies side-by-side
+
+  Data & Search:
+  6. Regex search — search breached creds with regex patterns
+  7. Similar password detection — find accounts using the same/similar passwords
+  8. Email pattern analysis — detect naming patterns (first.last@, firstlast@, etc.)
+  9. Domain discovery — auto-discover related subdomains from breach data
+  10. Deduplication engine — find and merge duplicate records
+
+  Automation:
+  11. Playbooks — automated response workflows (breach found → notify → assign → review → resolve)
+  12. Auto-tagging — ML-based classification of breach type/severity
+  13. Watchlist auto-scan — periodically scan ES for new matches against company watchlists
+  14. Expiry alerts — notify when credentials are X days old and may need rotation
+
+  Collaboration:
+  15. Case management — group related breaches into investigation cases
+  16. Assignment & workflow — assign breaches to analysts, track review status (new → investigating →
+  resolved)
+  17. Internal chat — per-credential discussion threads
+  18. Shared dashboards — create custom dashboard views and share with team
+
+  Integration & API:
+  19. Webhook builder — visual webhook config with payload templates
+  20. MISP integration — export/import threat intel in MISP format
+  21. Have I Been Pwned check — cross-reference with HIBP database
+  22. VirusTotal lookup — check domains/URLs against VT from within the app
+  23. Jira/ServiceNow tickets — auto-create tickets for new breaches
+
+  Security & Admin:
+  24. Role-based permissions — granular permissions (view-only, analyst, admin)
+  25. Data masking rules — configure which fields are masked for which roles
+  26. Login geography — show login locations on map, flag unusual locations
+  27. Compliance dashboard — GDPR/SOC2 compliance status tracking
+
+
+   Data Intelligence:
+  1. Password strength analyzer — score each breached password (weak/medium/strong), show distribution
+  chart
+  2. Credential age tracking — how old is each breach, highlight stale vs fresh
+  3. Domain WHOIS lookup — inline WHOIS info for breached domains
+  4. Breach source reputation — rate reliability of each source (Telegram channels etc.)
+  5. Related credentials finder — find accounts sharing same password or email pattern
+
+  User Experience:
+  6. Activity feed page — real-time feed of all platform actions (like GitHub activity)
+  7. Favorites/Bookmarks — star important credentials for quick access
+  8. Custom filters preset — save filter combinations as named presets
+  9. Bulk actions — delete selected, mark selected, export selected (partially done)
+  10. Inline edit — click to edit credential fields directly in the table
+
+  Notifications & Alerts:
+  11. Notification center page — full page with all notifications, filters, mark read
+  12. Email digest — daily/weekly summary email of new breaches
+  13. Slack bot — /breach check user@domain.com command
+  14. Browser push notifications — native push for critical alerts
+
+  Admin & Operations:
+  15. System status page — ES health, DB size, uptime, response times
+  16. User onboarding wizard — step-by-step guide for new users
+  17. Backup & restore — export/import full system config
+  18. API usage dashboard — track API calls per user, rate limit status
+
+  Visualization:
+  19. Network graph — visualize connections between domains, users, sources
+  20. Breach heatmap calendar — GitHub-style contribution grid showing breach density per day
+  21. Sankey diagram — flow from source → domain → type
+  22. Geo map — plot breached credentials by country on world map
