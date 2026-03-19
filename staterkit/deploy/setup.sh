@@ -3,10 +3,11 @@
 # Run as root: sudo bash deploy/setup.sh
 set -e
 
+REPO_DIR="/opt/dseclab-repo"
 APP_DIR="/opt/dseclab"
 APP_USER="dseclab"
-REPO_URL="YOUR_GIT_REPO_URL"
-DOMAIN="YOUR_DOMAIN"
+REPO_URL="https://github.com/dorjoos/dseclab_backend.git"
+DOMAIN="YOUR_DOMAIN"  # Change this to your domain
 
 echo "=== D-SECLAB Production Setup ==="
 
@@ -30,15 +31,18 @@ sudo -u postgres psql -c "CREATE USER dseclab WITH PASSWORD 'CHANGE_ME_DB_PASSWO
 sudo -u postgres psql -c "CREATE DATABASE dseclab OWNER dseclab;" 2>/dev/null || true
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE dseclab TO dseclab;" 2>/dev/null || true
 
-# 4. Clone/pull app
+# 4. Clone/pull repo and symlink app dir
 echo "[4/9] Setting up application..."
-if [ -d "$APP_DIR" ]; then
-    cd "$APP_DIR"
+if [ -d "$REPO_DIR" ]; then
+    cd "$REPO_DIR"
     sudo -u "$APP_USER" git pull
 else
-    git clone "$REPO_URL" "$APP_DIR"
-    chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
+    git clone "$REPO_URL" "$REPO_DIR"
+    chown -R "$APP_USER":"$APP_USER" "$REPO_DIR"
 fi
+
+# Symlink staterkit/ as the app directory
+ln -sfn "$REPO_DIR/staterkit" "$APP_DIR"
 
 # 5. Python environment
 echo "[5/9] Setting up Python environment..."
@@ -54,13 +58,13 @@ if [ ! -f "$APP_DIR/.env" ]; then
     cp deploy/.env.production "$APP_DIR/.env"
     chown "$APP_USER":"$APP_USER" "$APP_DIR/.env"
     chmod 600 "$APP_DIR/.env"
-    echo ">>> IMPORTANT: Edit /opt/dseclab/.env with your actual secrets!"
+    echo ">>> IMPORTANT: Edit $APP_DIR/.env with your actual secrets!"
 fi
 
 # 7. Database migration
 echo "[7/9] Running database migrations..."
 cd "$APP_DIR"
-sudo -u "$APP_USER" bash -c "source .env && venv/bin/flask db upgrade"
+sudo -u "$APP_USER" bash -c "set -a && source $APP_DIR/.env && set +a && cd $APP_DIR && venv/bin/flask db upgrade"
 
 # 8. Log directory
 mkdir -p /var/log/dseclab
@@ -84,7 +88,7 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Edit /opt/dseclab/.env with your actual secrets"
+echo "  1. Edit $APP_DIR/.env with your actual secrets"
 echo "  2. Run: sudo systemctl restart dseclab"
 echo "  3. Get SSL: sudo certbot --nginx -d $DOMAIN"
 echo "  4. Test: curl https://$DOMAIN"
