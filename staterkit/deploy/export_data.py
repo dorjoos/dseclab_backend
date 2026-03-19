@@ -21,9 +21,15 @@ TABLES = [
     'breached_cred_meta',
 ]
 
-def escape_sql(val):
+BOOL_COLUMNS = {
+    'isAdmin', 'is_active', 'totp_enabled', 'is_read', 'is_marked',
+}
+
+def escape_sql(val, col_name=None):
     if val is None:
         return 'NULL'
+    if col_name and col_name in BOOL_COLUMNS:
+        return 'TRUE' if val else 'FALSE'
     if isinstance(val, bool):
         return 'TRUE' if val else 'FALSE'
     if isinstance(val, (int, float)):
@@ -60,7 +66,7 @@ def export():
 
         lines.append(f'-- {table} ({len(rows)} rows)')
         for row in rows:
-            vals = ', '.join(escape_sql(row[c]) for c in cols)
+            vals = ', '.join(escape_sql(row[c], c) for c in cols)
             lines.append(f'INSERT INTO "{table}" ({col_names}) VALUES ({vals}) ON CONFLICT DO NOTHING;')
         lines.append('')
 

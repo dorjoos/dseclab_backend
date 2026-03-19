@@ -1,5 +1,5 @@
 -- D-SECLAB Data Export from SQLite
--- Generated: 2026-03-19T13:13:16.509223
+-- Generated: 2026-03-19T13:18:22.712303
 
 BEGIN;
 
@@ -13,10 +13,10 @@ INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "c
 SELECT setval(pg_get_serial_sequence('"company"', 'id'), COALESCE(MAX(id), 1)) FROM "company";
 
 -- user (4 rows)
-INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (1, 'admin', 'hw13d036@csms.edu.mn', 'scrypt:32768:8:1$CYg7zaqWXyzVvxIR$72441019f16edc2e0d8ddaa1065a9ec06fd4ad669ad11d652ec80c089cd2d17d078679af2878e0deee232e0dc94cfd09a2c6542ae952fc6bdb2c979059b6fb78', 0, 'member', NULL, 1, NULL, '2026-03-17 03:17:27.635661', '2026-03-17 03:17:27.631607', NULL, 0, '') ON CONFLICT DO NOTHING;
-INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (2, 'administrator', 'admin@dseclab.com', 'pbkdf2:sha256:260000$cPGN1JwGKAGo3X6t$7b63c789598d864d7e0c4dfe37bfb03eb140711258103fca46633797c5291011', 1, 'admin', NULL, 1, NULL, '2026-03-19 04:57:59.907326', '2026-03-19 04:57:59.898754', NULL, 0, '') ON CONFLICT DO NOTHING;
-INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (3, 'dorjoo', 'dorjoo@test.com', 'scrypt:32768:8:1$RDPY5T5xHP4JwbJu$ea5d766375cf44a0a06f2cb1dfe4880b66e7bca9b658691edad899669d4615bd1922c4c9c32a75464820634d4c7258bf43ecee15f54a81e90a0a13dee34e898b', 0, 'member', 1, 1, '2025-12-12 09:45:46.010985', '2026-03-18 12:37:38.558277', '2026-03-18 12:37:38.557605', 'PKGSEH76LSNCM5QHMQTTCPK2INS24X3V', 1, '') ON CONFLICT DO NOTHING;
-INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (4, 'admin@dseclab.com', 'dorjsa@test.com', 'scrypt:32768:8:1$E7I2nToiQwfC12nA$918b32a11e3fe28d45f5d1753a01270ac8516f604274e048b3b3b5f226d5a98b1cbabbbb6143a2b26c9495315326f181d91d775afbd83d44102bb8299ca27b46', 0, 'member', 1, 1, '2026-03-17 11:52:07.799484', '2026-03-17 12:08:53.483934', '2026-03-17 12:08:53.483583', NULL, 0, '') ON CONFLICT DO NOTHING;
+INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (1, 'admin', 'hw13d036@csms.edu.mn', 'scrypt:32768:8:1$CYg7zaqWXyzVvxIR$72441019f16edc2e0d8ddaa1065a9ec06fd4ad669ad11d652ec80c089cd2d17d078679af2878e0deee232e0dc94cfd09a2c6542ae952fc6bdb2c979059b6fb78', FALSE, 'member', NULL, TRUE, NULL, '2026-03-17 03:17:27.635661', '2026-03-17 03:17:27.631607', NULL, FALSE, '') ON CONFLICT DO NOTHING;
+INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (2, 'administrator', 'admin@dseclab.com', 'pbkdf2:sha256:260000$cPGN1JwGKAGo3X6t$7b63c789598d864d7e0c4dfe37bfb03eb140711258103fca46633797c5291011', TRUE, 'admin', NULL, TRUE, NULL, '2026-03-19 04:57:59.907326', '2026-03-19 04:57:59.898754', NULL, FALSE, '') ON CONFLICT DO NOTHING;
+INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (3, 'dorjoo', 'dorjoo@test.com', 'scrypt:32768:8:1$RDPY5T5xHP4JwbJu$ea5d766375cf44a0a06f2cb1dfe4880b66e7bca9b658691edad899669d4615bd1922c4c9c32a75464820634d4c7258bf43ecee15f54a81e90a0a13dee34e898b', FALSE, 'member', 1, TRUE, '2025-12-12 09:45:46.010985', '2026-03-18 12:37:38.558277', '2026-03-18 12:37:38.557605', 'PKGSEH76LSNCM5QHMQTTCPK2INS24X3V', TRUE, '') ON CONFLICT DO NOTHING;
+INSERT INTO "user" ("id", "username", "email", "password", "isAdmin", "role", "company_id", "is_active", "created_at", "updated_at", "last_login", "totp_secret", "totp_enabled", "permissions") VALUES (4, 'admin@dseclab.com', 'dorjsa@test.com', 'scrypt:32768:8:1$E7I2nToiQwfC12nA$918b32a11e3fe28d45f5d1753a01270ac8516f604274e048b3b3b5f226d5a98b1cbabbbb6143a2b26c9495315326f181d91d775afbd83d44102bb8299ca27b46', FALSE, 'member', 1, TRUE, '2026-03-17 11:52:07.799484', '2026-03-17 12:08:53.483934', '2026-03-17 12:08:53.483583', NULL, FALSE, '') ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('"user"', 'id'), COALESCE(MAX(id), 1)) FROM "user";
 
@@ -76,11 +76,11 @@ INSERT INTO "audit_log" ("id", "user_id", "action_type", "resource_type", "resou
 SELECT setval(pg_get_serial_sequence('"audit_log"', 'id'), COALESCE(MAX(id), 1)) FROM "audit_log";
 
 -- notification (5 rows)
-INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (1, 1, 'info', 'Test Notification', 'This is a test notification to verify the system is working.', '/threat-intelligence/breached-creds', 0, NULL, '2025-12-12 13:20:07.874896') ON CONFLICT DO NOTHING;
-INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (2, 2, 'warning', 'New Breach Detected: aduu.com', 'Email: sdf@sdc.om', '/threat-intelligence/breached-creds/85', 1, '2025-12-18 09:11:28.196864', '2025-12-17 02:26:45.206380') ON CONFLICT DO NOTHING;
-INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (3, 2, 'warning', 'New Breach Detected: 1.1.1.2', 'Email: R0002123213', '/threat-intelligence/breached-creds/86', 1, '2025-12-18 09:11:24.693625', '2025-12-17 02:49:25.843493') ON CONFLICT DO NOTHING;
-INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (4, 2, 'warning', 'New Breach Detected: 1.1.1.2', 'Email: R0030030', '/threat-intelligence/breached-creds/87', 1, '2025-12-18 09:11:21.580403', '2025-12-17 03:18:36.418620') ON CONFLICT DO NOTHING;
-INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (5, 2, 'warning', 'New Breach Detected: 1.1.1.2', 'Email: hw13d036@csms.edu.mn', '/threat-intelligence/breached-creds/88', 1, '2025-12-18 09:30:41.652287', '2025-12-18 09:29:58.750301') ON CONFLICT DO NOTHING;
+INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (1, 1, 'info', 'Test Notification', 'This is a test notification to verify the system is working.', '/threat-intelligence/breached-creds', FALSE, NULL, '2025-12-12 13:20:07.874896') ON CONFLICT DO NOTHING;
+INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (2, 2, 'warning', 'New Breach Detected: aduu.com', 'Email: sdf@sdc.om', '/threat-intelligence/breached-creds/85', TRUE, '2025-12-18 09:11:28.196864', '2025-12-17 02:26:45.206380') ON CONFLICT DO NOTHING;
+INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (3, 2, 'warning', 'New Breach Detected: 1.1.1.2', 'Email: R0002123213', '/threat-intelligence/breached-creds/86', TRUE, '2025-12-18 09:11:24.693625', '2025-12-17 02:49:25.843493') ON CONFLICT DO NOTHING;
+INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (4, 2, 'warning', 'New Breach Detected: 1.1.1.2', 'Email: R0030030', '/threat-intelligence/breached-creds/87', TRUE, '2025-12-18 09:11:21.580403', '2025-12-17 03:18:36.418620') ON CONFLICT DO NOTHING;
+INSERT INTO "notification" ("id", "user_id", "notification_type", "title", "message", "link", "is_read", "read_at", "created_at") VALUES (5, 2, 'warning', 'New Breach Detected: 1.1.1.2', 'Email: hw13d036@csms.edu.mn', '/threat-intelligence/breached-creds/88', TRUE, '2025-12-18 09:30:41.652287', '2025-12-18 09:29:58.750301') ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('"notification"', 'id'), COALESCE(MAX(id), 1)) FROM "notification";
 
@@ -130,14 +130,14 @@ INSERT INTO "user_activity" ("id", "user_id", "activity_type", "ip_address", "us
 SELECT setval(pg_get_serial_sequence('"user_activity"', 'id'), COALESCE(MAX(id), 1)) FROM "user_activity";
 
 -- alert_rule (2 rows)
-INSERT INTO "alert_rule" ("id", "name", "condition_type", "condition_value", "notify_method", "notify_target", "is_active", "trigger_count", "last_triggered", "created_by", "created_at") VALUES (1, 'test', 'domain_match', 'khanbank.com', 'in_app', NULL, 0, 0, NULL, 2, '2026-03-18 11:26:00.358770') ON CONFLICT DO NOTHING;
-INSERT INTO "alert_rule" ("id", "name", "condition_type", "condition_value", "notify_method", "notify_target", "is_active", "trigger_count", "last_triggered", "created_by", "created_at") VALUES (2, 'test', 'domain_match', 'khanbank.com', 'email', 'dorjsambuu@golomtbank.com', 1, 0, NULL, 3, '2026-03-18 12:36:18.558489') ON CONFLICT DO NOTHING;
+INSERT INTO "alert_rule" ("id", "name", "condition_type", "condition_value", "notify_method", "notify_target", "is_active", "trigger_count", "last_triggered", "created_by", "created_at") VALUES (1, 'test', 'domain_match', 'khanbank.com', 'in_app', NULL, FALSE, 0, NULL, 2, '2026-03-18 11:26:00.358770') ON CONFLICT DO NOTHING;
+INSERT INTO "alert_rule" ("id", "name", "condition_type", "condition_value", "notify_method", "notify_target", "is_active", "trigger_count", "last_triggered", "created_by", "created_at") VALUES (2, 'test', 'domain_match', 'khanbank.com', 'email', 'dorjsambuu@golomtbank.com', TRUE, 0, NULL, 3, '2026-03-18 12:36:18.558489') ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('"alert_rule"', 'id'), COALESCE(MAX(id), 1)) FROM "alert_rule";
 
 -- scheduled_report (2 rows)
-INSERT INTO "scheduled_report" ("id", "name", "frequency", "format", "filters", "email_to", "is_active", "last_run", "next_run", "created_by", "created_at") VALUES (1, 'asdsad', 'weekly', 'pdf', '{"cron_hint": "2026-03-14T20:04"}', 'dorjsambuu@golomtbank.com', 1, NULL, NULL, 2, '2026-03-18 12:04:58.646459') ON CONFLICT DO NOTHING;
-INSERT INTO "scheduled_report" ("id", "name", "frequency", "format", "filters", "email_to", "is_active", "last_run", "next_run", "created_by", "created_at") VALUES (2, 'test', 'weekly', 'pdf', '{"cron_hint": "2026-03-07T20:36"}', 'dorjsambuu@golomtbank.com', 1, NULL, NULL, 3, '2026-03-18 12:36:35.836677') ON CONFLICT DO NOTHING;
+INSERT INTO "scheduled_report" ("id", "name", "frequency", "format", "filters", "email_to", "is_active", "last_run", "next_run", "created_by", "created_at") VALUES (1, 'asdsad', 'weekly', 'pdf', '{"cron_hint": "2026-03-14T20:04"}', 'dorjsambuu@golomtbank.com', TRUE, NULL, NULL, 2, '2026-03-18 12:04:58.646459') ON CONFLICT DO NOTHING;
+INSERT INTO "scheduled_report" ("id", "name", "frequency", "format", "filters", "email_to", "is_active", "last_run", "next_run", "created_by", "created_at") VALUES (2, 'test', 'weekly', 'pdf', '{"cron_hint": "2026-03-07T20:36"}', 'dorjsambuu@golomtbank.com', TRUE, NULL, NULL, 3, '2026-03-18 12:36:35.836677') ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('"scheduled_report"', 'id'), COALESCE(MAX(id), 1)) FROM "scheduled_report";
 
@@ -147,8 +147,8 @@ INSERT INTO "report_history" ("id", "name", "format", "file_size", "record_count
 SELECT setval(pg_get_serial_sequence('"report_history"', 'id'), COALESCE(MAX(id), 1)) FROM "report_history";
 
 -- breached_cred_meta (2 rows)
-INSERT INTO "breached_cred_meta" ("id", "es_id", "is_marked", "marked_by", "marked_at", "notes", "created_at") VALUES (1, 'wAgWAJ0BR3rGDTgTQ08c', 1, 2, '2026-03-18 10:51:21.633647', NULL, '2026-03-18 10:51:21.642015') ON CONFLICT DO NOTHING;
-INSERT INTO "breached_cred_meta" ("id", "es_id", "is_marked", "marked_by", "marked_at", "notes", "created_at") VALUES (2, 'vggWAJ0BR3rGDTgTQ08c', 1, 2, '2026-03-18 10:51:47.735191', NULL, '2026-03-18 10:51:47.736083') ON CONFLICT DO NOTHING;
+INSERT INTO "breached_cred_meta" ("id", "es_id", "is_marked", "marked_by", "marked_at", "notes", "created_at") VALUES (1, 'wAgWAJ0BR3rGDTgTQ08c', TRUE, 2, '2026-03-18 10:51:21.633647', NULL, '2026-03-18 10:51:21.642015') ON CONFLICT DO NOTHING;
+INSERT INTO "breached_cred_meta" ("id", "es_id", "is_marked", "marked_by", "marked_at", "notes", "created_at") VALUES (2, 'vggWAJ0BR3rGDTgTQ08c', TRUE, 2, '2026-03-18 10:51:47.735191', NULL, '2026-03-18 10:51:47.736083') ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('"breached_cred_meta"', 'id'), COALESCE(MAX(id), 1)) FROM "breached_cred_meta";
 
