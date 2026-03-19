@@ -11,7 +11,12 @@ logger = logging.getLogger(__name__)
 
 
 def get_client_ip():
-    """Get client IP address from request."""
+    """Get real client IP address, accounting for reverse proxy."""
+    if request.headers.get('X-Real-IP'):
+        return request.headers['X-Real-IP']
+    forwarded = request.headers.get('X-Forwarded-For')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
     return request.remote_addr or '0.0.0.0'
 
 
