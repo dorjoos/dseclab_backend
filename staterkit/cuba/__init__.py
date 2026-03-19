@@ -9,6 +9,7 @@ from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_socketio import SocketIO
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
 db = SQLAlchemy()
@@ -22,6 +23,7 @@ socketio = SocketIO()
 
 def create_app(config_name=None):
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     if config_name is None:
         config_name = os.environ.get('FLASK_CONFIG', 'development')
