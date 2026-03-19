@@ -29,7 +29,7 @@ class Company(db.Model):
         if self.domain:
             domains.add(self.domain.lower().strip())
         for entry in self.watchlist_entries:
-            if entry.entry_value:
+            if entry.entry_type == 'domain' and entry.entry_value:
                 val = entry.entry_value.strip().lower()
                 if val:
                     domains.add(val)
@@ -73,7 +73,7 @@ class User(db.Model, UserMixin):
 
     @property
     def is_admin_user(self) -> bool:
-        return self.role == 'admin' or self.isAdmin
+        return self.role == 'admin'
 
     @property
     def company_domain(self) -> str:

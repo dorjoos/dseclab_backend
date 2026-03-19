@@ -5,6 +5,8 @@ import requests
 
 logger = logging.getLogger(__name__)
 
+# Note: ip-api.com free tier does not support HTTPS. Paid plan required for https://pro.ip-api.com.
+# Requests are wrapped in try/except to fail gracefully on network errors.
 GEO_API = "http://ip-api.com/json/"
 
 

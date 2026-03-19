@@ -149,7 +149,7 @@ class ElasticsearchService:
             if not domain:
                 continue
             domain = domain.lower().strip()
-            if not domain:
+            if not domain or len(domain) < 4:
                 continue
 
             # domain.keyword — exact or contains

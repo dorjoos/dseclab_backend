@@ -23,7 +23,7 @@ try:
 except ImportError:
     REPORTLAB_AVAILABLE = False
 
-from . import db, cache, csrf
+from . import db, cache, csrf, limiter
 from .models import BreachedCredMeta, Company, Notification, User
 from .api_utils import sanitize_input
 from .audit_helpers import log_audit
@@ -83,14 +83,14 @@ def _notify_new_breach(credential_id, company_domain, company_name, email):
     try:
         if not company_domain:
             users = User.query.filter(
-                or_(User.role == 'admin', User.isAdmin == True),
+                User.role == 'admin',
                 User.is_active == True
             ).all()
         else:
             company = Company.query.filter_by(domain=company_domain).first()
             if not company:
                 users = User.query.filter(
-                    or_(User.role == 'admin', User.isAdmin == True),
+                    User.role == 'admin',
                     User.is_active == True
                 ).all()
             else:
@@ -98,7 +98,6 @@ def _notify_new_breach(credential_id, company_domain, company_name, email):
                     or_(
                         User.company_id == company.id,
                         User.role == 'admin',
-                        User.isAdmin == True
                     ),
                     User.is_active == True
                 ).all()
@@ -215,6 +214,7 @@ def timeline_api():
 
 @threat_intel.route('/api/breached-creds/search', methods=['POST'])
 @login_required
+@limiter.limit("30/minute")
 def breached_creds_api():
     """Search breached credentials
     ---
@@ -252,8 +252,10 @@ def breached_creds_api():
 
     page = data.get('page', 1)
     per_page = data.get('per_page', 20)
-    per_page = min(max(int(per_page), 1), 100)
+    per_page = min(max(int(per_page), 1), 50)
     search_query = sanitize_input(data.get('search', ''))
+    if search_query and len(search_query.strip()) < 3:
+        search_query = None  # Too short, ignore
     type_filter = sanitize_input(data.get('type', ''))
     source_filter = sanitize_input(data.get('source', ''))
     domain_filter_param = sanitize_input(data.get('domain', ''))
@@ -459,6 +461,7 @@ def breached_creds_delete(doc_id):
 
 @threat_intel.route('/threat-intelligence/breached-creds/export')
 @login_required
+@limiter.limit("3/minute")
 def breached_creds_export():
     """Export breached credentials
     ---
@@ -773,6 +776,20 @@ def add_alert():
         flash('Alert name and condition are required.', 'warning')
         return redirect(url_for('threat_intel.reports') + '#alerts')
 
+    # Validate webhook URL if notify_method is webhook
+    if notify_method == 'webhook' and notify_target:
+        if not notify_target.startswith('https://'):
+            flash('Webhook URL must use HTTPS.', 'danger')
+            return redirect(url_for('threat_intel.reports') + '#alerts')
+        # Block private/internal IPs in webhook URLs
+        from urllib.parse import urlparse
+        parsed = urlparse(notify_target)
+        hostname = parsed.hostname or ''
+        # Reject localhost, internal hostnames, and private IP ranges
+        if hostname in ('localhost', '127.0.0.1', '::1', '0.0.0.0') or hostname.startswith('10.') or hostname.startswith('192.168.') or hostname.startswith('172.16.') or hostname.endswith('.local') or hostname.endswith('.internal'):
+            flash('Webhook URL must not point to a private/internal address.', 'danger')
+            return redirect(url_for('threat_intel.reports') + '#alerts')
+
     alert = AlertRule(
         name=name, condition_type=condition_type, condition_value=condition_value,
         notify_method=notify_method, notify_target=notify_target or None,
@@ -814,6 +831,7 @@ def delete_alert(aid):
 
 @threat_intel.route('/threat-intelligence/reports/generate', methods=['POST'])
 @login_required
+@limiter.limit("3/minute")
 def generate_report():
     """Generate a report now and save to history."""
     from .models import ReportHistory

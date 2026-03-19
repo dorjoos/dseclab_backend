@@ -92,8 +92,8 @@ def mark_read(id):
         db.session.commit()
         
         return json_success()
-    except Exception as e:
-        return json_error(str(e), status_code=500)
+    except Exception:
+        return json_error("An error occurred", status_code=500)
 
 
 @notification_bp.route('/api/notifications/mark-all-read', methods=['POST'])

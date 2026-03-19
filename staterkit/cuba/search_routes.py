@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import or_
+from . import limiter
 from .api_utils import sanitize_input, escape_like
 from .models import Company
 from .security import get_user_watchlist_domains
@@ -11,6 +12,7 @@ search_bp = Blueprint('search', __name__)
 
 @search_bp.route('/api/search')
 @login_required
+@limiter.limit("30/minute")
 def search():
     """Global search
     ---
@@ -27,7 +29,7 @@ def search():
         description: Array of search results
     """
     query = sanitize_input(request.args.get('q', ''))
-    if not query or len(query) < 2:
+    if not query or len(query.strip()) < 3:
         return jsonify([])
 
     results = []
