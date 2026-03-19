@@ -1,80 +1,83 @@
 {% extends "base.html" %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/admin.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
   <div class="row g-4">
     <!-- Left: Company Info -->
     <div class="col-lg-4">
       {% if company %}
-      <div class="card" style="padding:28px;text-align:center;">
-        <div style="width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,#0891b2,#059669);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;font-weight:700;color:#fff;">
+      <div class="card cf-card">
+        <div class="cf-avatar">
           {{ company.name[0]|upper }}
         </div>
-        <div style="font-size:18px;font-weight:700;">{{ company.name }}</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;" class="av-domain">{{ company.domain }}</div>
-        <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+        <div class="cf-name">{{ company.name }}</div>
+        <div class="cf-domain av-domain">{{ company.domain }}</div>
+        <div class="cf-tags">
           <span class="av-tag {% if company.company_type == 'bank' %}av-tag-blue{% elif company.company_type == 'operator' %}av-tag-teal{% elif company.company_type == 'government' %}av-tag-orange{% else %}av-tag{% endif %}">{{ company.company_type|title }}</span>
         </div>
       </div>
 
-      <div class="card" style="padding:20px;margin-top:16px;">
-        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">Company Stats</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;justify-content:space-between;">
-            <span style="font-size:13px;color:var(--text-muted);">Users</span>
-            <span style="font-size:13px;font-weight:600;">{{ company.users|length }}</span>
+      <div class="card cf-stats-card">
+        <div class="cf-stats-title">Company Stats</div>
+        <div class="cf-stats-list">
+          <div class="cf-stats-row">
+            <span class="cf-stats-label">Users</span>
+            <span class="cf-stats-value">{{ company.users|length }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="font-size:13px;color:var(--text-muted);">Watchlist</span>
-            <span style="font-size:13px;font-weight:600;">{{ company.watchlist_entries|length }}</span>
+          <div class="cf-stats-row">
+            <span class="cf-stats-label">Watchlist</span>
+            <span class="cf-stats-value">{{ company.watchlist_entries|length }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="font-size:13px;color:var(--text-muted);">Created</span>
-            <span style="font-size:13px;font-weight:500;">{{ company.created_at.strftime('%b %d, %Y') if company.created_at else '—' }}</span>
+          <div class="cf-stats-row">
+            <span class="cf-stats-label">Created</span>
+            <span class="cf-stats-value cf-stats-value--light">{{ company.created_at.strftime('%b %d, %Y') if company.created_at else '—' }}</span>
           </div>
         </div>
       </div>
 
-      <div class="card" style="padding:20px;margin-top:16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <div style="font-size:14px;font-weight:600;">Watchlist Entries</div>
-          <span style="font-size:12px;color:var(--text-muted);">{{ company.watchlist_entries|length }} items</span>
+      <div class="card cf-wl-card">
+        <div class="cf-wl-header">
+          <div class="cf-wl-title">Watchlist Entries</div>
+          <span class="cf-wl-count">{{ company.watchlist_entries|length }} items</span>
         </div>
         {% if company.watchlist_entries %}
         {% for entry in company.watchlist_entries %}
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;{% if not loop.last %}border-bottom:1px solid var(--border-light);{% endif %}">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="av-tag {% if entry.entry_type == 'domain' %}av-tag-blue{% elif entry.entry_type == 'url' %}av-tag-purple{% elif entry.entry_type == 'email' %}av-tag-teal{% elif entry.entry_type == 'ip_address' %}av-tag-orange{% else %}av-tag-pink{% endif %}" style="font-size:10px;">{{ entry.entry_type }}</span>
-            <span style="font-size:13px;font-weight:500;">{{ entry.entry_value }}</span>
+        <div class="cf-wl-entry{% if not loop.last %} cf-wl-entry--bordered{% endif %}">
+          <div class="cf-wl-entry-left">
+            <span class="av-tag cf-wl-entry-tag {% if entry.entry_type == 'domain' %}av-tag-blue{% elif entry.entry_type == 'url' %}av-tag-purple{% elif entry.entry_type == 'email' %}av-tag-teal{% elif entry.entry_type == 'ip_address' %}av-tag-orange{% else %}av-tag-pink{% endif %}">{{ entry.entry_type }}</span>
+            <span class="cf-wl-entry-val">{{ entry.entry_value }}</span>
           </div>
-          <button type="button" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:2px 6px;" title="Remove" onclick="deleteWatchlistEntry({{ company.id }}, {{ entry.id }}, this)">&times;</button>
+          <button type="button" class="cf-wl-remove-btn" title="Remove" onclick="deleteWatchlistEntry({{ company.id }}, {{ entry.id }}, this)">&times;</button>
         </div>
         {% endfor %}
         {% else %}
-        <div style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">No watchlist entries</div>
+        <div class="cf-wl-empty">No watchlist entries</div>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('admin.add_watchlist_entry', company_id=company.id) }}" style="margin-top:12px;border-top:1px solid var(--border-light);padding-top:12px;">
+        <form method="POST" action="{{ url_for('admin.add_watchlist_entry', company_id=company.id) }}" class="cf-wl-add-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div style="display:flex;gap:6px;">
-            <select name="entry_type" class="form-select" style="font-size:12px;width:100px;padding:5px 8px;">
+          <div class="cf-wl-add-row">
+            <select name="entry_type" class="form-select cf-wl-add-select">
               <option value="domain">Domain</option>
               <option value="url">URL</option>
               <option value="email">Email</option>
               <option value="ip_address">IP</option>
               <option value="slug">Slug</option>
             </select>
-            <input type="text" name="entry_value" class="form-control" style="font-size:12px;flex:1;padding:5px 8px;" placeholder="Value" required>
-            <button type="submit" class="btn btn-primary btn-sm" style="font-size:11px;padding:5px 10px;">Add</button>
+            <input type="text" name="entry_value" class="form-control cf-wl-add-input" placeholder="Value" required>
+            <button type="submit" class="btn btn-primary btn-sm cf-wl-add-btn">Add</button>
           </div>
         </form>
       </div>
       {% else %}
-      <div class="card" style="padding:28px;text-align:center;">
-        <div style="width:80px;height:80px;border-radius:16px;background:linear-gradient(135deg,#1a56db,#7c3aed);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px;color:#fff;">
+      <div class="card cf-card">
+        <div class="cf-avatar--new">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         </div>
-        <div style="font-size:18px;font-weight:700;">New Company</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Fill in the details to register a new company</div>
+        <div class="cf-name">New Company</div>
+        <div class="cf-domain">Fill in the details to register a new company</div>
       </div>
       {% endif %}
     </div>
@@ -83,30 +86,30 @@
     <div class="col-lg-8">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mb-3" style="font-size:13px;">{{ message }}</div>
+          <div class="alert alert-{{ category }} mb-3 adm-alert">{{ message }}</div>
         {% endfor %}
       {% endwith %}
 
-      <div class="card" style="padding:28px;margin-bottom:16px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">Company Details</div>
+      <div class="card cf-form-card">
+        <div class="cf-form-heading">Company Details</div>
         <form method="POST" action="{{ url_for('admin.edit_company', company_id=company.id) if company else url_for('admin.add_company') }}" id="company-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="cf-grid">
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Company Name</label>
-              <input type="text" name="name" value="{{ company.name if company else '' }}" class="form-control" style="font-size:14px;padding:10px 14px;" required>
+              <label class="cf-field-label">Company Name</label>
+              <input type="text" name="name" value="{{ company.name if company else '' }}" class="form-control cf-field-input" required>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Domain</label>
-              <input type="text" name="domain" value="{{ company.domain if company else '' }}" class="form-control" style="font-size:14px;padding:10px 14px;" placeholder="example.com" required>
+              <label class="cf-field-label">Domain</label>
+              <input type="text" name="domain" value="{{ company.domain if company else '' }}" class="form-control cf-field-input" placeholder="example.com" required>
             </div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="cf-grid">
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Type</label>
-              <select name="company_type" class="form-select" style="font-size:14px;padding:10px 14px;" required>
+              <label class="cf-field-label">Type</label>
+              <select name="company_type" class="form-select cf-field-input" required>
                 <option value="">Select type</option>
                 {% for t in ['bank','operator','government','other'] %}
                 <option value="{{ t }}" {% if company and company.company_type == t %}selected{% endif %}>{{ t|title }}</option>
@@ -114,48 +117,48 @@
               </select>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Description</label>
-              <textarea name="description" class="form-control" style="font-size:14px;padding:10px 14px;min-height:44px;resize:vertical;" placeholder="Optional description">{{ company.description if company else '' }}</textarea>
+              <label class="cf-field-label">Description</label>
+              <textarea name="description" class="form-control cf-field-textarea" placeholder="Optional description">{{ company.description if company else '' }}</textarea>
             </div>
           </div>
 
           {% if not company %}
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px;">
-            <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Watchlist Entries</div>
+          <div class="cf-wl-builder-section">
+            <div class="cf-wl-builder-title">Watchlist Entries</div>
             <div id="watchlist-container"></div>
-            <div style="display:flex;gap:8px;align-items:end;margin-top:8px;">
-              <select id="new-entry-type" class="form-select" style="font-size:13px;width:130px;padding:8px;">
+            <div class="cf-wl-builder-row">
+              <select id="new-entry-type" class="form-select cf-wl-builder-select">
                 <option value="domain">Domain</option>
                 <option value="url">URL</option>
                 <option value="email">Email</option>
                 <option value="ip_address">IP</option>
                 <option value="slug">Slug</option>
               </select>
-              <input type="text" id="new-entry-value" class="form-control" style="font-size:13px;flex:1;padding:8px;" placeholder="Value">
+              <input type="text" id="new-entry-value" class="form-control cf-wl-builder-input" placeholder="Value">
               <button type="button" class="btn btn-outline-primary btn-sm" onclick="addWatchlistEntry()">Add</button>
             </div>
             <div id="watchlist-hidden-inputs"></div>
           </div>
           {% endif %}
 
-          <div style="display:flex;justify-content:flex-end;gap:8px;">
-            <a href="{{ url_for('admin.company_management') }}" class="btn btn-outline-primary btn-sm" style="padding:8px 20px;">Cancel</a>
-            <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 20px;">{% if company %}Update Company{% else %}Create Company{% endif %}</button>
+          <div class="cf-actions">
+            <a href="{{ url_for('admin.company_management') }}" class="btn btn-outline-primary btn-sm cf-action-btn">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-sm cf-action-btn">{% if company %}Update Company{% else %}Create Company{% endif %}</button>
           </div>
         </form>
       </div>
 
       {% if company %}
-      <div class="card" style="padding:28px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--danger);">Danger Zone</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="card cf-danger-card">
+        <div class="cf-danger-title">Danger Zone</div>
+        <div class="cf-danger-row">
           <div>
-            <div style="font-size:14px;font-weight:500;">Delete this company</div>
-            <div style="font-size:13px;color:var(--text-muted);">This action cannot be undone.</div>
+            <div class="cf-danger-name">Delete this company</div>
+            <div class="cf-danger-desc">This action cannot be undone.</div>
           </div>
           <form method="POST" action="{{ url_for('admin.delete_company', company_id=company.id) }}" data-confirm="Are you sure you want to delete {{ company.name }}?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-danger btn-sm" style="padding:8px 20px;">Delete</button>
+            <button type="submit" class="btn btn-danger btn-sm cf-action-btn">Delete</button>
           </form>
         </div>
       </div>
@@ -175,7 +178,7 @@ function deleteWatchlistEntry(companyId, entryId, btn) {
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (data.success) {
-      var row = btn.closest('div[style]');
+      var row = btn.closest('.cf-wl-entry');
       if (row) { row.style.transition='opacity 0.2s'; row.style.opacity='0'; setTimeout(function(){row.remove();},200); }
       if (typeof showToast === 'function') showToast('Watchlist entry removed', 'success');
     }
@@ -199,23 +202,22 @@ function addWatchlistEntry() {
   var hidden = document.getElementById('watchlist-hidden-inputs');
   var idx = watchlistCount++;
   var row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light);';
+  row.className = 'cf-wl-entry cf-wl-entry--bordered';
   row.id = 'wl-row-' + idx;
   var left = document.createElement('div');
-  left.style.cssText = 'display:flex;align-items:center;gap:8px;';
+  left.className = 'cf-wl-entry-left';
   var tag = document.createElement('span');
   var tagColors = {domain:'av-tag-blue',url:'av-tag-purple',email:'av-tag-teal',ip_address:'av-tag-orange',slug:'av-tag-pink'};
-  tag.className = 'av-tag ' + (tagColors[type] || '');
-  tag.style.fontSize = '10px';
+  tag.className = 'av-tag cf-wl-entry-tag ' + (tagColors[type] || '');
   tag.textContent = type;
   var val = document.createElement('span');
-  val.style.cssText = 'font-size:13px;font-weight:500;';
+  val.className = 'cf-wl-entry-val';
   val.textContent = value;
   left.appendChild(tag);
   left.appendChild(val);
   var btn = document.createElement('button');
   btn.type = 'button';
-  btn.style.cssText = 'background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;';
+  btn.className = 'cf-wl-remove-btn';
   btn.textContent = '\u00d7';
   btn.setAttribute('data-idx', idx);
   btn.addEventListener('click', function() {

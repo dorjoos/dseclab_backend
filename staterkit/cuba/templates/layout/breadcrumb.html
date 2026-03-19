@@ -1,13 +1,13 @@
 {% if breadcrumb %}
-<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);margin-bottom:16px;">
-  <a href="{{ url_for('main.indexPage') }}" style="color:var(--text-muted);text-decoration:none;">Home</a>
+<div class="breadcrumb-inline">
+  <a href="{{ url_for('main.indexPage') }}" class="breadcrumb-inline-link">Home</a>
   {% if breadcrumb.parent %}
-  <span style="opacity:0.4;">/</span>
+  <span class="breadcrumb-inline-sep">/</span>
   <span>{{ breadcrumb.parent }}</span>
   {% endif %}
   {% if breadcrumb.child %}
-  <span style="opacity:0.4;">/</span>
-  <span style="color:var(--text);font-weight:500;">{{ breadcrumb.child }}</span>
+  <span class="breadcrumb-inline-sep">/</span>
+  <span class="breadcrumb-inline-current">{{ breadcrumb.child }}</span>
   {% endif %}
 </div>
 {% endif %}

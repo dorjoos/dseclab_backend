@@ -5,7 +5,7 @@
     </button>
     <div class="dsec-header-search">
       <i data-feather="search"></i>
-      <form action="{{ url_for('threat_intel.breached_creds_list') }}" method="get" style="margin:0;">
+      <form action="{{ url_for('threat_intel.breached_creds_list') }}" method="get" class="header-search-form">
         <input type="text" name="search" placeholder="Search breached credentials..." autocomplete="off">
       </form>
     </div>
@@ -13,37 +13,37 @@
   <div class="dsec-header-right">
     <!-- Theme toggle -->
     <button class="dsec-header-btn" id="theme-toggle" title="Toggle dark/light mode">
-      <i data-feather="moon" id="theme-icon-dark" style="display:inline;"></i>
-      <i data-feather="sun" id="theme-icon-light" style="display:none;"></i>
+      <i data-feather="moon" id="theme-icon-dark"></i>
+      <i data-feather="sun" id="theme-icon-light" class="d-none"></i>
     </button>
 
     {% if current_user.is_authenticated %}
-    <div style="position:relative;">
+    <div class="header-dropdown-wrapper">
       <button class="dsec-header-btn" id="notif-toggle" title="Notifications">
         <i data-feather="bell"></i>
-        <span class="dsec-header-badge" id="notification-badge" style="display:none;"></span>
+        <span class="dsec-header-badge d-none" id="notification-badge"></span>
       </button>
       <div class="dsec-notif-dropdown" id="notif-dropdown">
-        <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:600; font-size:14px;">Notifications</span>
-          <button class="btn btn-sm btn-outline-primary" id="mark-all-read-btn" style="display:none; font-size:11px; padding:2px 8px;">Mark all read</button>
+        <div class="header-notif-panel-header">
+          <span class="header-notif-panel-title">Notifications</span>
+          <button class="btn btn-sm btn-outline-primary header-mark-all-btn d-none" id="mark-all-read-btn">Mark all read</button>
         </div>
-        <ul id="notification-list" style="list-style:none; padding:0; margin:0; max-height:300px; overflow-y:auto;">
-          <li style="text-align:center; padding:24px; color:var(--text-muted); font-size:13px;">No notifications</li>
+        <ul id="notification-list" class="header-notif-list">
+          <li class="header-notif-empty">No notifications</li>
         </ul>
       </div>
     </div>
-    <div style="position:relative;">
+    <div class="header-dropdown-wrapper">
       <div class="dsec-header-profile" id="profile-toggle">
         <div class="dsec-header-profile-info">
           <div class="dsec-header-profile-name">{{ current_user.username }}</div>
           <div class="dsec-header-profile-role">{{ 'Admin' if current_user.is_admin_user else 'Member' }}</div>
         </div>
-        <i data-feather="chevron-down" style="width:14px;height:14px;color:var(--text-muted);"></i>
+        <i data-feather="chevron-down" class="header-chevron-icon"></i>
       </div>
       <div class="dsec-profile-dropdown" id="profile-dropdown">
-        <a href="{{ url_for('auth.profile') }}"><i data-feather="user" style="width:16px;height:16px;"></i> Profile</a>
-        <a href="{{ url_for('auth.logout') }}"><i data-feather="log-out" style="width:16px;height:16px;"></i> Logout</a>
+        <a href="{{ url_for('auth.profile') }}"><i data-feather="user" class="header-dropdown-icon"></i> Profile</a>
+        <a href="{{ url_for('auth.logout') }}"><i data-feather="log-out" class="header-dropdown-icon"></i> Logout</a>
       </div>
     </div>
     {% else %}
@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', function() {
   var saved = localStorage.getItem('dsec-theme');
   if (saved === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-    if (iconDark) iconDark.style.display = 'none';
-    if (iconLight) iconLight.style.display = 'inline';
+    if (iconDark) iconDark.classList.add('d-none');
+    if (iconLight) iconLight.classList.remove('d-none');
   }
   if (themeBtn) {
     themeBtn.addEventListener('click', function() {
@@ -70,13 +70,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (current === 'dark') {
         document.documentElement.removeAttribute('data-theme');
         localStorage.setItem('dsec-theme', 'light');
-        if (iconDark) iconDark.style.display = 'inline';
-        if (iconLight) iconLight.style.display = 'none';
+        if (iconDark) { iconDark.classList.remove('d-none'); }
+        if (iconLight) { iconLight.classList.add('d-none'); }
       } else {
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('dsec-theme', 'dark');
-        if (iconDark) iconDark.style.display = 'none';
-        if (iconLight) iconLight.style.display = 'inline';
+        if (iconDark) { iconDark.classList.add('d-none'); }
+        if (iconLight) { iconLight.classList.remove('d-none'); }
       }
       if (typeof feather !== 'undefined') feather.replace();
     });
@@ -127,15 +127,17 @@ document.addEventListener('DOMContentLoaded', function() {
         var badge = document.getElementById('notification-badge');
         var list = document.getElementById('notification-list');
         var markBtn = document.getElementById('mark-all-read-btn');
-        if (badge) badge.style.display = data.unread_count > 0 ? 'block' : 'none';
+        if (badge) {
+          if (data.unread_count > 0) { badge.classList.remove('d-none'); } else { badge.classList.add('d-none'); }
+        }
         if (!list) return;
         if (!data.notifications || !data.notifications.length) {
           list.textContent = '';
           var li = document.createElement('li');
-          li.style.cssText = 'text-align:center;padding:24px;color:var(--text-muted);font-size:13px;';
+          li.className = 'header-notif-empty';
           li.textContent = 'No notifications';
           list.appendChild(li);
-          if (markBtn) markBtn.style.display = 'none';
+          if (markBtn) markBtn.classList.add('d-none');
           return;
         }
         list.textContent = '';
@@ -160,7 +162,9 @@ document.addEventListener('DOMContentLoaded', function() {
           li.appendChild(a);
           list.appendChild(li);
         });
-        if (markBtn) markBtn.style.display = data.unread_count > 0 ? 'inline-block' : 'none';
+        if (markBtn) {
+          if (data.unread_count > 0) { markBtn.classList.remove('d-none'); } else { markBtn.classList.add('d-none'); }
+        }
       })
       .catch(function() {});
   }

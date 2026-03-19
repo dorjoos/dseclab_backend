@@ -1,70 +1,15 @@
 {% extends "base.html" %}
 
 {% block css %}
-<style>
-  .av-toolbar { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; gap:12px; flex-wrap:wrap; }
-  .av-toolbar-left { display:flex; align-items:center; gap:12px; }
-  .av-toolbar-right { display:flex; align-items:center; gap:8px; }
-  .av-segmented { display:inline-flex; background:var(--bg); border-radius:6px; padding:2px; gap:1px; }
-  .av-segmented a { padding:5px 14px; font-size:13px; font-weight:500; color:var(--text-secondary); text-decoration:none; border-radius:5px; transition:all 0.15s; cursor:pointer; }
-  .av-segmented a.active { background:var(--bg-white); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
-  .av-segmented a:hover:not(.active) { color:var(--text); }
-  .av-count { font-size:13px; color:var(--text-muted); }
-  .av-search { position:relative; }
-  .av-search input { background:var(--bg); border:none; border-radius:6px; padding:7px 10px 7px 30px; font-size:13px; width:200px; outline:none; color:var(--text); transition:all 0.2s; }
-  .av-search input:focus { background:var(--bg-white); box-shadow:0 0 0 2px var(--primary); width:240px; }
-  .av-search input::placeholder { color:var(--text-muted); }
-  .av-search svg { position:absolute; left:8px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); }
-  .av-btn { font-size:13px; font-weight:500; color:var(--primary); background:none; border:none; padding:5px 10px; cursor:pointer; text-decoration:none; border-radius:4px; transition:all 0.15s; }
-  .av-btn:hover { background:var(--primary-50); text-decoration:none; }
-  .av-btn-filled { background:var(--primary); color:#fff; padding:6px 14px; border-radius:6px; }
-  .av-btn-filled:hover { background:var(--primary-hover); color:#fff; }
-  .av-filters { display:flex; align-items:center; gap:6px; padding:0 16px 10px; flex-wrap:wrap; }
-  .av-filter-select, .av-filter-input { font-size:13px; padding:5px 8px; border:1px solid var(--border); border-radius:6px; background:var(--bg-white); color:var(--text); outline:none; }
-  .av-filter-select { padding-right:24px; cursor:pointer; }
-  .av-filter-input { width:120px; }
-  .av-filter-select:focus, .av-filter-input:focus { border-color:var(--primary); }
-  .av-filter-input::placeholder { color:var(--text-muted); }
-
-  /* Table */
-  .av-table { width:100%; border-collapse:collapse; font-size:14px; table-layout:fixed; }
-  .av-table thead th { padding:10px 14px; font-size:12px; font-weight:500; color:var(--text-muted); text-align:left; border-bottom:1px solid var(--border); background:var(--bg-white); user-select:none; }
-  .av-table thead th.r { text-align:right; }
-  .av-table thead th.c { text-align:center; }
-  .av-table tbody tr { transition:background 0.1s; }
-  .av-table tbody tr:nth-child(even) { background:rgba(0,0,0,0.015); }
-  [data-theme="dark"] .av-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.02); }
-  .av-table tbody tr:hover { background:var(--primary-50); }
-  .av-table tbody td { padding:10px 14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border-bottom:1px solid var(--border-light); }
-  .av-table tbody td.m { color:var(--text-muted); }
-  .av-table tbody td.r { text-align:right; }
-  .av-table tbody td.c { text-align:center; }
-  .av-domain { color:var(--primary); font-weight:500; }
-  .av-pass { color:var(--text-muted); letter-spacing:1px; cursor:default; }
-  .av-tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:12px; font-weight:500; background:var(--bg); color:var(--text-secondary); }
-
-  /* Pagination */
-  .av-pag { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-top:1px solid var(--border-light); font-size:13px; color:var(--text-muted); }
-  .av-pag-nav { display:flex; gap:2px; }
-  .av-pag-nav a, .av-pag-nav span { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 6px; border-radius:5px; font-size:13px; font-weight:500; color:var(--text-secondary); text-decoration:none; cursor:pointer; transition:all 0.15s; }
-  .av-pag-nav a:hover { background:var(--bg); }
-  .av-pag-nav .act { background:var(--primary); color:#fff; }
-  .av-pag-nav .dis { opacity:0.3; pointer-events:none; }
-
-  .av-empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
-  .av-loading { text-align:center; padding:40px; color:var(--text-muted); font-size:14px; }
-
-  #export-menu a:hover { background:var(--primary-50); color:var(--primary); }
-  #export-menu.show { display:block !important; }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/breached-creds.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
-  <div class="card" style="overflow:hidden;">
+  <div class="card av-card-overflow">
 
     <!-- Toolbar -->
-    <div class="av-toolbar" style="border-bottom:1px solid var(--border-light);">
+    <div class="av-toolbar av-toolbar--bordered">
       <div class="av-toolbar-left">
         <div class="av-segmented" id="date-seg">
           <a data-val="all" class="active">All</a>
@@ -79,13 +24,13 @@
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="search-input" placeholder="Search...">
         </div>
-        <div style="position:relative;" id="export-wrap">
+        <div class="av-export-wrap" id="export-wrap">
           <a href="#" class="av-btn" onclick="document.getElementById('export-menu').classList.toggle('show');event.preventDefault();">Export &#9662;</a>
-          <div id="export-menu" style="display:none;position:absolute;right:0;top:100%;background:var(--bg-white);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);padding:4px;min-width:140px;z-index:100;">
-            <a href="{{ url_for('threat_intel.breached_creds_export', format='csv') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">CSV</a>
-            <a href="{{ url_for('threat_intel.breached_creds_export', format='xlsx') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">Excel</a>
-            <a href="{{ url_for('threat_intel.breached_creds_export', format='json') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">JSON</a>
-            <a href="{{ url_for('threat_intel.breached_creds_export', format='pdf') }}" style="display:block;padding:8px 12px;font-size:13px;color:var(--text);text-decoration:none;border-radius:4px;">PDF</a>
+          <div id="export-menu" class="av-export-menu">
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='csv') }}">CSV</a>
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='xlsx') }}">Excel</a>
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='json') }}">JSON</a>
+            <a href="{{ url_for('threat_intel.breached_creds_export', format='pdf') }}">PDF</a>
           </div>
         </div>
         <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
@@ -96,7 +41,7 @@
     </div>
 
     <!-- Filters -->
-    <div class="av-filters" style="padding-top:8px;">
+    <div class="av-filters av-filters--padded">
       <select class="av-filter-select" id="filter-type">
         <option value="">All types</option>
         {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
@@ -105,33 +50,33 @@
       </select>
       <input type="text" class="av-filter-input" id="filter-source" placeholder="Source">
       <input type="text" class="av-filter-input" id="filter-domain" placeholder="Domain">
-      <a href="#" class="av-btn" id="clear-btn" style="color:var(--text-muted);display:none;">Clear</a>
+      <a href="#" class="av-btn av-btn--muted" id="clear-btn" style="display:none;">Clear</a>
     </div>
 
     <!-- Selection bar (hidden until items selected) -->
-    <div id="sel-bar" style="display:none;padding:8px 16px;background:var(--primary-50);border-bottom:1px solid var(--border-light);display:none;align-items:center;justify-content:space-between;">
-      <span style="font-size:13px;font-weight:500;color:var(--primary);"><span id="sel-count">0</span> selected</span>
-      <div style="display:flex;gap:6px;">
-        <a href="#" class="av-btn" style="font-size:12px;" onclick="exportSelected('csv');return false;">Export CSV</a>
-        <a href="#" class="av-btn" style="font-size:12px;" onclick="exportSelected('xlsx');return false;">Export Excel</a>
-        <a href="#" class="av-btn" style="font-size:12px;" onclick="exportSelected('json');return false;">Export JSON</a>
-        <a href="#" class="av-btn" style="font-size:12px;color:var(--text-muted);" onclick="clearSelection();return false;">Clear</a>
+    <div id="sel-bar" class="av-sel-bar">
+      <span class="av-sel-label"><span id="sel-count">0</span> selected</span>
+      <div class="av-sel-actions">
+        <a href="#" class="av-btn av-btn--sm" onclick="exportSelected('csv');return false;">Export CSV</a>
+        <a href="#" class="av-btn av-btn--sm" onclick="exportSelected('xlsx');return false;">Export Excel</a>
+        <a href="#" class="av-btn av-btn--sm" onclick="exportSelected('json');return false;">Export JSON</a>
+        <a href="#" class="av-btn av-btn--sm av-btn--muted" onclick="clearSelection();return false;">Clear</a>
       </div>
     </div>
 
     <!-- Table -->
-    <div style="overflow-x:auto;">
+    <div class="av-table-scroll">
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:32px;padding-left:14px;"><input type="checkbox" id="select-all" style="accent-color:var(--primary);width:15px;height:15px;cursor:pointer;"></th>
-            <th style="width:26%;">Username</th>
-            <th style="width:14%;">Domain</th>
-            <th style="width:10%;">Password</th>
-            <th style="width:17%;">Source</th>
-            <th style="width:8%;" class="c">Type</th>
-            <th style="width:8%;" class="r">Date</th>
-            <th style="width:50px;"></th>
+            <th class="av-th-checkbox"><input type="checkbox" id="select-all" class="av-checkbox"></th>
+            <th class="av-th-username">Username</th>
+            <th class="av-th-domain">Domain</th>
+            <th class="av-th-password">Password</th>
+            <th class="av-th-source">Source</th>
+            <th class="av-th-type c">Type</th>
+            <th class="av-th-date r">Date</th>
+            <th class="av-th-actions"></th>
           </tr>
         </thead>
         <tbody id="table-body">
@@ -211,10 +156,10 @@
 
         // Checkbox
         var tdCb = document.createElement('td');
-        tdCb.style.paddingLeft = '14px';
+        tdCb.className = 'av-th-checkbox';
         var cb = document.createElement('input');
         cb.type = 'checkbox';
-        cb.style.cssText = 'accent-color:var(--primary);width:15px;height:15px;cursor:pointer;';
+        cb.className = 'av-checkbox';
         cb.setAttribute('data-id', row.es_id);
         if (selectedIds.has(row.es_id)) cb.checked = true;
         cb.addEventListener('change', function() {
@@ -281,7 +226,7 @@
         var link = document.createElement('a');
         link.href = '/threat-intelligence/breached-creds/' + row.es_id;
         link.textContent = 'View';
-        link.style.cssText = 'color:var(--primary);text-decoration:none;font-size:13px;font-weight:500;';
+        link.className = 'av-btn av-btn--sm';
         td7.appendChild(link);
         tr.appendChild(td7);
 
@@ -405,10 +350,10 @@
     var cnt = document.getElementById('sel-count');
     var selectAll = document.getElementById('select-all');
     if (selectedIds.size > 0) {
-      bar.style.display = 'flex';
+      bar.classList.add('active');
       cnt.textContent = selectedIds.size;
     } else {
-      bar.style.display = 'none';
+      bar.classList.remove('active');
     }
     // Update select-all checkbox state
     var cbs = tbody.querySelectorAll('input[type="checkbox"]');

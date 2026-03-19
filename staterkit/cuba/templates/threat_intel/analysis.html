@@ -1,82 +1,7 @@
 {% extends "base.html" %}
 
 {% block css %}
-<style>
-  .an-hero { margin-bottom: 20px; }
-  .an-hero-top {
-    background: linear-gradient(135deg, #1a56db 0%, #4f46e5 40%, #7c3aed 70%, #a855f7 100%);
-    border-radius: 16px 16px 0 0;
-    padding: 32px 32px 24px;
-    color: #fff;
-    position: relative;
-    overflow: hidden;
-  }
-  .an-hero-top::before { content:''; position:absolute; top:-40px; right:-40px; width:200px; height:200px; border-radius:50%; background:rgba(255,255,255,0.08); }
-  .an-hero-top::after { content:''; position:absolute; bottom:-60px; right:120px; width:150px; height:150px; border-radius:50%; background:rgba(255,255,255,0.05); }
-  .an-hero-num { font-size: 56px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; position:relative; z-index:1; }
-  .an-hero-label { font-size: 14px; font-weight: 500; opacity: 0.8; margin-top: 6px; position:relative; z-index:1; }
-  .an-hero-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border-radius: 0 0 16px 16px;
-    overflow: hidden;
-    border: 1px solid var(--border);
-    border-top: none;
-  }
-  .an-hero-stat {
-    padding: 20px;
-    text-align: center;
-    background: var(--bg-white);
-    position: relative;
-    transition: background 0.15s;
-  }
-  .an-hero-stat:not(:last-child) { border-right: 1px solid var(--border-light); }
-  .an-hero-stat:hover { background: var(--bg); }
-  .an-hero-stat-val { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
-  .an-hero-stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 4px; }
-
-  .an-section { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
-
-  /* Bar items */
-  .an-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-  .an-bar-label { font-size: 13px; font-weight: 500; min-width: 160px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .an-bar-track { flex: 1; height: 24px; background: var(--border-light); border-radius: 6px; overflow: hidden; position: relative; }
-  .an-bar-fill { height: 100%; border-radius: 6px; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; font-weight: 600; color: #fff; min-width: 40px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-  .an-bar-num { font-size: 13px; font-weight: 600; min-width: 70px; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
-
-  /* Domain cards */
-  .an-dom-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
-  .an-dom-card {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 16px; border-radius: 10px;
-    background: var(--bg-white); border: 1px solid var(--border);
-    transition: all 0.15s;
-  }
-  .an-dom-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(26,86,219,0.08); }
-  .an-dom-rank {
-    width: 28px; height: 28px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; flex-shrink: 0;
-  }
-  .an-dom-rank.r1 { background: #fef3c7; color: #92400e; }
-  .an-dom-rank.r2 { background: #e2e8f0; color: #475569; }
-  .an-dom-rank.r3 { background: #fed7aa; color: #9a3412; }
-  .an-dom-rank.rn { background: var(--bg); color: var(--text-muted); }
-  .an-dom-name { font-size: 13px; font-weight: 600; color: var(--primary); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .an-dom-count { font-size: 14px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-
-  /* Gradient colors for bars */
-  .bar-c1 { background: linear-gradient(90deg, #1a56db, #3b82f6); }
-  .bar-c2 { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
-  .bar-c3 { background: linear-gradient(90deg, #0891b2, #22d3ee); }
-  .bar-c4 { background: linear-gradient(90deg, #059669, #34d399); }
-  .bar-c5 { background: linear-gradient(90deg, #d97706, #fbbf24); }
-  .bar-c6 { background: linear-gradient(90deg, #dc2626, #f87171); }
-  .bar-c7 { background: linear-gradient(90deg, #475569, #94a3b8); }
-
-  [data-theme="dark"] .an-bar-track { background: #1e293b; }
-  [data-theme="dark"] .an-dom-card { background: var(--bg-white); border-color: var(--border); }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/analysis.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -90,19 +15,19 @@
     </div>
     <div class="an-hero-stats">
       <div class="an-hero-stat">
-        <div class="an-hero-stat-val" style="color:#4f46e5;">{{ by_source|length }}</div>
+        <div class="an-hero-stat-val an-hero-stat-val--sources">{{ by_source|length }}</div>
         <div class="an-hero-stat-label">Sources</div>
       </div>
       <div class="an-hero-stat">
-        <div class="an-hero-stat-val" style="color:#d97706;">{{ by_domain|length }}</div>
+        <div class="an-hero-stat-val an-hero-stat-val--domains">{{ by_domain|length }}</div>
         <div class="an-hero-stat-label">Domains</div>
       </div>
       <div class="an-hero-stat">
-        <div class="an-hero-stat-val" style="color:#059669;">{{ by_type|length }}</div>
+        <div class="an-hero-stat-val an-hero-stat-val--types">{{ by_type|length }}</div>
         <div class="an-hero-stat-label">Types</div>
       </div>
       <div class="an-hero-stat">
-        <div class="an-hero-stat-val" style="color:#dc2626;">{{ marked_count }}</div>
+        <div class="an-hero-stat-val an-hero-stat-val--marked">{{ marked_count }}</div>
         <div class="an-hero-stat-label">Marked</div>
       </div>
     </div>
@@ -111,32 +36,32 @@
   <!-- Charts row -->
   <div class="row g-3 mb-4">
     <div class="col-lg-7">
-      <div class="card" style="padding:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-          <div class="an-section" style="margin:0;">Source Distribution</div>
-          <span style="font-size:12px;color:var(--text-muted);">{{ total|format_number }} total</span>
+      <div class="card an-card-pad">
+        <div class="an-card-header">
+          <div class="an-section an-section--flush">Source Distribution</div>
+          <span class="an-meta">{{ total|format_number }} total</span>
         </div>
-        <div style="display:flex;gap:24px;align-items:flex-start;">
+        <div class="an-chart-row">
           <!-- Donut chart left -->
-          <div style="flex-shrink:0;">
-            <div id="source-donut" style="min-width:280px;"></div>
+          <div class="an-chart-col-shrink">
+            <div id="source-donut" class="an-donut-wrap"></div>
           </div>
           <!-- Source cards right -->
-          <div style="flex:1;display:flex;flex-direction:column;gap:10px;">
+          <div class="an-chart-col-grow">
             {% set src_icons = ['📡','📨','🔗','📎','📦','🌐','💾'] %}
             {% set src_colors = ['#1a56db','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#ec4899'] %}
             {% for src, count in by_source.items() %}
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);transition:all 0.15s;background:var(--bg-white);" onmouseover="this.style.borderColor='{{ src_colors[loop.index0 % 7] }}';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-              <div style="width:36px;height:36px;border-radius:8px;background:{{ src_colors[loop.index0 % 7] }}15;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">
+            <div class="an-src-card" onmouseover="this.style.borderColor='{{ src_colors[loop.index0 % 7] }}';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+              <div class="an-src-icon" style="background:{{ src_colors[loop.index0 % 7] }}15;">
                 {{ src_icons[loop.index0 % 7] }}
               </div>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:14px;font-weight:600;color:var(--text);">{{ src }}</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:1px;">{{ count|format_number }} records</div>
+              <div class="an-src-info">
+                <div class="an-src-name">{{ src }}</div>
+                <div class="an-src-count">{{ count|format_number }} records</div>
               </div>
-              <div style="text-align:right;flex-shrink:0;">
-                <div style="font-size:18px;font-weight:700;color:var(--text);line-height:1;">{{ ((count / total) * 100)|round(1) }}<span style="font-size:12px;font-weight:500;color:var(--text-muted);">%</span></div>
-                <div style="font-size:11px;color:{{ src_colors[loop.index0 % 7] }};font-weight:600;margin-top:2px;">↑ {{ ((count / total) * 100)|round(0)|int }}%</div>
+              <div class="an-src-stats">
+                <div class="an-src-pct">{{ ((count / total) * 100)|round(1) }}<span class="an-src-pct-unit">%</span></div>
+                <div class="an-src-trend" style="color:{{ src_colors[loop.index0 % 7] }};">↑ {{ ((count / total) * 100)|round(0)|int }}%</div>
               </div>
             </div>
             {% endfor %}
@@ -145,10 +70,10 @@
       </div>
     </div>
     <div class="col-lg-5">
-      <div class="card" style="padding:24px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="an-section" style="margin:0;">Breach Timeline</div>
-          <select id="timeline-period" style="font-size:12px;padding:4px 24px 4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none;cursor:pointer;">
+      <div class="card an-card-pad">
+        <div class="an-card-header an-card-header--tight">
+          <div class="an-section an-section--flush">Breach Timeline</div>
+          <select id="timeline-period" class="an-period-select">
             <option value="7d" selected>Last 7 days</option>
             <option value="week">Weekly</option>
             <option value="month">Monthly</option>
@@ -160,9 +85,9 @@
   </div>
 
   <!-- Top Domains Treemap -->
-  <div class="card" style="padding:24px;margin-bottom:20px;position:relative;overflow:hidden;">
+  <div class="card an-treemap-card">
     <!-- SVG background pattern -->
-    <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:0.03;pointer-events:none;" xmlns="http://www.w3.org/2000/svg">
+    <svg class="an-treemap-bg" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
           <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="0.5"/>
@@ -174,7 +99,7 @@
       <rect width="100%" height="100%" fill="url(#grid)"/>
       <rect width="100%" height="100%" fill="url(#dots)"/>
     </svg>
-    <div style="position:relative;z-index:1;">
+    <div class="an-treemap-inner">
       <div class="an-section">Top Affected Domains</div>
       <div id="domain-treemap"></div>
     </div>
@@ -182,33 +107,33 @@
 
   <!-- Recent Breaches -->
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border-light);">
-      <div class="an-section" style="margin:0;">Recent Breaches</div>
+    <div class="an-table-header">
+      <div class="an-section an-section--flush">Recent Breaches</div>
       <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="av-view-link">View all &rarr;</a>
     </div>
     <table class="av-table">
       <thead>
         <tr>
-          <th style="width:14px;padding-left:10px;padding-right:0;font-size:12px;">#</th>
-          <th style="padding-left:24px;width:25%;">Username</th>
-          <th style="width:15%;">Domain</th>
-          <th style="width:20%;">Source</th>
-          <th style="width:10%;" class="c">Type</th>
-          <th style="width:10%;" class="r" style="padding-right:24px;">Date</th>
+          <th class="an-col-index">#</th>
+          <th class="an-col-username">Username</th>
+          <th class="an-col-domain">Domain</th>
+          <th class="an-col-source">Source</th>
+          <th class="an-col-type c">Type</th>
+          <th class="an-col-date r">Date</th>
         </tr>
       </thead>
       <tbody>
         {% for cred in recent %}
         <tr>
-          <td style="padding-left:10px;padding-right:0;font-size:12px;" class="m">{{ loop.index }}</td>
-          <td style="padding-left:24px;font-weight:500;">{{ cred.username or '—' }}</td>
+          <td class="an-td-index m">{{ loop.index }}</td>
+          <td class="an-td-username">{{ cred.username or '—' }}</td>
           <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
           <td class="m">{{ cred.source or '—' }}</td>
           <td class="c"><span class="av-tag av-tag-blue">{{ cred.type or '—' }}</span></td>
-          <td class="m r" style="padding-right:24px;">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
+          <td class="an-td-date m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
         </tr>
         {% endfor %}
-        {% if not recent %}<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">No recent breaches</td></tr>{% endif %}
+        {% if not recent %}<tr><td colspan="6" class="an-empty">No recent breaches</td></tr>{% endif %}
       </tbody>
     </table>
   </div>

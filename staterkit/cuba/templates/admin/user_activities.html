@@ -1,38 +1,41 @@
 {% extends "base.html" %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/admin.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
   <div class="card">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);">
-      <form method="GET" style="margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <select name="activity_type" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none;">
+    <div class="adm-filter-bar">
+      <form method="GET" class="adm-filter-form">
+        <select name="activity_type" class="adm-filter-select">
           <option value="">All activities</option>
           {% for a in activity_types %}<option value="{{ a }}" {% if request.args.get('activity_type') == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
         </select>
-        <button type="submit" style="font-size:13px;font-weight:500;color:var(--primary);background:none;border:none;cursor:pointer;">Filter</button>
+        <button type="submit" class="adm-filter-btn">Filter</button>
       </form>
     </div>
-    <div style="overflow-x:auto;">
+    <div class="adm-overflow">
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
-            <th style="width:18%;padding-left:16px;">Activity</th>
-            <th style="width:18%;">User</th>
-            <th style="width:14%;">IP Address</th>
-            <th style="width:14%;">Location</th>
-            <th style="width:10%;" class="c">Status</th>
-            <th style="width:18%;">Reason</th>
-            <th style="width:14%;" class="r">Date</th>
+            <th class="adm-col-num">#</th>
+            <th class="adm-col-first ua-col-activity">Activity</th>
+            <th class="ua-col-user">User</th>
+            <th class="ua-col-ip">IP Address</th>
+            <th class="ua-col-location">Location</th>
+            <th class="ua-col-status c">Status</th>
+            <th class="ua-col-reason">Reason</th>
+            <th class="ua-col-date r">Date</th>
           </tr>
         </thead>
         <tbody>
           {% if activities %}
           {% for act in activities %}
           <tr>
-            <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;"><span class="av-tag {% if act.activity_type == 'login' %}av-tag-green{% elif 'failed' in act.activity_type %}av-tag-red{% elif act.activity_type == 'logout' %}av-tag-blue{% else %}av-tag-purple{% endif %}">{{ act.activity_type }}</span></td>
+            <td class="adm-col-num m">{{ loop.index }}</td>
+            <td class="adm-col-first"><span class="av-tag {% if act.activity_type == 'login' %}av-tag-green{% elif 'failed' in act.activity_type %}av-tag-red{% elif act.activity_type == 'logout' %}av-tag-blue{% else %}av-tag-purple{% endif %}">{{ act.activity_type }}</span></td>
             <td class="m">{{ act.user.username if act.user else '—' }}</td>
-            <td class="m" style="font-family:'SF Mono',monospace;font-size:12px;">{{ act.ip_address or '—' }}</td>
+            <td class="m adm-mono">{{ act.ip_address or '—' }}</td>
             <td class="m">{{ act.location or '—' }}</td>
             <td class="c">{% if act.status == 'success' %}<span class="av-tag av-tag-success">OK</span>{% else %}<span class="av-tag av-tag-danger">{{ act.status }}</span>{% endif %}</td>
             <td class="m">{{ act.failure_reason or '—' }}</td>

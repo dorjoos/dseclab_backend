@@ -1,8 +1,48 @@
-.vercel
-.env*.local
+# Python
 __pycache__/
-*.pyc
-instance/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environment
 venv/
-*.db
+.venv/
+env/
+
+# Environment & secrets
 .env
+.env.local
+.env*.local
+
+# Database
+*.db
+instance/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Vercel
+.vercel
+
+# Temp
+*.tmp
+*.bak
+
+# Coverage
+htmlcov/
+.coverage
+.pytest_cache/

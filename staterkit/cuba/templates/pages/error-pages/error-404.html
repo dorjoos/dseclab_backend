@@ -1,4 +1,17 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>404</title>
-<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:'Inter',system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#0f172a;text-align:center;padding:20px;}.e{font-size:72px;font-weight:800;color:#1a56db;letter-spacing:-0.04em;}.t{font-size:16px;color:#64748b;margin:8px 0 20px;}.b{display:inline-block;padding:10px 20px;background:#1a56db;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600;}</style></head>
-<body><div><div class="e">404</div><div class="t">Page not found</div><a href="/" class="b">Go Home</a></div></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/auth.css') }}">
+</head>
+<body class="error-page">
+  <div>
+    <div class="error-code error-code--primary">404</div>
+    <div class="error-text">Page not found</div>
+    <a href="/" class="error-btn">Go Home</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+[Unit]
+Description=D-SECLAB Threat Intelligence Platform
+After=network.target postgresql.service elasticsearch.service
+Wants=postgresql.service elasticsearch.service
+
+[Service]
+Type=notify
+User=dseclab
+Group=dseclab
+WorkingDirectory=/opt/dseclab
+EnvironmentFile=/opt/dseclab/.env
+ExecStart=/opt/dseclab/venv/bin/gunicorn --config gunicorn.conf.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+KillMode=mixed
+TimeoutStopSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

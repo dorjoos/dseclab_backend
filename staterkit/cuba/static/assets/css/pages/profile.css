@@ -1,0 +1,248 @@
+/* ============================================
+   Profile & 2FA Setup Pages
+   ============================================ */
+
+/* --- Profile Card --- */
+.profile-card {
+  padding: 28px;
+  text-align: center;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a56db, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.profile-username {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.profile-email {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.profile-tags {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* --- Account Details --- */
+.profile-details-card {
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.profile-details-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.profile-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-detail-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.profile-detail-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.profile-detail-value {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.profile-detail-row-2fa {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light);
+}
+
+.profile-2fa-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-disable-2fa-form {
+  display: inline;
+}
+
+.profile-disable-2fa-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+}
+
+.profile-enable-2fa-link {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* --- Alert --- */
+.profile-alert {
+  font-size: 13px;
+}
+
+/* --- Form Sections --- */
+.profile-form-card {
+  padding: 28px;
+  margin-bottom: 16px;
+}
+
+.profile-form-card-last {
+  padding: 28px;
+}
+
+.profile-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.profile-form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.profile-form-input {
+  font-size: 14px;
+  padding: 10px 14px;
+}
+
+.profile-form-group {
+  margin-bottom: 16px;
+}
+
+.profile-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-submit-btn {
+  padding: 8px 20px;
+}
+
+/* ============================================
+   2FA Setup Page
+   ============================================ */
+
+.setup-2fa-container {
+  max-width: 480px;
+}
+
+.setup-2fa-card {
+  padding: 32px;
+  text-align: center;
+}
+
+.setup-2fa-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.setup-2fa-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.setup-2fa-qr-wrapper {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.setup-2fa-qr-img {
+  width: 200px;
+  height: 200px;
+}
+
+.setup-2fa-manual-entry {
+  margin-bottom: 20px;
+}
+
+.setup-2fa-manual-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.setup-2fa-secret-code {
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--bg);
+  padding: 6px 14px;
+  border-radius: 6px;
+  letter-spacing: 2px;
+  user-select: all;
+}
+
+.setup-2fa-form {
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.setup-2fa-token-group {
+  margin-bottom: 16px;
+}
+
+.setup-2fa-token-input {
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: 8px;
+  padding: 12px;
+}
+
+.setup-2fa-submit-btn {
+  width: 100%;
+  padding: 10px;
+}
+
+.setup-2fa-cancel-link {
+  display: block;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-muted);
+}

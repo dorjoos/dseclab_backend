@@ -1,45 +1,48 @@
 {% extends "base.html" %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/admin.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
   <div class="row g-4">
     <!-- Left: User Info -->
     <div class="col-lg-4">
       {% if user %}
-      <div class="card" style="padding:28px;text-align:center;">
-        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#1a56db,#7c3aed);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;font-weight:700;color:#fff;">
+      <div class="card uf-card">
+        <div class="uf-avatar">
           {{ user.username[0]|upper }}
         </div>
-        <div style="font-size:18px;font-weight:700;">{{ user.username }}</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">{{ user.email }}</div>
-        <div style="margin-top:12px;display:flex;justify-content:center;gap:8px;">
+        <div class="uf-name">{{ user.username }}</div>
+        <div class="uf-email">{{ user.email }}</div>
+        <div class="uf-tags">
           <span class="av-tag{% if user.role == 'admin' %} av-tag-warning{% endif %}">{{ user.role|title }}</span>
           {% if user.is_active %}<span class="av-tag av-tag-success">Active</span>{% else %}<span class="av-tag av-tag-danger">Inactive</span>{% endif %}
         </div>
       </div>
-      <div class="card" style="padding:20px;margin-top:16px;">
-        <div style="font-size:14px;font-weight:600;margin-bottom:14px;">Account Details</div>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <div style="display:flex;justify-content:space-between;">
-            <span style="font-size:13px;color:var(--text-muted);">Company</span>
-            <span style="font-size:13px;font-weight:500;">{{ user.company.name if user.company else '—' }}</span>
+      <div class="card uf-details-card">
+        <div class="uf-details-title">Account Details</div>
+        <div class="uf-details-list">
+          <div class="uf-details-row">
+            <span class="uf-details-label">Company</span>
+            <span class="uf-details-value">{{ user.company.name if user.company else '—' }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="font-size:13px;color:var(--text-muted);">Last Login</span>
-            <span style="font-size:13px;font-weight:500;">{{ user.last_login.strftime('%b %d, %Y') if user.last_login else 'Never' }}</span>
+          <div class="uf-details-row">
+            <span class="uf-details-label">Last Login</span>
+            <span class="uf-details-value">{{ user.last_login.strftime('%b %d, %Y') if user.last_login else 'Never' }}</span>
           </div>
-          <div style="display:flex;justify-content:space-between;">
-            <span style="font-size:13px;color:var(--text-muted);">Created</span>
-            <span style="font-size:13px;font-weight:500;">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else '—' }}</span>
+          <div class="uf-details-row">
+            <span class="uf-details-label">Created</span>
+            <span class="uf-details-value">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else '—' }}</span>
           </div>
         </div>
       </div>
       {% else %}
-      <div class="card" style="padding:28px;text-align:center;">
-        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#059669,#0891b2);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+      <div class="card uf-card">
+        <div class="uf-avatar--new">
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </div>
-        <div style="font-size:18px;font-weight:700;">New User</div>
-        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Create a new platform user</div>
+        <div class="uf-name">New User</div>
+        <div class="uf-email">Create a new platform user</div>
       </div>
       {% endif %}
     </div>
@@ -48,35 +51,35 @@
     <div class="col-lg-8">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for category, message in messages %}
-          <div class="alert alert-{{ category }} mb-3" style="font-size:13px;">{{ message }}</div>
+          <div class="alert alert-{{ category }} mb-3 adm-alert">{{ message }}</div>
         {% endfor %}
       {% endwith %}
 
-      <div class="card" style="padding:28px;margin-bottom:16px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:20px;">User Details</div>
+      <div class="card uf-form-card">
+        <div class="uf-form-heading">User Details</div>
         <form method="POST" action="{% if user %}{{ url_for('admin.edit_user', user_id=user.id) }}{% else %}{{ url_for('admin.add_user') }}{% endif %}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="uf-grid">
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Username</label>
-              <input type="text" name="username" value="{{ user.username if user else '' }}" class="form-control" style="font-size:14px;padding:10px 14px;" required>
+              <label class="uf-field-label">Username</label>
+              <input type="text" name="username" value="{{ user.username if user else '' }}" class="form-control uf-field-input" required>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Email</label>
-              <input type="email" name="email" value="{{ user.email if user else '' }}" class="form-control" style="font-size:14px;padding:10px 14px;" required>
+              <label class="uf-field-label">Email</label>
+              <input type="email" name="email" value="{{ user.email if user else '' }}" class="form-control uf-field-input" required>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="uf-grid">
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Role</label>
-              <select name="role" class="form-select" style="font-size:14px;padding:10px 14px;" required>
+              <label class="uf-field-label">Role</label>
+              <select name="role" class="form-select uf-field-input" required>
                 <option value="member" {% if user and user.role == 'member' %}selected{% elif not user %}selected{% endif %}>Member</option>
                 <option value="admin" {% if user and (user.role == 'admin' or user.isAdmin) %}selected{% endif %}>Admin</option>
               </select>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Company</label>
-              <select name="company_id" class="form-select" style="font-size:14px;padding:10px 14px;">
+              <label class="uf-field-label">Company</label>
+              <select name="company_id" class="form-select uf-field-input">
                 <option value="">No company</option>
                 {% for company in companies %}
                 <option value="{{ company.id }}" {% if user and user.company_id == company.id %}selected{% endif %}>{{ company.name }} ({{ company.domain }})</option>
@@ -85,59 +88,59 @@
             </div>
           </div>
           {% if not user %}
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="uf-grid">
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Password</label>
-              <input type="password" name="password" class="form-control" style="font-size:14px;padding:10px 14px;" required>
+              <label class="uf-field-label">Password</label>
+              <input type="password" name="password" class="form-control uf-field-input" required>
             </div>
             <div>
-              <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Confirm Password</label>
-              <input type="password" name="confirm_password" class="form-control" style="font-size:14px;padding:10px 14px;" required>
+              <label class="uf-field-label">Confirm Password</label>
+              <input type="password" name="confirm_password" class="form-control uf-field-input" required>
             </div>
           </div>
           {% else %}
-          <div style="margin-bottom:16px;">
-            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">New Password</label>
-            <input type="password" name="password" class="form-control" style="font-size:14px;padding:10px 14px;max-width:300px;" placeholder="Leave blank to keep current">
+          <div class="uf-single-row">
+            <label class="uf-field-label">New Password</label>
+            <input type="password" name="password" class="form-control uf-field-input uf-field-pw" placeholder="Leave blank to keep current">
           </div>
           {% endif %}
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-            <input type="checkbox" name="is_active" id="is_active" {% if not user or user.is_active %}checked{% endif %} style="accent-color:#1a56db;width:16px;height:16px;">
-            <label for="is_active" style="font-size:13px;margin:0;">Active account</label>
+          <div class="uf-checkbox-row">
+            <input type="checkbox" name="is_active" id="is_active" {% if not user or user.is_active %}checked{% endif %} class="uf-checkbox">
+            <label for="is_active" class="uf-checkbox-label">Active account</label>
           </div>
           {% if user %}
-          <div style="margin-bottom:16px;border-top:1px solid var(--border);padding-top:16px;">
-            <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px;">Permissions</label>
-            <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          <div class="uf-perms-section">
+            <label class="uf-field-label">Permissions</label>
+            <div class="uf-perms-wrap">
               {% set all_perms = ['view','analyze','export','manage_users','manage_companies','manage_alerts','manage_reports'] %}
               {% set user_perms = user.get_permissions() %}
               {% for p in all_perms %}
-              <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;">
-                <input type="checkbox" name="permissions" value="{{ p }}" {% if p in user_perms %}checked{% endif %} style="accent-color:#1a56db;width:15px;height:15px;">
+              <label class="uf-perm-label">
+                <input type="checkbox" name="permissions" value="{{ p }}" {% if p in user_perms %}checked{% endif %} class="uf-perm-checkbox">
                 {{ p|replace('_',' ')|title }}
               </label>
               {% endfor %}
             </div>
           </div>
           {% endif %}
-          <div style="display:flex;justify-content:flex-end;gap:8px;">
-            <a href="{{ url_for('admin.user_management') }}" class="btn btn-outline-primary btn-sm" style="padding:8px 20px;">Cancel</a>
-            <button type="submit" class="btn btn-primary btn-sm" style="padding:8px 20px;">{% if user %}Update User{% else %}Create User{% endif %}</button>
+          <div class="uf-actions">
+            <a href="{{ url_for('admin.user_management') }}" class="btn btn-outline-primary btn-sm uf-action-btn">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-sm uf-action-btn">{% if user %}Update User{% else %}Create User{% endif %}</button>
           </div>
         </form>
       </div>
 
       {% if user %}
-      <div class="card" style="padding:28px;">
-        <div style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--danger);">Danger Zone</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="card uf-danger-card">
+        <div class="uf-danger-title">Danger Zone</div>
+        <div class="uf-danger-row">
           <div>
-            <div style="font-size:14px;font-weight:500;">Delete this user</div>
-            <div style="font-size:13px;color:var(--text-muted);">This action cannot be undone.</div>
+            <div class="uf-danger-name">Delete this user</div>
+            <div class="uf-danger-desc">This action cannot be undone.</div>
           </div>
           <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" data-confirm="Are you sure you want to delete {{ user.username }}?">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" class="btn btn-danger btn-sm" style="padding:8px 20px;">Delete</button>
+            <button type="submit" class="btn btn-danger btn-sm uf-action-btn">Delete</button>
           </form>
         </div>
       </div>

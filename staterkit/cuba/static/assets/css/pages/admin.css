@@ -1,0 +1,411 @@
+/* ==========================================================================
+   Admin pages — shared styles
+   ========================================================================== */
+
+/* ---- Toolbar / filter bar ---- */
+.adm-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.adm-toolbar--left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.adm-filter-form {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.adm-filter-bar {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* ---- Filter inputs ---- */
+.adm-filter-select {
+  font-size: 13px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-white);
+  color: var(--text);
+  outline: none;
+}
+.adm-filter-input {
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-white);
+  color: var(--text);
+  outline: none;
+  width: 200px;
+}
+.adm-filter-btn {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.adm-filter-clear {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+/* ---- Table column widths ---- */
+.adm-overflow { overflow-x: auto; }
+
+.adm-col-num    { width: 20px; padding-left: 10px; padding-right: 0; font-size: 11px; }
+.adm-col-first  { padding-left: 16px; }
+
+/* ---- Info label ---- */
+.adm-info-label { font-size: 13px; color: var(--text-muted); }
+.adm-add-btn    { font-size: 13px; }
+.adm-edit-icon  { font-size: 13px; }
+
+/* ---- Alert font ---- */
+.adm-alert { font-size: 13px; }
+
+/* ---- Monospace IP address ---- */
+.adm-mono { font-family: 'SF Mono', monospace; font-size: 12px; }
+
+/* ---- Max-width cell ---- */
+.adm-desc-cell { max-width: 300px; }
+
+/* ---- Cell helpers ---- */
+.adm-cell-bold { font-weight: 500; }
+.adm-col-action { width: 50px; }
+
+/* ---- User management table columns ---- */
+.um-col-username { width: 20%; }
+.um-col-email    { width: 25%; }
+.um-col-role     { width: 12%; }
+.um-col-company  { width: 18%; }
+.um-col-status   { width: 10%; }
+.um-col-login    { width: 12%; }
+.um-col-actions  { width: 60px; }
+
+/* ---- Company management table columns ---- */
+.cm-col-name     { width: 22%; }
+.cm-col-domain   { width: 18%; }
+.cm-col-type     { width: 12%; }
+.cm-col-watch    { width: 10%; }
+.cm-col-breach   { width: 12%; }
+.cm-col-created  { width: 12%; }
+.cm-col-actions  { width: 80px; }
+
+/* ---- Audit logs table columns ---- */
+.al-col-action   { width: 14%; }
+.al-col-resource { width: 12%; }
+.al-col-desc     { width: 30%; }
+.al-col-user     { width: 14%; }
+.al-col-status   { width: 10%; }
+.al-col-date     { width: 14%; }
+
+/* ---- User activities table columns ---- */
+.ua-col-activity { width: 18%; }
+.ua-col-user     { width: 18%; }
+.ua-col-ip       { width: 14%; }
+.ua-col-location { width: 14%; }
+.ua-col-status   { width: 10%; }
+.ua-col-reason   { width: 18%; }
+.ua-col-date     { width: 14%; }
+
+/* ==========================================================================
+   User form page
+   ========================================================================== */
+.uf-card { padding: 28px; text-align: center; }
+
+.uf-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a56db, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+}
+.uf-avatar--new {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #059669, #0891b2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.uf-name  { font-size: 18px; font-weight: 700; }
+.uf-email { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.uf-tags  { margin-top: 12px; display: flex; justify-content: center; gap: 8px; }
+
+.uf-details-card { padding: 20px; margin-top: 16px; }
+.uf-details-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+.uf-details-list { display: flex; flex-direction: column; gap: 12px; }
+.uf-details-row { display: flex; justify-content: space-between; }
+.uf-details-label { font-size: 13px; color: var(--text-muted); }
+.uf-details-value { font-size: 13px; font-weight: 500; }
+
+/* Form section */
+.uf-form-card { padding: 28px; margin-bottom: 16px; }
+.uf-form-heading { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+
+.uf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.uf-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+.uf-field-input {
+  font-size: 14px;
+  padding: 10px 14px;
+}
+.uf-field-pw { max-width: 300px; }
+.uf-single-row { margin-bottom: 16px; }
+
+/* Active checkbox */
+.uf-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.uf-checkbox { accent-color: #1a56db; width: 16px; height: 16px; }
+.uf-checkbox-label { font-size: 13px; margin: 0; }
+
+/* Permissions */
+.uf-perms-section {
+  margin-bottom: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.uf-perms-wrap { display: flex; flex-wrap: wrap; gap: 12px; }
+.uf-perm-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.uf-perm-checkbox { accent-color: #1a56db; width: 15px; height: 15px; }
+
+/* Action row */
+.uf-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.uf-action-btn { padding: 8px 20px; }
+
+/* Danger zone */
+.uf-danger-card { padding: 28px; }
+.uf-danger-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--danger); }
+.uf-danger-row { display: flex; justify-content: space-between; align-items: center; }
+.uf-danger-name { font-size: 14px; font-weight: 500; }
+.uf-danger-desc { font-size: 13px; color: var(--text-muted); }
+
+/* ==========================================================================
+   Company form page
+   ========================================================================== */
+.cf-card { padding: 28px; text-align: center; }
+
+.cf-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #0891b2, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+.cf-avatar--new {
+  width: 80px;
+  height: 80px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1a56db, #7c3aed);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 28px;
+  color: #fff;
+}
+.cf-name  { font-size: 18px; font-weight: 700; }
+.cf-domain { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+.cf-tags  { margin-top: 12px; display: flex; justify-content: center; gap: 8px; }
+
+/* Stats card */
+.cf-stats-card { padding: 20px; margin-top: 16px; }
+.cf-stats-title { font-size: 14px; font-weight: 600; margin-bottom: 14px; }
+.cf-stats-list { display: flex; flex-direction: column; gap: 12px; }
+.cf-stats-row { display: flex; justify-content: space-between; }
+.cf-stats-label { font-size: 13px; color: var(--text-muted); }
+.cf-stats-value { font-size: 13px; font-weight: 600; }
+.cf-stats-value--light { font-weight: 500; }
+
+/* Watchlist card */
+.cf-wl-card { padding: 20px; margin-top: 16px; }
+.cf-wl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.cf-wl-title { font-size: 14px; font-weight: 600; }
+.cf-wl-count { font-size: 12px; color: var(--text-muted); }
+
+.cf-wl-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.cf-wl-entry--bordered { border-bottom: 1px solid var(--border-light); }
+.cf-wl-entry-left { display: flex; align-items: center; gap: 8px; }
+.cf-wl-entry-tag { font-size: 10px; }
+.cf-wl-entry-val { font-size: 13px; font-weight: 500; }
+.cf-wl-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 2px 6px;
+}
+.cf-wl-empty { font-size: 13px; color: var(--text-muted); text-align: center; padding: 12px; }
+
+/* Watchlist add form */
+.cf-wl-add-form { margin-top: 12px; border-top: 1px solid var(--border-light); padding-top: 12px; }
+.cf-wl-add-row { display: flex; gap: 6px; }
+.cf-wl-add-select { font-size: 12px; width: 100px; padding: 5px 8px; }
+.cf-wl-add-input { font-size: 12px; flex: 1; padding: 5px 8px; }
+.cf-wl-add-btn { font-size: 11px; padding: 5px 10px; }
+
+/* New-company watchlist builder */
+.cf-wl-builder-section {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  margin-bottom: 16px;
+}
+.cf-wl-builder-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.cf-wl-builder-row { display: flex; gap: 8px; align-items: end; margin-top: 8px; }
+.cf-wl-builder-select { font-size: 13px; width: 130px; padding: 8px; }
+.cf-wl-builder-input { font-size: 13px; flex: 1; padding: 8px; }
+
+/* Company form */
+.cf-form-card { padding: 28px; margin-bottom: 16px; }
+.cf-form-heading { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+.cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cf-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: block;
+  margin-bottom: 6px;
+}
+.cf-field-input { font-size: 14px; padding: 10px 14px; }
+.cf-field-textarea { font-size: 14px; padding: 10px 14px; min-height: 44px; resize: vertical; }
+
+.cf-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.cf-action-btn { padding: 8px 20px; }
+
+/* Danger zone (reuses uf- prefix but identical pattern) */
+.cf-danger-card { padding: 28px; }
+.cf-danger-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; color: var(--danger); }
+.cf-danger-row { display: flex; justify-content: space-between; align-items: center; }
+.cf-danger-name { font-size: 14px; font-weight: 500; }
+.cf-danger-desc { font-size: 13px; color: var(--text-muted); }
+
+/* ==========================================================================
+   Company breached creds page
+   ========================================================================== */
+.cb-header-label { font-size: 14px; font-weight: 600; }
+.cb-edit-btn { font-size: 13px; }
+
+/* ==========================================================================
+   Compliance dashboard
+   ========================================================================== */
+.cpl-score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.cpl-score-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.cpl-score-val {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+.cpl-score-label { font-size: 14px; font-weight: 600; margin-top: 4px; }
+.cpl-score-desc { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+/* Metrics grid */
+.cpl-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.cpl-metric-card { padding: 24px; }
+.cpl-metric-heading { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+.cpl-metric-list { display: flex; flex-direction: column; gap: 12px; }
+.cpl-metric-row { display: flex; justify-content: space-between; align-items: center; }
+.cpl-metric-label { font-size: 13px; }
+.cpl-metric-value { font-size: 14px; font-weight: 600; }
+
+/* Checklist */
+.cpl-checklist-card { padding: 24px; }
+.cpl-checklist-heading { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+.cpl-check-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+.cpl-check-row--bordered { border-bottom: 1px solid var(--border-light); }
+.cpl-check-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cpl-check-icon--pass { background: #ecfdf5; }
+.cpl-check-icon--fail { background: #fef2f2; }
+.cpl-check-name { font-size: 13px; font-weight: 500; }
+.cpl-check-name--fail { color: #dc2626; }

@@ -1,0 +1,318 @@
+/* ==========================================================================
+   Ransomware Monitor — /threat_intel/ransomware
+   Prefix: rw-
+   ========================================================================== */
+
+/* Hero */
+.rw-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #4c1d95 100%);
+  border-radius: 16px;
+  padding: 32px;
+  color: #fff;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.rw-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.08);
+}
+.rw-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  left: 20%;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.06);
+}
+
+.rw-hero-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.rw-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.rw-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rw-hero-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.rw-hero-subtitle {
+  font-size: 13px;
+  opacity: 0.6;
+  margin-top: 6px;
+}
+
+.rw-active-badge {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.rw-active-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+  margin-right: 4px;
+  animation: dsec-ticker-pulse 1.5s infinite;
+}
+
+/* Stats row */
+.rw-stats-row {
+  display: flex;
+  gap: 40px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.rw-stat {
+  text-align: center;
+}
+
+.rw-stat-val {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.rw-stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.rw-stat-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Cards */
+.rw-card-body {
+  padding: 24px;
+}
+
+.rw-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.rw-card-title-lg {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.rw-card-title-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 6px;
+}
+
+/* Group cards */
+.rw-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rw-group-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s;
+}
+.rw-group-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.rw-group-rank {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rw-group-info {
+  flex: 1;
+}
+
+.rw-group-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rw-group-seen {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.rw-group-stats {
+  text-align: right;
+}
+
+.rw-group-victims {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rw-group-victims-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Victim rows */
+.rw-victim-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.15s;
+}
+.rw-victim-row:last-child {
+  border-bottom: none;
+}
+.rw-victim-row:hover {
+  background: var(--primary-50);
+  margin: 0 -16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.rw-victim-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.rw-victim-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rw-victim-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rw-victim-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 3px;
+}
+
+.rw-victim-meta-group {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Badge */
+.rw-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.rw-badge--banking {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.rw-badge--healthcare {
+  background: #eff4ff;
+  color: #4f46e5;
+}
+
+.rw-badge--government {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.rw-badge--technology {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.rw-badge--default {
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+/* Sector breakdown */
+.rw-sector-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.rw-sector-name {
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 100px;
+}
+
+.rw-sector-track {
+  flex: 1;
+  height: 20px;
+  background: var(--border-light);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rw-sector-fill {
+  height: 100%;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.rw-section-card {
+  padding: 24px;
+  margin-bottom: 20px;
+}

@@ -1,7 +1,8 @@
 <aside class="dsec-sidebar" id="dsec-sidebar">
   <div class="dsec-sidebar-logo">
-    <a href="{{ url_for('main.indexPage') }}" style="display:flex;align-items:center;text-decoration:none;">
-      <img src="{{ url_for('static', filename='assets/images/logo/logo.png') }}" alt="D-SECLAB">
+    <a href="{{ url_for('main.indexPage') }}" class="sidebar-logo-link">
+      <img src="{{ url_for('static', filename='assets/images/logo/logo.svg') }}" alt="D-SECLAB" class="dsec-logo-light">
+      <img src="{{ url_for('static', filename='assets/images/logo/logo_dark.svg') }}" alt="D-SECLAB" class="dsec-logo-dark">
     </a>
   </div>
   <nav class="dsec-sidebar-nav">
@@ -51,7 +52,7 @@
     </div>
     {% endif %}
 
-    <div class="dsec-nav-section" style="margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border);">
+    <div class="dsec-nav-section sidebar-bottom-section">
       <a href="/api/docs/" class="dsec-nav-item" target="_blank">
         <i data-feather="book-open"></i> API Docs
       </a>

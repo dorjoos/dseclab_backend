@@ -6,79 +6,41 @@
   <title>Sign In | D-SECLAB</title>
   <link rel="icon" href="{{ url_for('static', filename='assets/images/favicon.png') }}" type="image/x-icon">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#f0f4ff 0%,#e8eeff 50%,#f5f3ff 100%);color:#0f172a;padding:20px;}
-    .login-card{background:#fff;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,0.06);padding:40px;width:100%;max-width:400px;}
-    .login-logo{text-align:center;margin-bottom:28px;}
-    .login-logo img{height:36px;}
-    .login-logo h1{font-size:20px;font-weight:700;margin-top:12px;letter-spacing:-0.02em;}
-    .login-logo p{font-size:13px;color:#64748b;margin-top:4px;}
-    .form-group{margin-bottom:16px;}
-    .form-group label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px;}
-    .form-group input{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s;}
-    .form-group input:focus{border-color:#1a56db;box-shadow:0 0 0 3px rgba(26,86,219,0.08);}
-    .form-check{display:flex;align-items:center;gap:6px;margin-bottom:20px;font-size:13px;color:#64748b;}
-    .form-check input{width:16px;height:16px;accent-color:#1a56db;}
-    .btn-login{width:100%;padding:11px;background:#1a56db;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;transition:background 0.15s;}
-    .btn-login:hover{background:#1347b8;}
-    .login-footer{text-align:center;margin-top:20px;font-size:13px;color:#94a3b8;}
-    .login-footer a{color:#1a56db;text-decoration:none;font-weight:500;}
-    .login-footer a:hover{text-decoration:underline;}
-    .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;font-weight:500;}
-    .alert-danger{background:#fef2f2;color:#dc2626;}
-    .alert-success{background:#ecfdf5;color:#059669;}
-    .alert-warning{background:#fffbeb;color:#92400e;}
-    @media (prefers-color-scheme: dark) {
-      body { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #1e293b 100%); }
-      .login-card { background: #1e293b; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
-      .login-logo h1 { color: #e2e8f0; }
-      .login-logo p { color: #64748b; }
-      .form-group label { color: #94a3b8; }
-      .form-group input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
-      .form-group input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-      .form-group input::placeholder { color: #475569; }
-      .form-check { color: #94a3b8; }
-      .login-footer { color: #64748b; }
-      .login-footer a { color: #3b82f6; }
-      .alert-danger { background: rgba(220,38,38,0.15); color: #fca5a5; }
-      .alert-success { background: rgba(5,150,105,0.15); color: #6ee7b7; }
-      .alert-warning { background: rgba(217,119,6,0.15); color: #fcd34d; }
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='assets/css/auth.css') }}">
 </head>
-<body>
-  <div class="login-card">
-    <div class="login-logo">
-      <img src="{{ url_for('static', filename='assets/images/logo/logo.png') }}" alt="D-SECLAB">
-      <h1>Welcome back</h1>
-      <p>Sign in to your threat intelligence platform</p>
+<body class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="{{ url_for('static', filename='assets/images/logo/logo.svg') }}" alt="D-SECLAB" class="auth-logo-light">
+      <img src="{{ url_for('static', filename='assets/images/logo/logo_dark.svg') }}" alt="D-SECLAB" class="auth-logo-dark">
+      <h1 class="auth-logo-title">Welcome back</h1>
+      <p class="auth-logo-subtitle">Sign in to your threat intelligence platform</p>
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
-        <div class="alert alert-{{ category }}">{{ message }}</div>
+        <div class="auth-alert auth-alert-{{ category }}">{{ message }}</div>
       {% endfor %}
     {% endwith %}
 
     <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" name="email" value="{{ email|default('') }}" placeholder="you@company.com" required autofocus>
+      <div class="auth-form-group">
+        <label class="auth-label">Email</label>
+        <input type="email" name="email" value="{{ email|default('') }}" placeholder="you@company.com" required autofocus class="auth-input">
       </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" name="password" placeholder="Enter your password" required>
+      <div class="auth-form-group">
+        <label class="auth-label">Password</label>
+        <input type="password" name="password" placeholder="Enter your password" required class="auth-input">
       </div>
-      <div class="form-check">
+      <div class="auth-check">
         <input type="checkbox" name="remember" id="remember" value="1">
-        <label for="remember" style="margin:0;font-weight:400;">Remember me</label>
+        <label for="remember">Remember me</label>
       </div>
-      <button type="submit" class="btn-login">Sign In</button>
+      <button type="submit" class="auth-btn">Sign In</button>
     </form>
 
-    <div class="login-footer">
+    <div class="auth-footer">
       Don't have an account? <a href="{{ url_for('auth.register') }}">Register</a>
     </div>
   </div>

@@ -1,31 +1,34 @@
 {% extends "base.html" %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/admin.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-light);">
-      <span style="font-size:13px;color:var(--text-muted);">{{ companies|length }} companies</span>
-      <a href="{{ url_for('admin.add_company') }}" class="btn btn-primary btn-sm" style="font-size:13px;">+ Add Company</a>
+    <div class="adm-toolbar--left">
+      <span class="adm-info-label">{{ companies|length }} companies</span>
+      <a href="{{ url_for('admin.add_company') }}" class="btn btn-primary btn-sm adm-add-btn">+ Add Company</a>
     </div>
-    <div style="overflow-x:auto;">
+    <div class="adm-overflow">
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
-            <th style="width:22%;padding-left:16px;">Company</th>
-            <th style="width:18%;">Domain</th>
-            <th style="width:12%;">Type</th>
-            <th style="width:10%;" class="c">Watchlist</th>
-            <th style="width:12%;" class="c">Breached</th>
-            <th style="width:12%;">Created</th>
-            <th style="width:80px;" class="c"></th>
+            <th class="adm-col-num">#</th>
+            <th class="adm-col-first cm-col-name">Company</th>
+            <th class="cm-col-domain">Domain</th>
+            <th class="cm-col-type">Type</th>
+            <th class="cm-col-watch c">Watchlist</th>
+            <th class="cm-col-breach c">Breached</th>
+            <th class="cm-col-created">Created</th>
+            <th class="cm-col-actions c"></th>
           </tr>
         </thead>
         <tbody>
           {% if companies %}
           {% for company in companies %}
           <tr>
-            <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;font-weight:500;">{{ company.name }}</td>
+            <td class="adm-col-num m">{{ loop.index }}</td>
+            <td class="adm-col-first adm-cell-bold">{{ company.name }}</td>
             <td><span class="av-domain">{{ company.domain }}</span></td>
             <td><span class="av-tag {% if company.company_type == 'bank' %}av-tag-blue{% elif company.company_type == 'operator' %}av-tag-teal{% elif company.company_type == 'government' %}av-tag-orange{% endif %}">{{ company.company_type }}</span></td>
             <td class="c m">{{ company.watchlist_entries|length }}</td>
@@ -35,8 +38,8 @@
             </td>
             <td class="m">{{ company.created_at.strftime('%Y-%m-%d') if company.created_at else '-' }}</td>
             <td class="c">
-              <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" class="av-action-link" title="Edit"><i class="fa-regular fa-pen-to-square" style="font-size:13px;"></i></a>
-              <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" class="av-action-link" title="View breaches"><i class="fa-regular fa-eye" style="font-size:13px;"></i></a>
+              <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" class="av-action-link" title="Edit"><i class="fa-regular fa-pen-to-square adm-edit-icon"></i></a>
+              <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" class="av-action-link" title="View breaches"><i class="fa-regular fa-eye adm-edit-icon"></i></a>
             </td>
           </tr>
           {% endfor %}

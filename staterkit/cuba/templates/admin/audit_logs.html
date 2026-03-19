@@ -1,44 +1,47 @@
 {% extends "base.html" %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/admin.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
   <div class="card">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border-light);">
-      <form method="GET" style="margin:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <select name="action_type" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none;">
+    <div class="adm-filter-bar">
+      <form method="GET" class="adm-filter-form">
+        <select name="action_type" class="adm-filter-select">
           <option value="">All actions</option>
           {% for a in action_types %}<option value="{{ a }}" {% if request.args.get('action_type') == a %}selected{% endif %}>{{ a }}</option>{% endfor %}
         </select>
-        <select name="resource_type" style="font-size:13px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none;">
+        <select name="resource_type" class="adm-filter-select">
           <option value="">All resources</option>
           {% for r in resource_types %}<option value="{{ r }}" {% if request.args.get('resource_type') == r %}selected{% endif %}>{{ r }}</option>{% endfor %}
         </select>
-        <button type="submit" style="font-size:13px;font-weight:500;color:var(--primary);background:none;border:none;cursor:pointer;">Filter</button>
+        <button type="submit" class="adm-filter-btn">Filter</button>
         {% if request.args.get('action_type') or request.args.get('resource_type') %}
-        <a href="{{ url_for('admin.audit_logs') }}" style="font-size:13px;color:var(--text-muted);text-decoration:none;">Clear</a>
+        <a href="{{ url_for('admin.audit_logs') }}" class="adm-filter-clear">Clear</a>
         {% endif %}
       </form>
     </div>
-    <div style="overflow-x:auto;">
+    <div class="adm-overflow">
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
-            <th style="width:14%;padding-left:16px;">Action</th>
-            <th style="width:12%;">Resource</th>
-            <th style="width:30%;">Description</th>
-            <th style="width:14%;">User</th>
-            <th style="width:10%;" class="c">Status</th>
-            <th style="width:14%;" class="r">Date</th>
+            <th class="adm-col-num">#</th>
+            <th class="adm-col-first al-col-action">Action</th>
+            <th class="al-col-resource">Resource</th>
+            <th class="al-col-desc">Description</th>
+            <th class="al-col-user">User</th>
+            <th class="al-col-status c">Status</th>
+            <th class="al-col-date r">Date</th>
           </tr>
         </thead>
         <tbody>
           {% if audit_logs %}
           {% for log in audit_logs %}
           <tr>
-            <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;"><span class="av-tag av-tag-indigo">{{ log.action_type }}</span></td>
+            <td class="adm-col-num m">{{ loop.index }}</td>
+            <td class="adm-col-first"><span class="av-tag av-tag-indigo">{{ log.action_type }}</span></td>
             <td class="m">{{ log.resource_type }}</td>
-            <td style="max-width:300px;">{{ log.description }}</td>
+            <td class="adm-desc-cell">{{ log.description }}</td>
             <td class="m">{{ log.user.username if log.user else '—' }}</td>
             <td class="c">{% if log.status == 'success' %}<span class="av-tag av-tag-success">OK</span>{% else %}<span class="av-tag av-tag-danger">{{ log.status }}</span>{% endif %}</td>
             <td class="m r">{{ log.created_at.strftime('%b %d %H:%M') if log.created_at else '-' }}</td>

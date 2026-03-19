@@ -1,79 +1,48 @@
 {% extends "base.html" %}
 {% block css %}
-<style>
-  .reports-tabs { display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px; }
-  .reports-tab { padding:10px 20px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;background:none;border-top:none;border-left:none;border-right:none; }
-  .reports-tab:hover { color:var(--text); }
-  .reports-tab.active { color:var(--primary);border-bottom-color:var(--primary); }
-  .reports-panel { display:none; }
-  .reports-panel.active { display:block; }
-  .rp-card { background:var(--bg-white);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;transition:all 0.15s; }
-  .rp-card:hover { border-color:var(--primary);box-shadow:0 2px 8px rgba(0,0,0,0.04); }
-  .rp-info { flex:1;min-width:0; }
-  .rp-name { font-size:14px;font-weight:600; }
-  .rp-meta { font-size:12px;color:var(--text-secondary);margin-top:2px;display:flex;gap:8px;align-items:center; }
-  .rp-actions { display:flex;gap:6px;flex-shrink:0; }
-  .rp-toggle { width:40px;height:22px;border-radius:11px;border:none;cursor:pointer;position:relative;transition:background 0.2s; }
-  .rp-toggle.on { background:var(--primary); }
-  .rp-toggle.off { background:var(--border); }
-  .rp-toggle::after { content:'';position:absolute;top:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2); }
-  .rp-toggle.on::after { left:20px; }
-  .rp-toggle.off::after { left:2px; }
-  .rp-empty { text-align:center;padding:40px;color:var(--text-muted);font-size:14px; }
-  .rp-form { background:var(--bg);border-radius:10px;padding:20px;margin-bottom:20px; }
-  .rp-form-title { font-size:14px;font-weight:600;margin-bottom:14px; }
-  .rp-form-row { display:flex;gap:10px;flex-wrap:wrap;align-items:end; }
-  .rp-form-field { display:flex;flex-direction:column;gap:4px; }
-  .rp-form-field label { font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.04em; }
-  .rp-form-field input, .rp-form-field select { font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none; }
-  .rp-form-field input:focus, .rp-form-field select:focus { border-color:var(--primary); }
-  .history-status { font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px; }
-  .history-completed { background:#ecfdf5;color:#059669; }
-  .history-failed { background:#fef2f2;color:#dc2626; }
-  .history-pending { background:#fffbeb;color:#92400e; }
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/reports.css') }}">
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid p-0">
   <!-- Header -->
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <div class="rpt-header">
     <div>
-      <h1 style="font-size:22px;font-weight:700;margin:0;">Reports Hub</h1>
-      <p style="font-size:13px;color:var(--text-secondary);margin:4px 0 0;">Manage scheduled reports, alert rules, and download history</p>
+      <h1>Reports Hub</h1>
+      <p>Manage scheduled reports, alert rules, and download history</p>
     </div>
   </div>
 
   <!-- Stats cards -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
-    <div style="background:linear-gradient(135deg,#1a56db,#4f46e5);border-radius:16px;padding:22px 24px;position:relative;overflow:hidden;color:#fff;">
-      <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.12);"></div>
-      <div style="position:absolute;bottom:-25px;right:30px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
-      <div style="position:absolute;top:30px;right:60px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>
-      <div style="position:relative;z-index:1;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;">Schedules</div>
-        <div style="font-size:36px;font-weight:800;margin:8px 0 4px;letter-spacing:-0.03em;">{{ schedules|selectattr('is_active')|list|length }}</div>
-        <div style="font-size:12px;opacity:0.7;">of {{ schedules|length }} total active</div>
+  <div class="rpt-stats-grid">
+    <div class="rpt-stat-card rpt-stat-card--schedules">
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--lg"></div>
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--md"></div>
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--sm"></div>
+      <div class="rpt-stat-card__body">
+        <div class="rpt-stat-card__label">Schedules</div>
+        <div class="rpt-stat-card__value">{{ schedules|selectattr('is_active')|list|length }}</div>
+        <div class="rpt-stat-card__sub">of {{ schedules|length }} total active</div>
       </div>
     </div>
-    <div style="background:linear-gradient(135deg,#dc2626,#e11d48);border-radius:16px;padding:22px 24px;position:relative;overflow:hidden;color:#fff;">
-      <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.12);"></div>
-      <div style="position:absolute;bottom:-25px;right:30px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
-      <div style="position:absolute;top:30px;right:60px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>
-      <div style="position:relative;z-index:1;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;">Alerts</div>
-        <div style="font-size:36px;font-weight:800;margin:8px 0 4px;letter-spacing:-0.03em;">{{ alerts|selectattr('is_active')|list|length }}</div>
-        <div style="font-size:12px;opacity:0.7;">of {{ alerts|length }} monitoring</div>
+    <div class="rpt-stat-card rpt-stat-card--alerts">
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--lg"></div>
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--md"></div>
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--sm"></div>
+      <div class="rpt-stat-card__body">
+        <div class="rpt-stat-card__label">Alerts</div>
+        <div class="rpt-stat-card__value">{{ alerts|selectattr('is_active')|list|length }}</div>
+        <div class="rpt-stat-card__sub">of {{ alerts|length }} monitoring</div>
       </div>
     </div>
-    <div style="background:linear-gradient(135deg,#059669,#0891b2);border-radius:16px;padding:22px 24px;position:relative;overflow:hidden;color:#fff;">
-      <div style="position:absolute;top:-20px;right:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.12);"></div>
-      <div style="position:absolute;bottom:-25px;right:30px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.08);"></div>
-      <div style="position:absolute;top:30px;right:60px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,0.06);"></div>
-      <div style="position:relative;z-index:1;">
-        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;">Reports</div>
-        <div style="font-size:36px;font-weight:800;margin:8px 0 4px;letter-spacing:-0.03em;">{{ history|length }}</div>
-        <div style="font-size:12px;opacity:0.7;">generated &amp; downloadable</div>
+    <div class="rpt-stat-card rpt-stat-card--reports">
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--lg"></div>
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--md"></div>
+      <div class="rpt-stat-card__circle rpt-stat-card__circle--sm"></div>
+      <div class="rpt-stat-card__body">
+        <div class="rpt-stat-card__label">Reports</div>
+        <div class="rpt-stat-card__value">{{ history|length }}</div>
+        <div class="rpt-stat-card__sub">generated &amp; downloadable</div>
       </div>
     </div>
   </div>
@@ -92,7 +61,7 @@
       <form method="POST" action="{{ url_for('threat_intel.add_schedule') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="rp-form-row">
-          <div class="rp-form-field" style="flex:1;">
+          <div class="rp-form-field rp-form-field--grow">
             <label>Report Name</label>
             <input type="text" name="name" placeholder="e.g. Weekly Breach Summary" required>
           </div>
@@ -112,15 +81,15 @@
               <option value="xlsx">Excel</option>
             </select>
           </div>
-          <div class="rp-form-field">
+          <div class="rp-form-field rp-form-field--datetime">
             <label>Day/Time</label>
-            <input type="datetime-local" name="cron_hint" style="width:180px;">
+            <input type="datetime-local" name="cron_hint">
           </div>
-          <div class="rp-form-field" style="flex:1;">
+          <div class="rp-form-field rp-form-field--grow">
             <label>Email To (optional)</label>
             <input type="text" name="email_to" placeholder="user@company.com">
           </div>
-          <button type="submit" class="btn btn-primary btn-sm" style="padding:7px 16px;align-self:end;">Create</button>
+          <button type="submit" class="btn btn-primary btn-sm rpt-btn-submit">Create</button>
         </div>
       </form>
     </div>
@@ -131,36 +100,36 @@
     {% set freq_bgs = {'daily':'#fffbeb','weekly':'#eff4ff','monthly':'#ecfdf5'} %}
     {% set fc = freq_colors.get(s.frequency, '#4f46e5') %}
     {% set fb = freq_bgs.get(s.frequency, '#eff4ff') %}
-    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='{{ fc }}';this.style.boxShadow='0 4px 12px {{ fc }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+    <div class="rpt-item-row" onmouseover="this.style.borderColor='{{ fc }}';this.style.boxShadow='0 4px 12px {{ fc }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
       <!-- Frequency icon -->
-      <div style="width:48px;height:48px;border-radius:12px;background:{{ fb }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div class="rpt-item-icon" style="background:{{ fb }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ fc }}" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
       <!-- Info -->
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:14px;font-weight:600;">{{ s.name }}</span>
-          {% if s.is_active %}<span style="font-size:10px;font-weight:700;color:#059669;background:#ecfdf5;padding:2px 6px;border-radius:4px;">ACTIVE</span>{% else %}<span style="font-size:10px;font-weight:700;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;">PAUSED</span>{% endif %}
+      <div class="rpt-item-body">
+        <div class="rpt-item-title">
+          <span class="rpt-item-name">{{ s.name }}</span>
+          {% if s.is_active %}<span class="rpt-item-badge rpt-item-badge--active">ACTIVE</span>{% else %}<span class="rpt-item-badge rpt-item-badge--paused">PAUSED</span>{% endif %}
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-weight:600;color:{{ fc }};">{{ s.frequency|title }}</span>
+        <div class="rpt-item-meta">
+          <span class="rpt-item-meta__freq" style="color:{{ fc }}">{{ s.frequency|title }}</span>
           <span>&middot;</span>
           <span>{{ s.format|upper }}</span>
-          {% if s.email_to %}<span>&middot; → {{ s.email_to }}</span>{% endif %}
+          {% if s.email_to %}<span>&middot; &rarr; {{ s.email_to }}</span>{% endif %}
           {% if s.last_run %}<span>&middot; Last: {{ s.last_run.strftime('%b %d') }}</span>{% endif %}
         </div>
       </div>
       <!-- Actions -->
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <form method="POST" action="{{ url_for('threat_intel.toggle_schedule', sid=s.id) }}" style="display:inline;">
+      <div class="rpt-item-actions">
+        <form method="POST" action="{{ url_for('threat_intel.toggle_schedule', sid=s.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;transition:all 0.15s;{% if s.is_active %}background:var(--bg);border:1px solid var(--border);color:var(--text-secondary);{% else %}background:{{ fc }};border:1px solid {{ fc }};color:#fff;{% endif %}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+          <button type="submit" class="rpt-btn-toggle {% if s.is_active %}rpt-btn-toggle--pause{% else %}rpt-btn-toggle--enable{% endif %}" {% if not s.is_active %}style="background:{{ fc }};border-color:{{ fc }}"{% endif %}>
             {% if s.is_active %}Pause{% else %}Enable{% endif %}
           </button>
         </form>
-        <form method="POST" action="{{ url_for('threat_intel.delete_schedule', sid=s.id) }}" style="display:inline;" data-confirm="Delete this schedule?">
+        <form method="POST" action="{{ url_for('threat_intel.delete_schedule', sid=s.id) }}" data-confirm="Delete this schedule?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" style="padding:7px 10px;font-size:14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">&times;</button>
+          <button type="submit" class="rpt-btn-delete">&times;</button>
         </form>
       </div>
     </div>
@@ -177,7 +146,7 @@
       <form method="POST" action="{{ url_for('threat_intel.add_alert') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="rp-form-row">
-          <div class="rp-form-field" style="flex:1;">
+          <div class="rp-form-field rp-form-field--grow">
             <label>Alert Name</label>
             <input type="text" name="name" placeholder="e.g. New breach for khanbank.com" required>
           </div>
@@ -189,7 +158,7 @@
               <option value="threshold">Threshold (count/day)</option>
             </select>
           </div>
-          <div class="rp-form-field" style="flex:1;">
+          <div class="rp-form-field rp-form-field--grow">
             <label>Value</label>
             <input type="text" name="condition_value" placeholder="e.g. khanbank.com or 100" required>
           </div>
@@ -201,11 +170,11 @@
               <option value="webhook">Webhook</option>
             </select>
           </div>
-          <div class="rp-form-field" style="flex:1;">
+          <div class="rp-form-field rp-form-field--grow">
             <label>Target (optional)</label>
             <input type="text" name="notify_target" placeholder="email or webhook URL">
           </div>
-          <button type="submit" class="btn btn-primary btn-sm" style="padding:7px 16px;align-self:end;">Create</button>
+          <button type="submit" class="btn btn-primary btn-sm rpt-btn-submit">Create</button>
         </div>
       </form>
     </div>
@@ -216,9 +185,9 @@
     {% set cond_bgs = {'domain_match':'#eff4ff','new_breach':'#fef2f2','threshold':'#fffbeb'} %}
     {% set cc = cond_colors.get(a.condition_type, '#4f46e5') %}
     {% set cb = cond_bgs.get(a.condition_type, '#eff4ff') %}
-    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='{{ cc }}';this.style.boxShadow='0 4px 12px {{ cc }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+    <div class="rpt-item-row" onmouseover="this.style.borderColor='{{ cc }}';this.style.boxShadow='0 4px 12px {{ cc }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
       <!-- Condition icon -->
-      <div style="width:48px;height:48px;border-radius:12px;background:{{ cb }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <div class="rpt-item-icon" style="background:{{ cb }}">
         {% if a.condition_type == 'domain_match' %}
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ cc }}" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
         {% elif a.condition_type == 'new_breach' %}
@@ -230,15 +199,15 @@
         {% endif %}
       </div>
       <!-- Info -->
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:14px;font-weight:600;">{{ a.name }}</span>
-          {% if a.is_active %}<span style="font-size:10px;font-weight:700;color:#dc2626;background:#fef2f2;padding:2px 6px;border-radius:4px;">ACTIVE</span>{% else %}<span style="font-size:10px;font-weight:700;color:var(--text-muted);background:var(--bg);padding:2px 6px;border-radius:4px;">PAUSED</span>{% endif %}
+      <div class="rpt-item-body">
+        <div class="rpt-item-title">
+          <span class="rpt-item-name">{{ a.name }}</span>
+          {% if a.is_active %}<span class="rpt-item-badge rpt-item-badge--alert">ACTIVE</span>{% else %}<span class="rpt-item-badge rpt-item-badge--paused">PAUSED</span>{% endif %}
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-weight:600;color:{{ cc }};">{{ a.condition_type|replace('_',' ')|title }}</span>
+        <div class="rpt-item-meta">
+          <span class="rpt-item-meta__freq" style="color:{{ cc }}">{{ a.condition_type|replace('_',' ')|title }}</span>
           <span>&middot;</span>
-          <span style="font-weight:500;color:var(--text);">{{ a.condition_value }}</span>
+          <span class="rpt-item-meta__val">{{ a.condition_value }}</span>
           <span>&middot;</span>
           <span>via {{ a.notify_method }}</span>
           {% if a.trigger_count > 0 %}<span>&middot; Fired {{ a.trigger_count }}x</span>{% endif %}
@@ -246,16 +215,16 @@
         </div>
       </div>
       <!-- Actions -->
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <form method="POST" action="{{ url_for('threat_intel.toggle_alert', aid=a.id) }}" style="display:inline;">
+      <div class="rpt-item-actions">
+        <form method="POST" action="{{ url_for('threat_intel.toggle_alert', aid=a.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;transition:all 0.15s;{% if a.is_active %}background:var(--bg);border:1px solid var(--border);color:var(--text-secondary);{% else %}background:{{ cc }};border:1px solid {{ cc }};color:#fff;{% endif %}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+          <button type="submit" class="rpt-btn-toggle {% if a.is_active %}rpt-btn-toggle--pause{% else %}rpt-btn-toggle--enable{% endif %}" {% if not a.is_active %}style="background:{{ cc }};border-color:{{ cc }}"{% endif %}>
             {% if a.is_active %}Pause{% else %}Enable{% endif %}
           </button>
         </form>
-        <form method="POST" action="{{ url_for('threat_intel.delete_alert', aid=a.id) }}" style="display:inline;" data-confirm="Delete this alert rule?">
+        <form method="POST" action="{{ url_for('threat_intel.delete_alert', aid=a.id) }}" data-confirm="Delete this alert rule?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button type="submit" style="padding:7px 10px;font-size:14px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='#dc2626';this.style.color='#dc2626'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">&times;</button>
+          <button type="submit" class="rpt-btn-delete">&times;</button>
         </form>
       </div>
     </div>
@@ -273,42 +242,42 @@
     {% set fmt_bgs = {'csv':'#ecfdf5','xlsx':'#eff4ff','json':'#fffbeb','pdf':'#fef2f2'} %}
     {% set fmt_color = fmt_colors.get(h.format, '#4f46e5') %}
     {% set fmt_bg = fmt_bgs.get(h.format, '#eff4ff') %}
-    <div style="background:var(--bg-white);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:10px;display:flex;align-items:center;gap:16px;transition:all 0.2s;" onmouseover="this.style.borderColor='{{ fmt_color }}';this.style.boxShadow='0 4px 12px {{ fmt_color }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+    <div class="rpt-item-row" onmouseover="this.style.borderColor='{{ fmt_color }}';this.style.boxShadow='0 4px 12px {{ fmt_color }}10'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
       <!-- Format badge -->
-      <div style="width:48px;height:48px;border-radius:12px;background:{{ fmt_bg }};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <span style="font-size:13px;font-weight:800;color:{{ fmt_color }};text-transform:uppercase;">{{ h.format }}</span>
+      <div class="rpt-item-icon" style="background:{{ fmt_bg }}">
+        <span class="rpt-fmt-badge" style="color:{{ fmt_color }}">{{ h.format }}</span>
       </div>
       <!-- Info -->
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:600;">{{ h.name }}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <div class="rpt-item-body">
+        <div class="rpt-item-name">{{ h.name }}</div>
+        <div class="rpt-item-meta">
           <span>{{ h.record_count|format_number }} records</span>
           {% if h.file_size %}<span>&middot; {{ (h.file_size / 1024)|round(1) }}KB</span>{% endif %}
           <span>&middot; {{ h.created_at.strftime('%b %d, %H:%M') if h.created_at else '' }}</span>
-          {% if h.source == 'scheduled' %}<span class="av-tag av-tag-purple" style="font-size:10px;">AUTO</span>{% endif %}
+          {% if h.source == 'scheduled' %}<span class="av-tag av-tag-purple rpt-auto-tag">AUTO</span>{% endif %}
         </div>
       </div>
       <!-- Status -->
-      <div style="flex-shrink:0;">
+      <div class="rpt-status">
         {% if h.status == 'completed' %}
-        <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#059669;">
+        <span class="rpt-status--ready">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
           Ready
         </span>
         {% elif h.status == 'failed' %}
-        <span style="font-size:12px;font-weight:600;color:#dc2626;">Failed</span>
+        <span class="rpt-status--failed">Failed</span>
         {% else %}
-        <span style="font-size:12px;font-weight:600;color:#d97706;">{{ h.status }}</span>
+        <span class="rpt-status--other">{{ h.status }}</span>
         {% endif %}
       </div>
       <!-- Buttons -->
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button onclick="previewReport()" style="padding:8px 14px;font-size:12px;font-weight:600;color:var(--text-secondary);background:var(--bg);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      <div class="rpt-item-actions">
+        <button onclick="previewReport()" class="rpt-btn-preview">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="rpt-icon-inline"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           Preview
         </button>
-        <a href="{{ url_for('threat_intel.breached_creds_export', format=h.format) }}" style="display:inline-flex;align-items:center;gap:4px;padding:8px 14px;font-size:12px;font-weight:600;color:#fff;background:{{ fmt_color }};border-radius:8px;text-decoration:none;transition:all 0.15s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <a href="{{ url_for('threat_intel.breached_creds_export', format=h.format) }}" class="rpt-btn-download" style="background:{{ fmt_color }}">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="rpt-icon-inline-sm"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download
         </a>
       </div>
@@ -321,14 +290,14 @@
 </div>
 
   <!-- Preview Modal -->
-  <div id="preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;" onclick="if(event.target===this)this.style.display='none'">
-    <div style="background:var(--bg-white);border-radius:12px;width:90%;max-width:800px;max-height:80vh;overflow:auto;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);">
-        <span style="font-size:15px;font-weight:600;">Report Preview</span>
-        <button onclick="document.getElementById('preview-modal').style.display='none'" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--text-muted);">&times;</button>
+  <div id="preview-modal" class="rpt-modal-overlay" onclick="if(event.target===this)this.style.display='none'">
+    <div class="rpt-modal">
+      <div class="rpt-modal__header">
+        <span class="rpt-modal__title">Report Preview</span>
+        <button onclick="document.getElementById('preview-modal').style.display='none'" class="rpt-modal__close">&times;</button>
       </div>
-      <div id="preview-content" style="padding:20px;">
-        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading preview...</div>
+      <div id="preview-content" class="rpt-modal__body">
+        <div class="rpt-modal__loading">Loading preview...</div>
       </div>
     </div>
   </div>
@@ -358,7 +327,7 @@ function previewReport() {
   modal.style.display = 'flex';
   content.textContent = '';
   var loading = document.createElement('div');
-  loading.style.cssText = 'text-align:center;padding:20px;color:var(--text-muted);';
+  loading.className = 'rpt-modal__loading';
   loading.textContent = 'Loading preview...';
   content.appendChild(loading);
 
@@ -376,13 +345,12 @@ function previewReport() {
       return;
     }
     var info = document.createElement('div');
-    info.style.cssText = 'font-size:12px;color:var(--text-secondary);margin-bottom:12px;';
+    info.className = 'rpt-item-meta';
     info.textContent = 'Showing first 5 of ' + data.total.toLocaleString() + ' records';
     content.appendChild(info);
 
     var tbl = document.createElement('table');
     tbl.className = 'av-table';
-    tbl.style.tableLayout = 'auto';
     var thead = document.createElement('thead');
     var tr0 = document.createElement('tr');
     ['Username','Domain','Source','Type','Date'].forEach(function(h){

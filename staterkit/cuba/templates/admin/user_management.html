@@ -1,41 +1,44 @@
 {% extends "base.html" %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/admin.css') }}">
+{% endblock %}
 {% block content %}
 <div class="container-fluid p-0">
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border-light);flex-wrap:wrap;gap:8px;">
-      <form method="GET" style="margin:0;display:flex;align-items:center;gap:6px;">
-        <input type="text" name="search" placeholder="Search users..." value="{{ search or '' }}" style="font-size:13px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-white);color:var(--text);outline:none;width:200px;">
-        <button type="submit" style="font-size:13px;font-weight:500;color:var(--primary);background:none;border:none;cursor:pointer;">Search</button>
+    <div class="adm-toolbar">
+      <form method="GET" class="adm-filter-form">
+        <input type="text" name="search" placeholder="Search users..." value="{{ search or '' }}" class="adm-filter-input">
+        <button type="submit" class="adm-filter-btn">Search</button>
       </form>
-      <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary btn-sm" style="font-size:13px;">+ Add User</a>
+      <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary btn-sm adm-add-btn">+ Add User</a>
     </div>
-    <div style="overflow-x:auto;">
+    <div class="adm-overflow">
       <table class="av-table">
         <thead>
           <tr>
-            <th style="width:20px;padding-left:10px;padding-right:0;font-size:11px;">#</th>
-            <th style="width:20%;padding-left:16px;">Username</th>
-            <th style="width:25%;">Email</th>
-            <th style="width:12%;">Role</th>
-            <th style="width:18%;">Company</th>
-            <th style="width:10%;" class="c">Status</th>
-            <th style="width:12%;">Last Login</th>
-            <th style="width:60px;" class="c"></th>
+            <th class="adm-col-num">#</th>
+            <th class="adm-col-first um-col-username">Username</th>
+            <th class="um-col-email">Email</th>
+            <th class="um-col-role">Role</th>
+            <th class="um-col-company">Company</th>
+            <th class="um-col-status c">Status</th>
+            <th class="um-col-login">Last Login</th>
+            <th class="um-col-actions c"></th>
           </tr>
         </thead>
         <tbody>
           {% if users %}
           {% for user in users %}
           <tr>
-            <td style="padding-left:10px;padding-right:0;font-size:11px;" class="m">{{ loop.index }}</td>
-            <td style="padding-left:16px;font-weight:500;">{{ user.username }}</td>
+            <td class="adm-col-num m">{{ loop.index }}</td>
+            <td class="adm-col-first adm-cell-bold">{{ user.username }}</td>
             <td class="m">{{ user.email }}</td>
             <td><span class="av-tag{% if user.role == 'admin' %} av-tag-warning{% endif %}">{{ user.role }}</span></td>
             <td class="m">{{ user.company.name if user.company else '—' }}</td>
             <td class="c">{% if user.is_active %}<span class="av-tag av-tag-success">Active</span>{% else %}<span class="av-tag av-tag-danger">Inactive</span>{% endif %}</td>
             <td class="m">{{ user.last_login.strftime('%b %d') if user.last_login else '—' }}</td>
             <td class="c">
-              <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="av-action-link" title="Edit"><i class="fa-regular fa-pen-to-square" style="font-size:13px;"></i></a>
+              <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" class="av-action-link" title="Edit"><i class="fa-regular fa-pen-to-square adm-edit-icon"></i></a>
             </td>
           </tr>
           {% endfor %}

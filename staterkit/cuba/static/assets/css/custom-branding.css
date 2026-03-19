@@ -178,9 +178,16 @@ body {
 }
 
 .dsec-sidebar-logo img {
-  height: 28px;
+  height: 34px;
   width: auto;
 }
+
+/* Logo dark/light mode switching */
+.dsec-logo-dark { display: none !important; }
+.dsec-logo-light { display: inline !important; }
+[data-theme="dark"] .dsec-logo-dark { display: inline !important; }
+[data-theme="dark"] .dsec-logo-light { display: none !important; }
+
 
 .dsec-sidebar-logo span {
   font-weight: 700;
@@ -1260,4 +1267,103 @@ body {
   border-color: var(--primary);
   color: var(--primary);
   background: var(--primary-50);
+}
+
+/* ============================================
+   Layout: Header
+   ============================================ */
+
+.header-search-form {
+  margin: 0;
+}
+
+.header-dropdown-wrapper {
+  position: relative;
+}
+
+.header-notif-panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-notif-panel-title {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.header-mark-all-btn {
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.header-notif-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.header-notif-empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.header-chevron-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+
+.header-dropdown-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================
+   Layout: Sidebar
+   ============================================ */
+
+.sidebar-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.sidebar-bottom-section {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================
+   Layout: Breadcrumb (inline)
+   ============================================ */
+
+.breadcrumb-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.breadcrumb-inline-link {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.breadcrumb-inline-sep {
+  opacity: 0.4;
+}
+
+.breadcrumb-inline-current {
+  color: var(--text);
+  font-weight: 500;
 }

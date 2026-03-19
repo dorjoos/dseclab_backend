@@ -1,38 +1,43 @@
 {% extends "base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/breached-creds.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid p-0" style="max-width:640px;">
-  <div class="card" style="padding:28px;">
-    <h5 style="font-size:18px;font-weight:700;margin-bottom:20px;">
+<div class="container-fluid p-0 av-form-container">
+  <div class="card av-form-card">
+    <h5 class="av-form-title">
       {% if breached_cred %}Edit Credential{% else %}Add Credential{% endif %}
     </h5>
 
     <form method="POST" action="{% if breached_cred %}{{ url_for('threat_intel.breached_creds_edit', doc_id=breached_cred.es_id) }}{% else %}{{ url_for('threat_intel.breached_creds_add') }}{% endif %}">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="av-form-grid-2">
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Username</label>
-          <input type="text" name="username" value="{{ breached_cred.username if breached_cred else '' }}" class="form-control" style="font-size:14px;" placeholder="user@example.com">
+          <label class="av-form-label">Username</label>
+          <input type="text" name="username" value="{{ breached_cred.username if breached_cred else '' }}" class="form-control av-form-input" placeholder="user@example.com">
         </div>
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Domain</label>
-          <input type="text" name="domain" value="{{ breached_cred.domain if breached_cred else '' }}" class="form-control" style="font-size:14px;" placeholder="example.com">
+          <label class="av-form-label">Domain</label>
+          <input type="text" name="domain" value="{{ breached_cred.domain if breached_cred else '' }}" class="form-control av-form-input" placeholder="example.com">
         </div>
       </div>
 
-      <div style="margin-bottom:14px;">
-        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Password</label>
-        <input type="text" name="password" value="{{ breached_cred.password if breached_cred else '' }}" class="form-control" style="font-size:14px;font-family:'SF Mono',monospace;" placeholder="Breached password">
+      <div class="av-form-group">
+        <label class="av-form-label">Password</label>
+        <input type="text" name="password" value="{{ breached_cred.password if breached_cred else '' }}" class="form-control av-form-input av-form-input--mono" placeholder="Breached password">
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="av-form-grid-2">
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Source</label>
-          <input type="text" name="source" value="{{ breached_cred.source if breached_cred else '' }}" class="form-control" style="font-size:14px;" placeholder="e.g. Telegram">
+          <label class="av-form-label">Source</label>
+          <input type="text" name="source" value="{{ breached_cred.source if breached_cred else '' }}" class="form-control av-form-input" placeholder="e.g. Telegram">
         </div>
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Type</label>
-          <select name="type" class="form-select" style="font-size:14px;">
+          <label class="av-form-label">Type</label>
+          <select name="type" class="form-select av-form-input">
             <option value="">Select Type</option>
             {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb'] %}
             <option value="{{ t }}" {% if breached_cred and breached_cred.type == t %}selected{% endif %}>{{ t|title }}</option>
@@ -41,35 +46,35 @@
         </div>
       </div>
 
-      <div style="margin-bottom:14px;">
-        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">URL</label>
-        <input type="text" name="url" value="{{ breached_cred.url if breached_cred else '' }}" class="form-control" style="font-size:14px;" placeholder="https://...">
+      <div class="av-form-group">
+        <label class="av-form-label">URL</label>
+        <input type="text" name="url" value="{{ breached_cred.url if breached_cred else '' }}" class="form-control av-form-input" placeholder="https://...">
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px;">
+      <div class="av-form-grid-3">
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">ID</label>
-          <input type="text" name="_id" value="{{ breached_cred._id if breached_cred else '' }}" class="form-control" style="font-size:14px;" placeholder="Enter ID">
+          <label class="av-form-label">ID</label>
+          <input type="text" name="_id" value="{{ breached_cred._id if breached_cred else '' }}" class="form-control av-form-input" placeholder="Enter ID">
         </div>
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Index</label>
-          <input type="text" name="_index" value="{{ breached_cred._index if breached_cred else '' }}" class="form-control" style="font-size:14px;" placeholder="Enter index">
+          <label class="av-form-label">Index</label>
+          <input type="text" name="_index" value="{{ breached_cred._index if breached_cred else '' }}" class="form-control av-form-input" placeholder="Enter index">
         </div>
         <div>
-          <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Score</label>
-          <input type="number" name="_score" step="0.01" value="{{ breached_cred._score if breached_cred and breached_cred._score is not none else '' }}" class="form-control" style="font-size:14px;" placeholder="Score">
+          <label class="av-form-label">Score</label>
+          <input type="number" name="_score" step="0.01" value="{{ breached_cred._score if breached_cred and breached_cred._score is not none else '' }}" class="form-control av-form-input" placeholder="Score">
         </div>
       </div>
 
-      <div style="margin-bottom:20px;">
-        <label style="font-size:12px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:4px;">Ignored</label>
-        <select name="_ignored" class="form-select" style="font-size:14px;width:140px;">
+      <div class="av-form-group--lg">
+        <label class="av-form-label">Ignored</label>
+        <select name="_ignored" class="form-select av-form-input av-form-select--sm">
           <option value="0" {% if not breached_cred or not breached_cred._ignored %}selected{% endif %}>No</option>
           <option value="1" {% if breached_cred and breached_cred._ignored %}selected{% endif %}>Yes</option>
         </select>
       </div>
 
-      <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <div class="av-form-actions">
         <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="btn btn-outline-primary btn-sm">Cancel</a>
         <button type="submit" class="btn btn-primary btn-sm">{% if breached_cred %}Update{% else %}Add{% endif %}</button>
       </div>
