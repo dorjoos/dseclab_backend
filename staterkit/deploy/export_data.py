@@ -85,11 +85,6 @@ def export():
             lines.append(f'INSERT INTO "{table}" ({col_names}) VALUES ({vals}) ON CONFLICT DO NOTHING;')
         lines.append('')
 
-        # Reset sequence
-        if 'id' in cols:
-            lines.append(f"SELECT setval(pg_get_serial_sequence('\"{table}\"', 'id'), COALESCE(MAX(id), 1)) FROM \"{table}\";")
-            lines.append('')
-
         print(f'  {table}: {len(rows)} rows ({len(cols)} cols)')
 
     lines.append('')

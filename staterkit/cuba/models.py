@@ -1,3 +1,5 @@
+import uuid
+
 from . import db
 from datetime import datetime, timezone
 from flask_login import UserMixin
@@ -9,7 +11,7 @@ def utcnow():
 
 
 class Company(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(200), nullable=False, unique=True)
     domain = db.Column(db.String(200), nullable=False, unique=True, index=True)
     company_type = db.Column(db.String(50), nullable=False)
@@ -53,13 +55,13 @@ class Company(db.Model):
 
 
 class User(db.Model, UserMixin):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(255), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), default='member', nullable=False)
     isAdmin = db.Column(db.Boolean, default=False)
-    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     last_login = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=utcnow)
@@ -111,10 +113,10 @@ class User(db.Model, UserMixin):
 
 class BreachedCredMeta(db.Model):
     """Local metadata for ES breached credentials (marks, reviews)."""
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     es_id = db.Column(db.String(200), unique=True, nullable=False, index=True)
     is_marked = db.Column(db.Boolean, default=False)
-    marked_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    marked_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)
     marked_at = db.Column(db.DateTime, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=utcnow)
@@ -126,8 +128,8 @@ class BreachedCredMeta(db.Model):
 
 
 class WatchlistEntry(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
     entry_type = db.Column(db.String(20), nullable=False)
     entry_value = db.Column(db.String(500), nullable=False)
     description = db.Column(db.Text, nullable=True)
@@ -139,8 +141,8 @@ class WatchlistEntry(db.Model):
 
 
 class Notification(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     notification_type = db.Column(db.String(50), default='info')
     title = db.Column(db.String(200), nullable=False)
     message = db.Column(db.Text)
@@ -156,11 +158,11 @@ class Notification(db.Model):
 
 
 class AuditLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)
     action_type = db.Column(db.String(50), nullable=False, index=True)
     resource_type = db.Column(db.String(50), nullable=False, index=True)
-    resource_id = db.Column(db.Integer, nullable=True)
+    resource_id = db.Column(db.String(36), nullable=True)
     description = db.Column(db.Text, nullable=False)
     ip_address = db.Column(db.String(45), nullable=True)
     user_agent = db.Column(db.String(500), nullable=True)
@@ -177,8 +179,8 @@ class AuditLog(db.Model):
 
 
 class UserActivity(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)
     activity_type = db.Column(db.String(50), nullable=False, index=True)
     ip_address = db.Column(db.String(45), nullable=True, index=True)
     user_agent = db.Column(db.String(500), nullable=True)
@@ -195,7 +197,7 @@ class UserActivity(db.Model):
 
 class ScheduledReport(db.Model):
     """Scheduled automatic report generation."""
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(200), nullable=False)
     frequency = db.Column(db.String(20), nullable=False)  # daily, weekly, monthly
     format = db.Column(db.String(10), default='pdf')  # csv, xlsx, pdf, json
@@ -204,7 +206,7 @@ class ScheduledReport(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_run = db.Column(db.DateTime, nullable=True)
     next_run = db.Column(db.DateTime, nullable=True)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
     creator = db.relationship('User', foreign_keys=[created_by])
@@ -215,7 +217,7 @@ class ScheduledReport(db.Model):
 
 class AlertRule(db.Model):
     """Alert rules for breach monitoring."""
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(200), nullable=False)
     condition_type = db.Column(db.String(50), nullable=False)  # new_breach, threshold, domain_match
     condition_value = db.Column(db.String(500), nullable=False)  # domain pattern, threshold number, etc.
@@ -224,7 +226,7 @@ class AlertRule(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     trigger_count = db.Column(db.Integer, default=0)
     last_triggered = db.Column(db.DateTime, nullable=True)
-    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
     creator = db.relationship('User', foreign_keys=[created_by])
@@ -235,15 +237,15 @@ class AlertRule(db.Model):
 
 class ReportHistory(db.Model):
     """Generated report history for download."""
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(200), nullable=False)
     format = db.Column(db.String(10), nullable=False)
     file_size = db.Column(db.Integer, default=0)  # bytes
     record_count = db.Column(db.Integer, default=0)
     status = db.Column(db.String(20), default='completed')  # pending, generating, completed, failed
     source = db.Column(db.String(50), default='manual')  # manual, scheduled
-    schedule_id = db.Column(db.Integer, db.ForeignKey('scheduled_report.id'), nullable=True)
-    generated_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    schedule_id = db.Column(db.String(36), db.ForeignKey('scheduled_report.id'), nullable=True)
+    generated_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
     generator = db.relationship('User', foreign_keys=[generated_by])

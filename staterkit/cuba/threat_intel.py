@@ -734,7 +734,7 @@ def add_schedule():
     return redirect(url_for('threat_intel.reports'))
 
 
-@threat_intel.route('/threat-intelligence/reports/schedule/<int:sid>/toggle', methods=['POST'])
+@threat_intel.route('/threat-intelligence/reports/schedule/<sid>/toggle', methods=['POST'])
 @login_required
 def toggle_schedule(sid):
     from .models import ScheduledReport
@@ -748,7 +748,7 @@ def toggle_schedule(sid):
     return redirect(url_for('threat_intel.reports'))
 
 
-@threat_intel.route('/threat-intelligence/reports/schedule/<int:sid>/delete', methods=['POST'])
+@threat_intel.route('/threat-intelligence/reports/schedule/<sid>/delete', methods=['POST'])
 @login_required
 def delete_schedule(sid):
     from .models import ScheduledReport
@@ -801,7 +801,7 @@ def add_alert():
     return redirect(url_for('threat_intel.reports') + '#alerts')
 
 
-@threat_intel.route('/threat-intelligence/reports/alert/<int:aid>/toggle', methods=['POST'])
+@threat_intel.route('/threat-intelligence/reports/alert/<aid>/toggle', methods=['POST'])
 @login_required
 def toggle_alert(aid):
     from .models import AlertRule
@@ -815,7 +815,7 @@ def toggle_alert(aid):
     return redirect(url_for('threat_intel.reports') + '#alerts')
 
 
-@threat_intel.route('/threat-intelligence/reports/alert/<int:aid>/delete', methods=['POST'])
+@threat_intel.route('/threat-intelligence/reports/alert/<aid>/delete', methods=['POST'])
 @login_required
 def delete_alert(aid):
     from .models import AlertRule

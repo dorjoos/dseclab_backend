@@ -65,7 +65,7 @@ def add_user():
         password = request.form.get('password') or ''
         confirm_password = request.form.get('confirm_password', '')
         role = request.form.get('role', 'member').strip()
-        company_id = request.form.get('company_id', type=int)
+        company_id = request.form.get('company_id', '').strip() or None
         is_active = bool(request.form.get('is_active'))
         
         # Security: Input validation
@@ -149,7 +149,7 @@ def add_user():
     return render_template('admin/user_form.html', companies=companies, breadcrumb=breadcrumb)
 
 
-@admin_bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/admin/users/<user_id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_user(user_id):
@@ -164,7 +164,7 @@ def edit_user(user_id):
         username = (request.form.get('username') or '').strip()
         email = (request.form.get('email') or '').strip().lower()
         role = request.form.get('role', 'member').strip()
-        company_id = request.form.get('company_id', type=int)
+        company_id = request.form.get('company_id', '').strip() or None
         is_active = bool(request.form.get('is_active'))
         new_password = request.form.get('password', '').strip()  # Use 'password' field name
         
@@ -239,7 +239,7 @@ def edit_user(user_id):
     return render_template('admin/user_form.html', user=user, companies=companies, breadcrumb=breadcrumb)
 
 
-@admin_bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@admin_bp.route('/admin/users/<user_id>/delete', methods=['POST'])
 @login_required
 @admin_required
 def delete_user(user_id):
@@ -293,7 +293,7 @@ def company_management():
                          breadcrumb=breadcrumb)
 
 
-@admin_bp.route('/admin/companies/<int:company_id>/breached-creds')
+@admin_bp.route('/admin/companies/<company_id>/breached-creds')
 @login_required
 @admin_required
 def company_breached_creds(company_id):
@@ -389,7 +389,7 @@ def add_company():
     return render_template('admin/company_form.html', breadcrumb=breadcrumb)
 
 
-@admin_bp.route('/admin/companies/<int:company_id>/delete', methods=['POST'])
+@admin_bp.route('/admin/companies/<company_id>/delete', methods=['POST'])
 @login_required
 @admin_required
 def delete_company(company_id):
@@ -416,7 +416,7 @@ def delete_company(company_id):
     return redirect(url_for('admin.company_management'))
 
 
-@admin_bp.route('/admin/companies/<int:company_id>/edit', methods=['GET', 'POST'])
+@admin_bp.route('/admin/companies/<company_id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_company(company_id):
@@ -494,7 +494,7 @@ def edit_company(company_id):
     return render_template('admin/company_form.html', company=company, breadcrumb=breadcrumb)
 
 
-@admin_bp.route('/admin/companies/<int:company_id>/watchlist/add', methods=['POST'])
+@admin_bp.route('/admin/companies/<company_id>/watchlist/add', methods=['POST'])
 @login_required
 @admin_required
 def add_watchlist_entry(company_id):
@@ -547,7 +547,7 @@ def add_watchlist_entry(company_id):
         return jsonify({'success': False, 'error': 'An error occurred. Please try again.'}), 500
 
 
-@admin_bp.route('/admin/companies/<int:company_id>/watchlist/<int:entry_id>/delete', methods=['POST'])
+@admin_bp.route('/admin/companies/<company_id>/watchlist/<entry_id>/delete', methods=['POST'])
 @login_required
 @admin_required
 def delete_watchlist_entry(company_id, entry_id):
@@ -576,11 +576,11 @@ def audit_logs():
     # Filters
     action_filter = request.args.get('action_type', '')
     resource_filter = request.args.get('resource_type', '')
-    user_filter = request.args.get('user_id', type=int)
+    user_filter = request.args.get('user_id', '')
     status_filter = request.args.get('status', '')
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
-    
+
     query = AuditLog.query
     
     # Apply filters
@@ -634,11 +634,11 @@ def user_activities():
     
     # Filters
     activity_filter = request.args.get('activity_type', '')
-    user_filter = request.args.get('user_id', type=int)
+    user_filter = request.args.get('user_id', '')
     status_filter = request.args.get('status', '')
     date_from = request.args.get('date_from', '')
     date_to = request.args.get('date_to', '')
-    
+
     query = UserActivity.query
     
     # Apply filters

@@ -65,7 +65,7 @@ def get_notifications():
         return json_error("An error occurred", status_code=500, notifications=[], unread_count=0)
 
 
-@notification_bp.route('/api/notifications/<int:id>/read', methods=['POST'])
+@notification_bp.route('/api/notifications/<id>/read', methods=['POST'])
 @login_required
 def mark_read(id):
     """Mark notification as read

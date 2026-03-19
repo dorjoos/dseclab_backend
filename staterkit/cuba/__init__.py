@@ -120,7 +120,7 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         from .models import User
-        return db.session.get(User, int(user_id))
+        return db.session.get(User, user_id)
 
     from .routes import main as main_bp
     app.register_blueprint(main_bp)
