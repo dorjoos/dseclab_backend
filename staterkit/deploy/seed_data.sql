@@ -1,14 +1,12 @@
 -- D-SECLAB Data Export from SQLite
--- Generated: 2026-03-19T13:18:22.712303
-
-BEGIN;
+-- Generated: 2026-03-19T13:21:26.029897
 
 -- company (5 rows)
-INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at", "watchlist_domain", "watchlist_url", "watchlist_email", "watchlist_slug") VALUES (1, 'Test bank', 'test.com', 'bank', '<p>test bank of mongolia</p>', '2025-12-12 09:44:10.585249', '2026-03-17 10:07:32.492795', NULL, NULL, NULL, NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at", "watchlist_domain", "watchlist_url", "watchlist_email", "watchlist_slug") VALUES (2, 'TechCorp Bank', 'techcorp.com', 'bank', 'Demo company: TechCorp Bank', '2025-12-13 11:47:03.693942', '2025-12-13 11:47:03.693947', NULL, NULL, NULL, NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at", "watchlist_domain", "watchlist_url", "watchlist_email", "watchlist_slug") VALUES (3, 'Global Telecom', 'globaltel.com', 'operator', 'Demo company: Global Telecom', '2025-12-13 11:47:03.706067', '2025-12-23 16:18:56.044249', NULL, NULL, NULL, NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at", "watchlist_domain", "watchlist_url", "watchlist_email", "watchlist_slug") VALUES (4, 'National Security Agency', 'nsa.gov', 'government', 'Demo company: National Security Agency', '2025-12-13 11:47:03.709919', '2025-12-13 11:47:03.709920', NULL, NULL, NULL, NULL) ON CONFLICT DO NOTHING;
-INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at", "watchlist_domain", "watchlist_url", "watchlist_email", "watchlist_slug") VALUES (5, 'Mega Retail Inc', 'megaretail.com', 'other', 'Demo company: Mega Retail Inc', '2025-12-13 11:47:03.713680', '2025-12-13 11:47:03.713681', NULL, NULL, NULL, NULL) ON CONFLICT DO NOTHING;
+INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at") VALUES (1, 'Test bank', 'test.com', 'bank', '<p>test bank of mongolia</p>', '2025-12-12 09:44:10.585249', '2026-03-17 10:07:32.492795') ON CONFLICT DO NOTHING;
+INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at") VALUES (2, 'TechCorp Bank', 'techcorp.com', 'bank', 'Demo company: TechCorp Bank', '2025-12-13 11:47:03.693942', '2025-12-13 11:47:03.693947') ON CONFLICT DO NOTHING;
+INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at") VALUES (3, 'Global Telecom', 'globaltel.com', 'operator', 'Demo company: Global Telecom', '2025-12-13 11:47:03.706067', '2025-12-23 16:18:56.044249') ON CONFLICT DO NOTHING;
+INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at") VALUES (4, 'National Security Agency', 'nsa.gov', 'government', 'Demo company: National Security Agency', '2025-12-13 11:47:03.709919', '2025-12-13 11:47:03.709920') ON CONFLICT DO NOTHING;
+INSERT INTO "company" ("id", "name", "domain", "company_type", "description", "created_at", "updated_at") VALUES (5, 'Mega Retail Inc', 'megaretail.com', 'other', 'Demo company: Mega Retail Inc', '2025-12-13 11:47:03.713680', '2025-12-13 11:47:03.713681') ON CONFLICT DO NOTHING;
 
 SELECT setval(pg_get_serial_sequence('"company"', 'id'), COALESCE(MAX(id), 1)) FROM "company";
 
@@ -152,4 +150,3 @@ INSERT INTO "breached_cred_meta" ("id", "es_id", "is_marked", "marked_by", "mark
 
 SELECT setval(pg_get_serial_sequence('"breached_cred_meta"', 'id'), COALESCE(MAX(id), 1)) FROM "breached_cred_meta";
 
-COMMIT;
