@@ -30,15 +30,12 @@ sudo -u postgres psql -c "CREATE USER dseclab WITH PASSWORD 'CHANGE_ME_DB_PASSWO
 sudo -u postgres psql -c "CREATE DATABASE dseclab OWNER dseclab;" 2>/dev/null || true
 sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE dseclab TO dseclab;" 2>/dev/null || true
 
-# 4. Clone/pull repo and symlink app dir
+# 4. Set up app directory
 echo "[4/9] Setting up application..."
-if [ -d "$REPO_DIR" ]; then
-    cd "$REPO_DIR"
-    sudo -u "$APP_USER" git pull
-else
+if [ ! -d "$REPO_DIR" ]; then
     git clone "$REPO_URL" "$REPO_DIR"
-    chown -R "$APP_USER":"$APP_USER" "$REPO_DIR"
 fi
+chown -R "$APP_USER":"$APP_USER" "$REPO_DIR"
 
 # Symlink staterkit/ as the app directory
 ln -sfn "$REPO_DIR/staterkit" "$APP_DIR"
