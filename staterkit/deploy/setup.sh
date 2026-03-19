@@ -60,6 +60,9 @@ fi
 # 7. Database migration
 echo "[7/9] Running database migrations..."
 cd "$APP_DIR"
+if [ ! -d "$APP_DIR/migrations" ]; then
+    sudo -u "$APP_USER" bash -c "set -a && source $APP_DIR/.env && set +a && cd $APP_DIR && venv/bin/flask db init && venv/bin/flask db migrate -m 'initial'"
+fi
 sudo -u "$APP_USER" bash -c "set -a && source $APP_DIR/.env && set +a && cd $APP_DIR && venv/bin/flask db upgrade"
 
 # 8. Log directory
