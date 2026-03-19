@@ -305,10 +305,17 @@ def profile():
                 flash("New passwords do not match.", "warning")
                 return redirect(url_for("auth.profile"))
             current_user.set_password(new_password)
+            password_changed = True
             flash("Password updated successfully.", "success")
+        else:
+            password_changed = False
 
         try:
             db.session.commit()
+            # Regenerate session after password change to invalidate old sessions
+            if password_changed:
+                logout_user()
+                login_user(current_user)
             flash("Profile updated successfully.", "success")
         except OperationalError as e:
             # On read-only DB (Vercel), profile updates will fail
@@ -334,7 +341,7 @@ def setup_2fa():
     if request.method == "POST":
         # Verify the TOTP code to confirm setup
         token = request.form.get("token", "").strip()
-        secret = request.form.get("secret", "").strip()
+        secret = session.get("2fa_setup_secret", "")
         if not token or not secret:
             flash("Please enter the verification code.", "warning")
             return redirect(url_for("auth.setup_2fa"))
@@ -344,14 +351,16 @@ def setup_2fa():
             current_user.totp_secret = secret
             current_user.totp_enabled = True
             db.session.commit()
+            session.pop("2fa_setup_secret", None)
             flash("Two-factor authentication enabled successfully.", "success")
             return redirect(url_for("auth.profile"))
         else:
             flash("Invalid verification code. Please try again.", "danger")
             return redirect(url_for("auth.setup_2fa"))
 
-    # Generate new secret
+    # Generate new secret and store in session (not in form)
     secret = pyotp.random_base32()
+    session["2fa_setup_secret"] = secret
     totp = pyotp.TOTP(secret)
     uri = totp.provisioning_uri(name=current_user.email, issuer_name="D-SECLAB")
 
@@ -368,6 +377,10 @@ def setup_2fa():
 @auth.route("/2fa/disable", methods=["POST"])
 @login_required
 def disable_2fa():
+    password = request.form.get("password", "")
+    if not password or not current_user.check_password(password):
+        flash("Current password is required to disable 2FA.", "danger")
+        return redirect(url_for("auth.profile"))
     current_user.totp_secret = None
     current_user.totp_enabled = False
     db.session.commit()
@@ -376,6 +389,7 @@ def disable_2fa():
 
 
 @auth.route("/2fa/verify", methods=["GET", "POST"])
+@limiter.limit("5/minute")
 def verify_2fa():
     import pyotp
 

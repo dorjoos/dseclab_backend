@@ -17,10 +17,12 @@ def handle_disconnect():
 
 
 def broadcast_new_breach(breach_data):
-    """Broadcast a new breach event to all connected clients."""
-    socketio.emit('new_breach', breach_data, namespace='/')
+    """Log new breach event. Broadcast disabled to prevent data leakage across companies."""
+    import logging
+    logging.getLogger(__name__).info("New breach event (broadcast disabled): %s", breach_data.get('es_id', ''))
 
 
 def broadcast_stats_update(stats):
-    """Broadcast updated stats to all connected clients."""
-    socketio.emit('stats_update', stats, namespace='/')
+    """Log stats update. Broadcast disabled to prevent data leakage across companies."""
+    import logging
+    logging.getLogger(__name__).info("Stats update event (broadcast disabled)")

@@ -19,7 +19,6 @@
 
     <form method="POST" class="setup-2fa-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="secret" value="{{ secret }}">
       <div class="setup-2fa-token-group">
         <label class="profile-form-label">Verification Code</label>
         <input type="text" name="token" class="form-control setup-2fa-token-input" placeholder="000000" maxlength="6" autocomplete="off" required autofocus>

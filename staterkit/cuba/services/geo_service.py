@@ -1,4 +1,5 @@
 """IP geolocation service using free ip-api.com."""
+import ipaddress
 import logging
 import requests
 
@@ -7,10 +8,23 @@ logger = logging.getLogger(__name__)
 GEO_API = "http://ip-api.com/json/"
 
 
+def is_safe_ip(ip):
+    """Validate that an IP address is a public/global address (not private/internal)."""
+    try:
+        addr = ipaddress.ip_address(ip)
+        return addr.is_global
+    except ValueError:
+        return False
+
+
 def get_location(ip_address):
     """Get location info for an IP address. Returns dict or None."""
     if not ip_address or ip_address in ('127.0.0.1', '::1', 'localhost'):
         return {'country': 'Local', 'city': 'localhost', 'lat': 0, 'lon': 0}
+
+    if not is_safe_ip(ip_address):
+        logger.warning("Blocked geo lookup for non-global IP: %s", ip_address)
+        return None
 
     try:
         resp = requests.get(

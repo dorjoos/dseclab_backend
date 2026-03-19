@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, abort
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from datetime import datetime, timezone
@@ -30,6 +30,7 @@ from .audit_helpers import log_audit
 from .security import get_user_company_domain, get_user_watchlist_domains
 from .services.elasticsearch_service import es_service
 from .services.breached_creds_service import build_analysis_stats
+from .services.data_masking import mask_value
 
 logger = logging.getLogger(__name__)
 
@@ -314,6 +315,8 @@ def breached_creds_view(doc_id):
         flash('Access denied.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
     _attach_metadata([cred])
+    # Apply data masking to password field based on user role
+    cred.password = mask_value('password', cred.password)
     breadcrumb = {"parent": "Threat Intelligence", "child": "Credential Details"}
     return render_template('threat_intel/breached_creds_view.html',
                           breached_cred=cred, breadcrumb=breadcrumb)
@@ -475,6 +478,8 @@ def breached_creds_export():
       200:
         description: File download
     """
+    if not current_user.has_permission('export'):
+        abort(403)
     export_format = request.args.get('format', 'csv').lower()
     domain_filters = _get_domain_filters()
 

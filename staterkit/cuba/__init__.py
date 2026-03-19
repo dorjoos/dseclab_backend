@@ -37,7 +37,7 @@ def create_app(config_name=None):
     cache.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
-    socketio.init_app(app, cors_allowed_origins="*")
+    socketio.init_app(app, cors_allowed_origins=[])
     Environment(app)
 
     # Init Elasticsearch service
