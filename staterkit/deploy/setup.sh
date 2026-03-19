@@ -7,7 +7,6 @@ REPO_DIR="/opt/dseclab-repo"
 APP_DIR="/opt/dseclab"
 APP_USER="dseclab"
 REPO_URL="https://github.com/dorjoos/dseclab_backend.git"
-DOMAIN="YOUR_DOMAIN"  # Change this to your domain
 
 echo "=== D-SECLAB Production Setup ==="
 
@@ -79,7 +78,7 @@ systemctl start dseclab
 
 # 10. Nginx
 echo "[9/9] Setting up Nginx..."
-sed "s/YOUR_DOMAIN/$DOMAIN/g" deploy/nginx.conf > /etc/nginx/sites-available/dseclab
+cp deploy/nginx.conf /etc/nginx/sites-available/dseclab
 ln -sf /etc/nginx/sites-available/dseclab /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
@@ -90,6 +89,5 @@ echo ""
 echo "Next steps:"
 echo "  1. Edit $APP_DIR/.env with your actual secrets"
 echo "  2. Run: sudo systemctl restart dseclab"
-echo "  3. Get SSL: sudo certbot --nginx -d $DOMAIN"
-echo "  4. Test: curl https://$DOMAIN"
+echo "  3. Test: curl http://YOUR_SERVER_IP"
 echo ""

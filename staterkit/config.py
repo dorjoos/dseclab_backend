@@ -59,7 +59,7 @@ class ProductionConfig(BaseConfig):
     SECRET_KEY = os.environ.get('SECRET_KEY', '')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', os.environ.get('SECRET_KEY', ''))
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', '')
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true'
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'simple')
     CACHE_REDIS_URL = os.environ.get('CACHE_REDIS_URL')
     RATELIMIT_STORAGE_URI = os.environ.get('RATELIMIT_STORAGE_URI', 'memory://')
