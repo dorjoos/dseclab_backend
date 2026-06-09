@@ -61,29 +61,9 @@
     </div>
   </div>
 
-  <!-- Groups + Recent -->
+  <!-- Recent + Groups -->
   <div class="row g-3 mb-4">
-    <div class="col-lg-5">
-      <div class="card rw-card-body">
-        <div class="rw-card-title-lg">Active Groups</div>
-        <div class="rw-group-list">
-          {% for g in groups %}
-          <div class="rw-group-card">
-            <div class="rw-group-rank" style="background:{{ g.color }};">{{ loop.index }}</div>
-            <div class="rw-group-info">
-              <div class="rw-group-name">{{ g.name }}</div>
-              <div class="rw-group-seen">Last seen: {{ g.last_seen }}</div>
-            </div>
-            <div class="rw-group-stats">
-              <div class="rw-group-victims">{{ g.victims }}</div>
-              <div class="rw-group-victims-label">victims</div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
-    </div>
-    <div class="col-lg-7" id="recent-attacks">
+    <div class="col-lg-8" id="recent-attacks">
       <div class="card rw-card-body">
         <div class="rw-card-title-lg-row">
           <div class="rw-card-title-lg">Recent Attacks</div>
@@ -191,6 +171,26 @@
         {# Inline JSON payload keyed by data-rw-index. Jinja's |tojson escapes
            </script> sequences and HTML metacharacters. #}
         <script id="rw-recent-data" type="application/json">{{ recent | tojson | safe }}</script>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card rw-card-body">
+        <div class="rw-card-title-lg">Active Groups</div>
+        <div class="rw-group-list">
+          {% for g in groups %}
+          <div class="rw-group-card">
+            <div class="rw-group-rank" style="background:{{ g.color }};">{{ loop.index }}</div>
+            <div class="rw-group-info">
+              <div class="rw-group-name">{{ g.name }}</div>
+              <div class="rw-group-seen">Last seen: {{ g.last_seen }}</div>
+            </div>
+            <div class="rw-group-stats">
+              <div class="rw-group-victims">{{ g.victims }}</div>
+              <div class="rw-group-victims-label">victims</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
