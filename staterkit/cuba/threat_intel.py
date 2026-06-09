@@ -26,7 +26,7 @@ except ImportError:
 from . import db, cache, csrf, limiter
 from .models import BreachedCredMeta, Company, Notification, User
 from .api_utils import sanitize_input
-from .audit_helpers import log_audit
+from .audit_helpers import log_audit, log_user_activity
 from .security import get_user_company_domain, get_user_watchlist_domains
 from .services.elasticsearch_service import es_service
 from .services.breached_creds_service import build_analysis_stats
@@ -325,6 +325,32 @@ def breached_creds_view(doc_id):
     breadcrumb = {"parent": "Threat Intelligence", "child": "Credential Details"}
     return render_template('threat_intel/breached_creds_view.html',
                           breached_cred=cred, breadcrumb=breadcrumb)
+
+
+@threat_intel.route('/threat-intelligence/breached-creds/<doc_id>/reveal-password', methods=['POST'])
+@login_required
+@limiter.limit("30/minute")
+def breached_creds_reveal_password(doc_id):
+    """Return the plaintext password for a breached cred the user is authorized to see.
+
+    Gated by the same tenancy check as the detail view. Every successful and
+    denied call is recorded in the audit log so reveals are accountable.
+    """
+    cred = es_service.get_by_id(doc_id)
+    if not cred:
+        return jsonify({"error": "not_found"}), 404
+    if not _check_cred_access(cred):
+        log_audit("reveal_password_denied", "breached_cred", doc_id,
+                  f"User {current_user.username} denied reveal for cred {doc_id}",
+                  status="failed")
+        db.session.commit()
+        return jsonify({"error": "access_denied"}), 403
+    log_audit("reveal_password", "breached_cred", doc_id,
+              f"User {current_user.username} revealed password for cred {doc_id} "
+              f"(domain={cred.domain or 'unknown'})")
+    log_user_activity("reveal_password", current_user.id, status="success")
+    db.session.commit()
+    return jsonify({"password": cred.password or ""})
 
 
 @threat_intel.route('/threat-intelligence/breached-creds/add', methods=['GET', 'POST'])
