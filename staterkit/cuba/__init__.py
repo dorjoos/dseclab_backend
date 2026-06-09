@@ -133,6 +133,8 @@ def create_app(config_name=None):
     app.register_blueprint(auth_bp)
     from .threat_intel import threat_intel as threat_intel_bp
     app.register_blueprint(threat_intel_bp)
+    from .vulnerabilities import vulnerabilities as vulnerabilities_bp
+    app.register_blueprint(vulnerabilities_bp)
     from .admin_routes import admin_bp
     app.register_blueprint(admin_bp)
     from .search_routes import search_bp

@@ -165,3 +165,59 @@ def fake_cred(monkeypatch):
     monkeypatch.setattr(ti_mod.es_service, "get_by_id", fake_get_by_id)
     monkeypatch.setattr(es_mod.es_service, "get_by_id", fake_get_by_id)
     return setter
+
+
+@pytest.fixture()
+def fake_kev(monkeypatch):
+    """Mirror of fake_cred but for cisa_kev_service.
+
+    Usage:
+        fake_kev({"CVE-2024-1": {"cveID": "CVE-2024-1", "vendorProject": "Microsoft",
+                                  "product": "Windows", "vulnerabilityName": "RCE",
+                                  "shortDescription": "blah", "knownRansomwareCampaignUse": "Known"}})
+    """
+    from cuba.services import cisa_kev_service as svc_mod
+    from cuba.services.cisa_kev_service import CisaKevDoc, cisa_kev_service
+    from cuba.services.breached_creds_service import ESPagination
+
+    store = {}
+
+    def setter(mapping):
+        store.update(mapping)
+
+    def fake_get_by_id(doc_id):
+        src = store.get(doc_id)
+        if src is None:
+            return None
+        return CisaKevDoc(doc_id, src)
+
+    def fake_search(query_text=None, filters=None, page=1, per_page=20):
+        items = [CisaKevDoc(k, v) for k, v in store.items()]
+        if filters:
+            if filters.get('vendor'):
+                v = filters['vendor'].lower()
+                items = [i for i in items if (i.vendor or '').lower() == v]
+            if filters.get('product'):
+                p = filters['product'].lower()
+                items = [i for i in items if (i.product or '').lower() == p]
+            if filters.get('ransomware_use'):
+                ru = filters['ransomware_use']
+                items = [i for i in items if (i.known_ransomware_use or '') == ru]
+        if query_text:
+            q = query_text.lower()
+            items = [
+                i for i in items
+                if q in (i.cve_id or '').lower()
+                or q in (i.vulnerability_name or '').lower()
+                or q in (i.short_description or '').lower()
+            ]
+        total = len(items)
+        start = (page - 1) * per_page
+        end = start + per_page
+        return ESPagination(items=items[start:end], page=page, per_page=per_page, total=total)
+
+    monkeypatch.setattr(svc_mod.cisa_kev_service, 'get_by_id', fake_get_by_id)
+    monkeypatch.setattr(svc_mod.cisa_kev_service, 'search', fake_search)
+    monkeypatch.setattr(cisa_kev_service, 'get_by_id', fake_get_by_id)
+    monkeypatch.setattr(cisa_kev_service, 'search', fake_search)
+    return setter

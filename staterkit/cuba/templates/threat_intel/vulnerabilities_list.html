@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}D-SECLAB | Vulnerabilities{% endblock %}
+{% block content %}
+<div class="av-page" id="vulns-page">
+  <div class="av-page-header">
+    <h1 class="av-page-title">Vulnerabilities (CISA KEV)</h1>
+    <p class="av-page-subtitle">Known Exploited Vulnerabilities catalog</p>
+  </div>
+
+  <div class="av-toolbar">
+    <div class="av-toolbar-left">
+      <span class="av-count" id="vulns-total">Loading...</span>
+    </div>
+    <div class="av-toolbar-right">
+      <div class="av-search">
+        <input type="text" id="vulns-search" placeholder="Search CVE / name / description...">
+      </div>
+      <select id="vulns-vendor" class="av-filter">
+        <option value="">All vendors</option>
+      </select>
+      <select id="vulns-ransomware" class="av-filter">
+        <option value="">Any ransomware-use</option>
+        <option value="Known">Known</option>
+        <option value="Unknown">Unknown</option>
+      </select>
+      {% if full_access %}
+      <a href="{{ url_for('vulnerabilities.export_csv') }}" class="av-btn">Export CSV</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="av-table-wrap">
+    <table class="av-table" id="vulns-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>CVE ID</th>
+          <th>Vendor</th>
+          <th>Product</th>
+          <th>Vulnerability</th>
+          <th>Added</th>
+          <th>Due</th>
+          <th>Ransomware</th>
+        </tr>
+      </thead>
+      <tbody id="vulns-body"></tbody>
+    </table>
+    <div class="av-empty" id="vulns-empty" style="display:none;">No results found</div>
+  </div>
+
+  <div class="av-pagination" id="vulns-pagination"></div>
+</div>
+
+<script>
+(function() {
+  var FULL_ACCESS = {{ 'true' if full_access else 'false' }};
+  var state = { page: 1, per_page: 20 };
+
+  function fmt(s) { return s == null ? '' : String(s); }
+
+  function load() {
+    var body = {
+      page: state.page,
+      per_page: state.per_page,
+      search: document.getElementById('vulns-search').value,
+      vendor: document.getElementById('vulns-vendor').value,
+      ransomware_use: document.getElementById('vulns-ransomware').value
+    };
+    fetch('/api/vulnerabilities/search', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': window.CSRF_TOKEN || '',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(body)
+    }).then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data) { document.getElementById('vulns-empty').style.display = ''; return; }
+        document.getElementById('vulns-total').textContent = data.total + ' total';
+        var tbody = document.getElementById('vulns-body');
+        tbody.innerHTML = '';
+        if (!data.rows.length) {
+          document.getElementById('vulns-empty').style.display = '';
+          return;
+        }
+        document.getElementById('vulns-empty').style.display = 'none';
+        data.rows.forEach(function(row, i) {
+          var tr = document.createElement('tr');
+          var cveCell = FULL_ACCESS
+            ? '<a href="/threat-intelligence/vulnerabilities/' + encodeURIComponent(row.cve_id) + '">' + fmt(row.cve_id) + '</a>'
+            : fmt(row.cve_id);
+          tr.innerHTML =
+            '<td>' + ((state.page - 1) * state.per_page + i + 1) + '</td>' +
+            '<td>' + cveCell + '</td>' +
+            '<td>' + fmt(row.vendor) + '</td>' +
+            '<td>' + fmt(row.product) + '</td>' +
+            '<td>' + fmt(row.vulnerability_name) + '</td>' +
+            '<td>' + fmt(row.date_added) + '</td>' +
+            '<td>' + fmt(row.due_date) + '</td>' +
+            '<td>' + fmt(row.known_ransomware_use) + '</td>';
+          tbody.appendChild(tr);
+        });
+      });
+  }
+
+  document.getElementById('vulns-search').addEventListener('input', function() {
+    state.page = 1; load();
+  });
+  document.getElementById('vulns-vendor').addEventListener('change', function() {
+    state.page = 1; load();
+  });
+  document.getElementById('vulns-ransomware').addEventListener('change', function() {
+    state.page = 1; load();
+  });
+  load();
+})();
+</script>
+{% endblock %}

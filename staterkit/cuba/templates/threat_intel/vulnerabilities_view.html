@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}D-SECLAB | {{ vuln.cve_id }}{% endblock %}
+{% block content %}
+<div class="av-page">
+  <div class="av-page-header">
+    <h1 class="av-page-title">{{ vuln.cve_id }}</h1>
+    <p class="av-page-subtitle">{{ vuln.vulnerability_name or '' }}</p>
+  </div>
+
+  <div class="av-detail-grid">
+    <div class="av-detail-cell">
+      <div class="av-detail-label">Vendor</div>
+      <div class="av-detail-value">{{ vuln.vendor or '—' }}</div>
+    </div>
+    <div class="av-detail-cell">
+      <div class="av-detail-label">Product</div>
+      <div class="av-detail-value">{{ vuln.product or '—' }}</div>
+    </div>
+    <div class="av-detail-cell">
+      <div class="av-detail-label">Date Added</div>
+      <div class="av-detail-value">
+        {{ vuln.date_added.strftime('%Y-%m-%d') if vuln.date_added else '—' }}
+      </div>
+    </div>
+    <div class="av-detail-cell">
+      <div class="av-detail-label">Due Date</div>
+      <div class="av-detail-value">
+        {{ vuln.due_date.strftime('%Y-%m-%d') if vuln.due_date else '—' }}
+      </div>
+    </div>
+    <div class="av-detail-cell">
+      <div class="av-detail-label">Ransomware Use</div>
+      <div class="av-detail-value">{{ vuln.known_ransomware_use or '—' }}</div>
+    </div>
+    <div class="av-detail-cell av-detail-cell--wide">
+      <div class="av-detail-label">Description</div>
+      <div class="av-detail-value">{{ vuln.short_description or '—' }}</div>
+    </div>
+    <div class="av-detail-cell av-detail-cell--wide">
+      <div class="av-detail-label">Required Action</div>
+      <div class="av-detail-value">{{ vuln.required_action or '—' }}</div>
+    </div>
+    <div class="av-detail-cell av-detail-cell--wide">
+      <div class="av-detail-label">Notes / References</div>
+      <div class="av-detail-value">{{ vuln.notes or '—' }}</div>
+    </div>
+    <div class="av-detail-cell">
+      <div class="av-detail-label">CWEs</div>
+      <div class="av-detail-value">{{ (vuln.cwes or []) | join(', ') or '—' }}</div>
+    </div>
+  </div>
+
+  <div class="av-actions">
+    <a href="{{ url_for('vulnerabilities.list_page') }}" class="av-btn">← Back to list</a>
+  </div>
+</div>
+{% endblock %}
