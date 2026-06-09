@@ -405,8 +405,7 @@
 .rw-tl-source:hover { background: #1e293b; color: #fff; }
 
 /* Date pinned to the right end of the top row, tinted in the group's
-   palette colour. When a source_url is present this is the <a> that
-   opens the original feed post in a new tab. */
+   palette colour. Display-only — not a link. */
 .rw-tl-date-tag {
   margin-left: auto;
   display: inline-flex; align-items: center;
@@ -416,14 +415,8 @@
   border: 1px solid color-mix(in srgb, var(--vn-chip) 28%, transparent);
   color: var(--vn-chip);
   font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
-  text-decoration: none;
   font-variant-numeric: tabular-nums;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-}
-a.rw-tl-date-tag:hover {
-  background: var(--vn-chip);
-  color: #fff;
-  border-color: var(--vn-chip);
+  white-space: nowrap;
 }
 @supports not (color: color-mix(in srgb, red 50%, transparent)) {
   .rw-tl-date-tag {
@@ -431,7 +424,6 @@ a.rw-tl-date-tag:hover {
     border-color: rgba(100, 116, 139, 0.28);
     color: #1e293b;
   }
-  a.rw-tl-date-tag:hover { background: #1e293b; color: #fff; border-color: #1e293b; }
 }
 .rw-tl-victim {
   font-size: 15px; font-weight: 700;
