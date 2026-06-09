@@ -2,7 +2,7 @@ from flask import render_template, Blueprint
 from flask_login import login_required
 
 from .security import get_user_company_domain, get_user_watchlist_domains
-from .services.elasticsearch_service import es_service
+from .services.breached_creds_service import breached_creds_service as es_service
 
 main = Blueprint('main', __name__)
 

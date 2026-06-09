@@ -28,8 +28,8 @@ from .models import BreachedCredMeta, Company, Notification, User
 from .api_utils import sanitize_input
 from .audit_helpers import log_audit, log_user_activity
 from .security import get_user_company_domain, get_user_watchlist_domains
-from .services.elasticsearch_service import es_service
-from .services.breached_creds_service import build_analysis_stats
+from .services.breached_creds_service import breached_creds_service as es_service
+from .services.breached_creds_analysis import build_analysis_stats
 from .services.data_masking import mask_value
 
 logger = logging.getLogger(__name__)

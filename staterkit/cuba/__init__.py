@@ -46,7 +46,7 @@ def create_app(config_name=None):
     Environment(app)
 
     # Init Elasticsearch service
-    from .services.elasticsearch_service import es_service
+    from .services.breached_creds_service import breached_creds_service as es_service
     es_service.init_app(app)
 
     # Swagger API docs - only in non-production environments

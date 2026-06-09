@@ -5,7 +5,7 @@ from . import limiter
 from .api_utils import sanitize_input, escape_like
 from .models import Company
 from .security import get_user_watchlist_domains
-from .services.elasticsearch_service import es_service
+from .services.breached_creds_service import breached_creds_service as es_service
 
 search_bp = Blueprint('search', __name__)
 

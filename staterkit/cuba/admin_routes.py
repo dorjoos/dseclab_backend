@@ -11,7 +11,7 @@ from .models import User, Company, WatchlistEntry, AuditLog, UserActivity
 from .auth import validate_password, validate_email
 from .audit_helpers import log_audit
 from .security import admin_required
-from .services.elasticsearch_service import es_service
+from .services.breached_creds_service import breached_creds_service as es_service
 
 logger = logging.getLogger(__name__)
 

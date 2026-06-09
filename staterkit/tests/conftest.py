@@ -26,7 +26,7 @@ import pytest
 
 from cuba import create_app, db as _db
 from cuba.models import Company, User
-from cuba.services.elasticsearch_service import BreachedCredDoc
+from cuba.services.breached_creds_service import BreachedCredDoc
 
 
 @pytest.fixture()
@@ -148,7 +148,7 @@ def fake_cred(monkeypatch):
         fake_cred({"acme-1": {"username": "user@acme.com", "domain": "acme.com",
                               "password": "P@ssw0rd!"}})
     """
-    from cuba.services import elasticsearch_service as es_mod
+    from cuba.services import breached_creds_service as es_mod
     from cuba import threat_intel as ti_mod
 
     store = {}
