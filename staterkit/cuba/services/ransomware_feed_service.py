@@ -97,16 +97,19 @@ class RansomwareDoc:
                     return s[k]
             return None
 
-        self.group = _clean(get('group_name', 'group', 'gang', 'actor'))
-        self.victim = _clean(get('victim', 'victim_name', 'post_title', 'title'))
-        self.country = _clean(get('country', 'country_code', 'victim_country'))
+        # Real prod fields first, then common fallbacks for portability.
+        self.group = _clean(get('ransomware_group', 'group_name', 'group', 'gang', 'actor'))
+        self.victim = _clean(get('victim_name', 'victim', 'post_title', 'title'))
+        self.country = _clean(get('victim_country', 'country', 'country_code'))
         self.sector = _clean(get('sector', 'activity', 'industry', 'victim_sector'))
         self.discovered = _parse_date(
-            get('discovered', 'published', 'date', 'attack_date',
-                'date_added', 'timestamp', 'created_at')
+            get('@timestamp', 'published_date', 'discovered', 'published',
+                'date', 'attack_date', 'date_added', 'timestamp', 'created_at')
         )
-        self.description = _clean(get('description', 'summary', 'post'))
-        self.url = _clean(get('post_url', 'url', 'leak_site', 'screenshot'))
+        self.description = _clean(get('raw_description', 'description', 'summary', 'post'))
+        self.url = _clean(get('source_url', 'post_url', 'url', 'leak_site', 'screenshot'))
+        self.victim_website = _clean(get('victim_website', 'website'))
+        self.feed_source = _clean(get('feed_source', 'source'))
         self.data_size = get('data_size', 'size', 'leak_size', 'bytes')
 
 
@@ -133,39 +136,18 @@ class RansomwareFeedService(ESIndexService):
             'aggs': {
                 'by_group': {
                     'terms': {
-                        # Try both spellings via runtime field fallback isn't
-                        # available pre-7.10; use whichever the index uses.
-                        'field': 'group_name.keyword',
+                        'field': 'ransomware_group',
                         'size': top_n,
                         'missing': 'unknown',
                     },
                     'aggs': {
-                        'last_seen': {
-                            'max': {
-                                'field': 'discovered',
-                                'missing': 0,
-                            }
-                        }
+                        'last_seen': {'max': {'field': '@timestamp'}}
                     }
                 }
             }
         }
         resp = self._search(body)
         buckets = resp.get('aggregations', {}).get('by_group', {}).get('buckets', [])
-        if not buckets:
-            # Fall back to alternate field naming.
-            body2 = {
-                'size': 0,
-                'query': {'match_all': {}},
-                'aggs': {
-                    'by_group': {
-                        'terms': {'field': 'group.keyword', 'size': top_n, 'missing': 'unknown'},
-                        'aggs': {'last_seen': {'max': {'field': 'date'}}}
-                    }
-                }
-            }
-            resp = self._search(body2)
-            buckets = resp.get('aggregations', {}).get('by_group', {}).get('buckets', [])
 
         out = []
         for b in buckets:
@@ -193,7 +175,7 @@ class RansomwareFeedService(ESIndexService):
     def get_recent(self, limit: int = 10) -> list:
         body = {
             'size': limit,
-            'sort': [{'discovered': {'order': 'desc', 'unmapped_type': 'date'}}],
+            'sort': [{'@timestamp': {'order': 'desc', 'unmapped_type': 'date'}}],
             'query': {'match_all': {}},
             'track_total_hits': True,
         }
@@ -226,14 +208,18 @@ class RansomwareFeedService(ESIndexService):
             'query': {'match_all': {}},
             'track_total_hits': True,
             'aggs': {
-                'groups':    {'cardinality': {'field': 'group_name.keyword'}},
-                'countries': {'cardinality': {'field': 'country.keyword'}},
-                'by_sector': {
-                    'terms': {'field': 'sector.keyword', 'size': 10, 'missing': 'Other'}
+                'groups':    {'cardinality': {'field': 'ransomware_group'}},
+                'countries': {'cardinality': {'field': 'victim_country'}},
+                # The feed has no sector/industry — group by country instead so
+                # the bar chart still tells the user something useful (top
+                # affected countries). Renamed externally but keeps the same
+                # template variable name to avoid a template churn.
+                'by_country': {
+                    'terms': {'field': 'victim_country', 'size': 10, 'missing': 'Unknown'}
                 },
                 'monthly': {
                     'date_histogram': {
-                        'field': 'discovered',
+                        'field': '@timestamp',
                         'calendar_interval': 'month',
                         'min_doc_count': 0,
                         'extended_bounds': {
@@ -251,25 +237,9 @@ class RansomwareFeedService(ESIndexService):
             total = total.get('value', 0)
         aggs = resp.get('aggregations', {})
 
-        # Try alternate field names if primary returned empty.
-        if not aggs.get('by_sector', {}).get('buckets'):
-            body2 = {**body}
-            body2['aggs'] = {
-                'groups':    {'cardinality': {'field': 'group.keyword'}},
-                'countries': {'cardinality': {'field': 'country.keyword'}},
-                'by_sector': {'terms': {'field': 'activity.keyword', 'size': 10, 'missing': 'Other'}},
-                'monthly':   body['aggs']['monthly'].copy(),
-            }
-            body2['aggs']['monthly']['date_histogram'] = dict(
-                body['aggs']['monthly']['date_histogram'],
-                field='date',
-            )
-            resp = self._search(body2)
-            aggs = resp.get('aggregations', {})
-
         sectors = OrderedDict()
-        for b in aggs.get('by_sector', {}).get('buckets', []):
-            sectors[b.get('key', 'Other')] = b.get('doc_count', 0)
+        for b in aggs.get('by_country', {}).get('buckets', []):
+            sectors[b.get('key', 'Unknown')] = b.get('doc_count', 0)
 
         monthly = aggs.get('monthly', {}).get('buckets', [])
         # Take the last 12 buckets
@@ -286,12 +256,8 @@ class RansomwareFeedService(ESIndexService):
             monthly_trend.append(b.get('doc_count', 0))
 
         attacks_this_month_resp = self._count({
-            'range': {'discovered': {'gte': month_start}}
+            'range': {'@timestamp': {'gte': month_start}}
         })
-        if not attacks_this_month_resp:
-            attacks_this_month_resp = self._count({
-                'range': {'date': {'gte': month_start}}
-            })
 
         return {
             'total_attacks': int(total),
