@@ -205,3 +205,33 @@ def test_unauthenticated_search_does_not_leak(client, fake_kev):
     r = client.post(SEARCH_PATH)
     assert r.status_code in (302, 400, 401)
     assert b'Use-after-free' not in r.data
+
+
+def test_get_stats_includes_due_counts(app, monkeypatch):
+    """get_stats() must surface due_soon and overdue integer counts."""
+    from cuba.services import cisa_kev_service as svc_mod
+
+    def fake_search(body):
+        return {
+            'hits': {'total': {'value': 1607}, 'hits': []},
+            'aggregations': {
+                'by_vendor': {'buckets': [{'key': 'Microsoft', 'doc_count': 377}]},
+                'by_ransomware': {'buckets': [{'key': 'Known', 'doc_count': 325},
+                                              {'key': 'Unknown', 'doc_count': 1282}]},
+            },
+        }
+    counts = iter([47, 12])  # due_soon, overdue
+
+    def fake_count(query=None):
+        return next(counts)
+
+    monkeypatch.setattr(svc_mod.cisa_kev_service, '_search', fake_search)
+    monkeypatch.setattr(svc_mod.cisa_kev_service, '_count', fake_count)
+
+    with app.app_context():
+        s = svc_mod.cisa_kev_service.get_stats()
+    assert s['total'] == 1607
+    assert s['by_vendor'][:1] == [('Microsoft', 377)]
+    assert s['by_ransomware'] == {'Known': 325, 'Unknown': 1282}
+    assert s['due_soon'] == 47
+    assert s['overdue'] == 12

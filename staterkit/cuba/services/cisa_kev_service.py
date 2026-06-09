@@ -1,6 +1,6 @@
 """CISA KEV (Known Exploited Vulnerabilities) service backed by ES."""
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from flask import current_app
@@ -28,6 +28,11 @@ def _clean(val):
     if isinstance(val, str) and val.strip().lower() in ('none', 'null', 'n/a', ''):
         return None
     return val
+
+
+def _today_iso():
+    """Return today at 00:00 UTC as ISO8601 — boundary for due_soon/overdue ranges."""
+    return datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
 
 
 class CisaKevDoc:
@@ -181,6 +186,29 @@ class CisaKevService(ESIndexService):
         if isinstance(total, dict):
             total = total.get('value', 0)
         aggs = resp.get('aggregations', {})
+        today = _today_iso()
+        in_7d = (datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+                 + timedelta(days=7)).isoformat()
+
+        due_soon = self._count({
+            'bool': {
+                'should': [
+                    {'range': {'dueDate': {'gte': today, 'lt': in_7d}}},
+                    {'range': {'due_date': {'gte': today, 'lt': in_7d}}},
+                ],
+                'minimum_should_match': 1,
+            }
+        })
+        overdue = self._count({
+            'bool': {
+                'should': [
+                    {'range': {'dueDate': {'lt': today}}},
+                    {'range': {'due_date': {'lt': today}}},
+                ],
+                'minimum_should_match': 1,
+            }
+        })
+
         return {
             'total': int(total),
             'by_vendor': [
@@ -191,6 +219,8 @@ class CisaKevService(ESIndexService):
                 b['key']: b['doc_count']
                 for b in aggs.get('by_ransomware', {}).get('buckets', [])
             },
+            'due_soon': int(due_soon or 0),
+            'overdue': int(overdue or 0),
         }
 
 
