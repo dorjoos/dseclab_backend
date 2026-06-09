@@ -17,6 +17,9 @@
       <a href="{{ url_for('threat_intel.breached_creds_list') }}" class="dsec-nav-item {% if 'breached_creds' in (request.endpoint or '') %}active{% endif %}">
         <i data-feather="shield"></i> Breached Credentials
       </a>
+      <a href="{{ url_for('vulnerabilities.list_page') }}" class="dsec-nav-item {% if 'vulnerabilities' in (request.endpoint or '') %}active{% endif %}">
+        <i data-feather="alert-triangle"></i> Vulnerabilities
+      </a>
       <a href="{{ url_for('threat_intel.analysis') }}" class="dsec-nav-item {% if request.endpoint == 'threat_intel.analysis' %}active{% endif %}">
         <i data-feather="bar-chart-2"></i> Analysis
       </a>
