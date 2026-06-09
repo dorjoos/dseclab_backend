@@ -103,9 +103,29 @@ def create_app(config_name=None):
 
     @app.after_request
     def add_security_headers(response):
+        from flask import request
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        # Lock down browser features the app doesn't use. Each missing token
+        # is implicitly denied for the doc + nested browsing contexts.
+        response.headers.setdefault(
+            "Permissions-Policy",
+            "camera=(), microphone=(), geolocation=(), payment=(), "
+            "usb=(), interest-cohort=(), browsing-topics=()",
+        )
+        # Cross-origin isolation: opener decoupled from cross-origin windows,
+        # resources scoped to same-site embedders. Cheap Spectre + clickjack
+        # hardening with no impact on the app's own resources.
+        response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+        response.headers.setdefault("Cross-Origin-Resource-Policy", "same-site")
+        # HSTS only over HTTPS — never pin the local HTTP dev server.
+        # request.is_secure honors X-Forwarded-Proto via ProxyFix.
+        if request.is_secure:
+            response.headers.setdefault(
+                "Strict-Transport-Security",
+                "max-age=63072000; includeSubDomains",
+            )
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; "
@@ -117,7 +137,10 @@ def create_app(config_name=None):
             "img-src 'self' data:; "
             # Inter font files load from fonts.gstatic.com per googleapis.com CSS.
             "font-src 'self' data: https://fonts.gstatic.com; "
-            "connect-src 'self';",
+            "connect-src 'self'; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self';",
         )
         return response
 

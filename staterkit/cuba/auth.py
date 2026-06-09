@@ -6,11 +6,11 @@ from sqlalchemy.exc import OperationalError
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from urllib.parse import urlparse
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 from . import db, limiter
-from .models import User, Company
+from .models import User, Company, UserActivity
 from .audit_helpers import log_user_activity, log_audit
 
 
@@ -37,6 +37,26 @@ def login():
         remember = bool(request.form.get("remember"))
 
         user = User.query.filter_by(email=email).first()
+
+        # Account lockout: after MAX_FAILED_LOGINS failures within LOCKOUT_WINDOW,
+        # deny further attempts for the lockout period — independent from the
+        # per-IP rate limit, so an attacker can't bypass it by rotating IPs.
+        MAX_FAILED_LOGINS = 10
+        LOCKOUT_WINDOW = timedelta(minutes=15)
+        if user is not None:
+            cutoff = datetime.utcnow() - LOCKOUT_WINDOW
+            recent_failures = UserActivity.query.filter(
+                UserActivity.user_id == user.id,
+                UserActivity.activity_type == "login_failed",
+                UserActivity.created_at >= cutoff,
+            ).count()
+            if recent_failures >= MAX_FAILED_LOGINS:
+                log_user_activity("login_blocked", user.id, status="failed",
+                                  failure_reason="account_locked")
+                flash("Too many failed attempts. The account is temporarily locked. "
+                      "Try again in 15 minutes.", "danger")
+                return render_template("auth/login.html", email=email)
+
         if not user or not user.check_password(password):
             # Log failed login attempt
             if user:
@@ -72,6 +92,11 @@ def login():
             session["2fa_next"] = request.args.get("next")
             return redirect(url_for("auth.verify_2fa"))
 
+        # Session-fixation protection: any session contents from before login
+        # (set by a passing attacker, or stale state from a previous session)
+        # are dropped. Flask then issues a fresh signed session cookie on the
+        # next response, so an attacker who pre-set the SID gets nothing.
+        session.clear()
         login_user(user, remember=remember)
 
         # Geo lookup for login location
@@ -406,8 +431,13 @@ def verify_2fa():
 
         totp = pyotp.TOTP(user.totp_secret)
         if totp.verify(token):
-            session.pop("2fa_user_id", None)
+            # Pull the keys we still need out of the session, then clear it
+            # for session-fixation protection (mirrors the non-2FA login path).
+            next_url = session.pop("2fa_next", None)
             remember = session.pop("2fa_remember", False)
+            session.clear()
+            if next_url:
+                session["2fa_next"] = next_url  # re-stash so the post-login redirect below still works
             login_user(user, remember=remember)
 
             # Geo lookup for login location
