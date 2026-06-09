@@ -22,6 +22,7 @@ class BaseConfig:
     ELASTICSEARCH_PASSWORD = os.environ.get('ELASTICSEARCH_PASSWORD', '')
     ELASTICSEARCH_INDEX = os.environ.get('ELASTICSEARCH_INDEX', 'main')
     CISA_KEV_INDEX = os.environ.get('CISA_KEV_INDEX', 'cisa-kev')
+    RANSOMWARE_FEED_INDEX = os.environ.get('RANSOMWARE_FEED_INDEX', 'ransomware-feed')
     ELASTICSEARCH_VERIFY_CERTS = os.environ.get('ELASTICSEARCH_VERIFY_CERTS', 'false').lower() == 'true'
 
     # Email (SMTP)
