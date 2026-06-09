@@ -83,7 +83,7 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-7">
+    <div class="col-lg-7" id="recent-attacks">
       <div class="card rw-card-body">
         <div class="rw-card-title-lg-row">
           <div class="rw-card-title-lg">Recent Attacks</div>
@@ -121,6 +121,45 @@
           <div class="rw-recent-empty">No recent attacks indexed yet.</div>
           {% endfor %}
         </div>
+
+        {% if recent_pagination and recent_pagination.pages > 1 %}
+        {% set p = recent_pagination.page %}
+        {% set pages = recent_pagination.pages %}
+        <div class="rw-tl-pagination">
+          {% if recent_pagination.has_prev %}
+            <a href="?rp={{ p - 1 }}#recent-attacks" class="rw-tl-page-btn">‹ Prev</a>
+          {% else %}
+            <span class="rw-tl-page-btn rw-tl-page-btn--disabled">‹ Prev</span>
+          {% endif %}
+
+          {# Compact page-number window: 1, …, p-1, p, p+1, …, last #}
+          {% set nums = [] %}
+          {% for n in [1, p - 1, p, p + 1, pages] %}
+            {% if n >= 1 and n <= pages and n not in nums %}
+              {% set _ = nums.append(n) %}
+            {% endif %}
+          {% endfor %}
+          {% set nums = nums | sort %}
+          {% set ns = namespace(prev=0) %}
+          {% for n in nums %}
+            {% if n - ns.prev > 1 %}<span class="rw-tl-page-gap">…</span>{% endif %}
+            {% if n == p %}
+              <span class="rw-tl-page-btn rw-tl-page-btn--active">{{ n }}</span>
+            {% else %}
+              <a href="?rp={{ n }}#recent-attacks" class="rw-tl-page-btn">{{ n }}</a>
+            {% endif %}
+            {% set ns.prev = n %}
+          {% endfor %}
+
+          {% if recent_pagination.has_next %}
+            <a href="?rp={{ p + 1 }}#recent-attacks" class="rw-tl-page-btn">Next ›</a>
+          {% else %}
+            <span class="rw-tl-page-btn rw-tl-page-btn--disabled">Next ›</span>
+          {% endif %}
+
+          <span class="rw-tl-page-info">Page {{ p }} of {{ pages }} ({{ recent_pagination.total }})</span>
+        </div>
+        {% endif %}
 
         {# --- Detail modal (populated client-side from JS) --- #}
         <div class="rw-modal-backdrop" id="rw-modal-root" style="display:none;"

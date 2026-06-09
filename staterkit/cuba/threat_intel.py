@@ -698,7 +698,17 @@ def ransomware_dashboard():
             return default
 
     groups = _safe(lambda: ransomware_feed_service.get_groups(top_n=8), [])
-    recent = _safe(lambda: ransomware_feed_service.get_recent(limit=10), [])
+
+    # Pagination for Recent Attacks — `rp` (recent page) query string param.
+    try:
+        rp = max(1, int(request.args.get('rp', 1) or 1))
+    except ValueError:
+        rp = 1
+    empty_recent = {'items': [], 'page': 1, 'per_page': 10, 'total': 0,
+                    'pages': 1, 'has_prev': False, 'has_next': False}
+    recent_p = _safe(lambda: ransomware_feed_service.get_recent(page=rp, per_page=10),
+                     empty_recent)
+    recent = recent_p['items']
     empty_stats = {
         'total_attacks': 0, 'active_groups': 0, 'countries_affected': 0,
         'data_leaked_tb': 0, 'attacks_this_month': 0,
@@ -710,8 +720,8 @@ def ransomware_dashboard():
 
     breadcrumb = {"parent": "Threat Intelligence", "child": "Ransomware"}
     return render_template('threat_intel/ransomware.html',
-                          groups=groups, recent=recent, stats=stats,
-                          breadcrumb=breadcrumb)
+                          groups=groups, recent=recent, recent_pagination=recent_p,
+                          stats=stats, breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/threat-intelligence/summary')

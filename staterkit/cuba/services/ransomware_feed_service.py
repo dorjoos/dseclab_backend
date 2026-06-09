@@ -15,6 +15,7 @@ entirely, just extend the `get(...)` calls.
 """
 import hashlib
 import logging
+import math
 from collections import Counter, OrderedDict
 from datetime import datetime, timedelta
 from typing import Optional
@@ -195,15 +196,24 @@ class RansomwareFeedService(ESIndexService):
     # Recent posts
     # ------------------------------------------------------------------
 
-    def get_recent(self, limit: int = 10) -> list:
+    def get_recent(self, page: int = 1, per_page: int = 10) -> dict:
+        """Paginated recent attacks. Returns {items, page, per_page, total,
+        pages, has_prev, has_next}."""
+        page = max(1, int(page or 1))
+        per_page = max(1, min(100, int(per_page or 10)))
         body = {
-            'size': limit,
+            'size': per_page,
+            'from': (page - 1) * per_page,
             'sort': [{'@timestamp': {'order': 'desc', 'unmapped_type': 'date'}}],
             'query': {'match_all': {}},
             'track_total_hits': True,
         }
         resp = self._search(body)
         hits = resp.get('hits', {}).get('hits', [])
+        total = resp.get('hits', {}).get('total', {})
+        if isinstance(total, dict):
+            total = total.get('value', 0)
+        total = int(total)
         out = []
         for h in hits:
             doc = RansomwareDoc(h['_id'], h.get('_source', {}))
@@ -226,7 +236,16 @@ class RansomwareFeedService(ESIndexService):
                 'description': description_full,
                 'description_short': _short(description_full, 120),
             })
-        return out
+        pages = max(1, math.ceil(total / per_page)) if per_page else 1
+        return {
+            'items': out,
+            'page': page,
+            'per_page': per_page,
+            'total': total,
+            'pages': pages,
+            'has_prev': page > 1,
+            'has_next': page < pages,
+        }
 
     # ------------------------------------------------------------------
     # Dashboard aggregates
