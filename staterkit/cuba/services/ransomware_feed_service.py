@@ -67,6 +67,18 @@ def _fmt_date(d):
     return d.strftime('%Y-%m-%d')
 
 
+def _safe_http_url(val):
+    """Return val only if it is an http(s) URL — strip javascript:, data:,
+    file:, etc. to neutralise XSS via attacker-controlled href in the feed."""
+    if not val:
+        return ''
+    s = str(val).strip()
+    low = s.lower()
+    if low.startswith('http://') or low.startswith('https://'):
+        return s
+    return ''
+
+
 def _fmt_size(val):
     """Format whatever the feed gives for data size. Accepts a raw byte int,
     a string like '2.5 TB', or None."""
@@ -194,7 +206,10 @@ class RansomwareFeedService(ESIndexService):
                 'sector': doc.sector or '',
                 'date': _fmt_date(doc.discovered),
                 'data_size': _fmt_size(doc.data_size),
-                'source_url': doc.url or '',
+                # Scheme-validated: an attacker-controlled feed row with
+                # source_url='javascript:...' is stripped to '' here so it
+                # never reaches a template href.
+                'source_url': _safe_http_url(doc.url),
                 'feed_source': doc.feed_source or '',
             })
         return out
