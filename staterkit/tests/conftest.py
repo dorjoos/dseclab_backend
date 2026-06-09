@@ -99,6 +99,24 @@ def member_other(db, company_other):
 
 
 @pytest.fixture()
+def company_ibank(db):
+    """Customer whose domain is a substring of another customer's domain.
+
+    Used to test that domain matching is suffix-aware, not substring-based:
+    ibank.mn must NOT match nibank.mn.
+    """
+    c = Company(name="iBank", domain="ibank.mn", company_type="bank")
+    db.session.add(c)
+    db.session.commit()
+    return c
+
+
+@pytest.fixture()
+def member_ibank(db, company_ibank):
+    return _make_user(db, email="carol@ibank.mn", role="member", company=company_ibank)
+
+
+@pytest.fixture()
 def analyst_user(db, company_acme):
     return _make_user(db, email="ana@acme.com", role="analyst", company=company_acme)
 

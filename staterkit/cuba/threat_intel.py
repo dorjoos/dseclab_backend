@@ -44,6 +44,42 @@ def _get_domain_filters():
     return get_user_watchlist_domains()
 
 
+def _host_belongs_to(host: str, domain: str) -> bool:
+    """True when `host` equals `domain` or is a subdomain of it.
+
+    Substring matching would treat 'ibank.mn' as belonging to 'nibank.mn';
+    suffix matching anchored on a '.' boundary prevents that.
+    """
+    if not host or not domain:
+        return False
+    host = host.lower().strip().rstrip(".")
+    domain = domain.lower().strip().lstrip(".").rstrip(".")
+    if not host or not domain:
+        return False
+    return host == domain or host.endswith("." + domain)
+
+
+def _cred_matches_domain(cred, domain: str) -> bool:
+    """True when any of cred.domain, the @-suffix of cred.username, or the
+    host of cred.url belongs to `domain` (equal or subdomain)."""
+    if not domain:
+        return False
+    if _host_belongs_to(cred.domain or "", domain):
+        return True
+    username = (cred.username or "").lower()
+    if "@" in username:
+        if _host_belongs_to(username.split("@", 1)[1], domain):
+            return True
+    url = (cred.url or "").strip()
+    if url:
+        from urllib.parse import urlparse
+        parsed = urlparse(url if "://" in url else "http://" + url)
+        host = (parsed.hostname or "").lower()
+        if _host_belongs_to(host, domain):
+            return True
+    return False
+
+
 def _check_cred_access(cred):
     """Check if current user can access this credential. Returns True if allowed."""
     if current_user.is_admin_user:
@@ -51,14 +87,7 @@ def _check_cred_access(cred):
     domain_filters = _get_domain_filters()
     if not domain_filters:
         return False
-    cred_domain = (cred.domain or '').lower()
-    cred_username = (cred.username or '').lower()
-    cred_url = (cred.url or '').lower()
-    for d in domain_filters:
-        d = d.lower()
-        if d in cred_domain or d in cred_username or d in cred_url:
-            return True
-    return False
+    return any(_cred_matches_domain(cred, d) for d in domain_filters)
 
 
 def _attach_metadata(items):

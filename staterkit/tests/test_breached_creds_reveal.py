@@ -133,6 +133,67 @@ def test_reveal_unknown_doc_returns_404(client, member_acme, fake_cred):
     assert resp.status_code == 404
 
 
+NIBANK_CRED_ID = "nibank-1"
+NIBANK_SRC = {
+    "username": "victim@nibank.mn",
+    "domain": "nibank.mn",
+    "password": "different-bank-secret",
+    "source": "test",
+    "type": "url",
+    "url": "https://nibank.mn/login",
+    "timestamp": "2026-01-01T00:00:00",
+}
+IBANK_SUB_CRED_ID = "ibank-sub-1"
+IBANK_SUB_SRC = {
+    "username": "real@mail.ibank.mn",
+    "domain": "mail.ibank.mn",
+    "password": "subdomain-secret",
+    "source": "test",
+    "type": "url",
+    "url": "https://mail.ibank.mn/login",
+    "timestamp": "2026-01-01T00:00:00",
+}
+
+
+def test_member_cannot_see_substring_lookalike_company(client, db, member_ibank, fake_cred):
+    """Regression: ibank.mn member must NOT see nibank.mn creds, even though
+    'ibank.mn' is a substring of 'nibank.mn'. Pre-fix this leaked."""
+    fake_cred({NIBANK_CRED_ID: NIBANK_SRC})
+    login(client, member_ibank.email)
+    # Detail page must deny.
+    resp = client.get(f"/threat-intelligence/breached-creds/{NIBANK_CRED_ID}",
+                      follow_redirects=False)
+    assert resp.status_code in (302, 403), (
+        f"ibank.mn member reached detail page of nibank.mn cred (status={resp.status_code})"
+    )
+    # Reveal endpoint must also deny.
+    token = _csrf_token(client)
+    reveal = client.post(
+        f"/threat-intelligence/breached-creds/{NIBANK_CRED_ID}/reveal-password",
+        headers={"X-CSRFToken": token},
+    )
+    assert reveal.status_code == 403
+    assert b"different-bank-secret" not in reveal.data
+
+
+def test_member_still_sees_own_subdomain_creds(client, db, member_ibank, fake_cred):
+    """Sanity: tightening must not break legitimate subdomain matches.
+    mail.ibank.mn is part of ibank.mn and must remain visible."""
+    fake_cred({IBANK_SUB_CRED_ID: IBANK_SUB_SRC})
+    login(client, member_ibank.email)
+    resp = client.get(f"/threat-intelligence/breached-creds/{IBANK_SUB_CRED_ID}")
+    assert resp.status_code == 200, (
+        f"ibank.mn member cannot see mail.ibank.mn cred (status={resp.status_code})"
+    )
+    token = _csrf_token(client)
+    reveal = client.post(
+        f"/threat-intelligence/breached-creds/{IBANK_SUB_CRED_ID}/reveal-password",
+        headers={"X-CSRFToken": token},
+    )
+    assert reveal.status_code == 200
+    assert reveal.get_json()["password"] == "subdomain-secret"
+
+
 def test_reveal_rate_limit_blocks_31st_call(client, member_acme, fake_cred):
     """The endpoint is decorated @limiter.limit('30/minute'); the 31st call returns 429."""
     from cuba import limiter

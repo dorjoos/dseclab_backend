@@ -140,7 +140,12 @@ class ElasticsearchService:
     # ------------------------------------------------------------------
 
     def build_domain_filter(self, domains):
-        """Build ES bool/should matching domains across multiple fields."""
+        """Build ES bool/should matching domains across multiple fields.
+
+        Matches a credential's domain/username-email-host/URL-host when it
+        equals the watched domain or is a subdomain of it. Substring matches
+        like 'ibank.mn' against 'nibank.mn' must not pass.
+        """
         if not domains:
             return None
 
@@ -148,22 +153,30 @@ class ElasticsearchService:
         for domain in domains:
             if not domain:
                 continue
-            domain = domain.lower().strip()
+            domain = domain.lower().strip().lstrip(".").rstrip(".")
             if not domain or len(domain) < 4:
                 continue
 
-            # domain.keyword — exact or contains
-            should.append({"wildcard": {"domain.keyword": {"value": f"*{domain}*", "case_insensitive": True}}})
+            # domain.keyword — exact match or subdomain (anchored on a dot)
             should.append({"term": {"domain.keyword": domain}})
+            should.append({"wildcard": {"domain.keyword": {"value": f"*.{domain}", "case_insensitive": True}}})
 
-            # username.keyword — email patterns and contains
+            # username.keyword — email whose host is the domain or a subdomain
             should.append({"wildcard": {"username.keyword": {"value": f"*@{domain}", "case_insensitive": True}}})
             should.append({"wildcard": {"username.keyword": {"value": f"*@*.{domain}", "case_insensitive": True}}})
-            should.append({"term": {"username.keyword": domain}})
-            should.append({"wildcard": {"username.keyword": {"value": f"*{domain}*", "case_insensitive": True}}})
 
-            # url — contains domain
-            should.append({"wildcard": {"url": {"value": f"*{domain}*", "case_insensitive": True}}})
+            # url — host portion equals domain or a subdomain. Wildcards on the
+            # raw URL string can't distinguish 'nibank.mn' from 'ibank.mn'
+            # safely, so use a regexp anchored on the scheme/host boundary.
+            host_re = domain.replace(".", "\\.")
+            should.append({
+                "regexp": {
+                    "url": {
+                        "value": f".*://([^/?#:@]+\\.)?{host_re}(:[0-9]+)?(/.*)?",
+                        "case_insensitive": True,
+                    }
+                }
+            })
 
         if not should:
             return None
