@@ -202,7 +202,7 @@
   <!-- Toast container -->
   <div class="dsec-toast-container" id="toast-container"></div>
   <!-- SocketIO for real-time updates -->
-  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="{{ url_for('static', filename='assets/js/socket.io.min.js') }}"></script>
   <script>
     // WebSocket real-time
     var socket = null;

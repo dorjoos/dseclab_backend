@@ -109,20 +109,15 @@ def create_app(config_name=None):
         response.headers.setdefault(
             "Content-Security-Policy",
             "default-src 'self'; "
-            # Allow the Socket.IO CDN used by base.html for the real-time channel,
-            # and keep inline/eval for the existing template scripts.
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.socket.io; "
-            "script-src-elem 'self' 'unsafe-inline' https://cdn.socket.io; "
-            # Allow Google Fonts stylesheet host (style-src-elem covers <link>).
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src-elem 'self' 'unsafe-inline'; "
+            # Google Fonts stylesheet host (style-src-elem covers <link>).
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "img-src 'self' data:; "
             # Inter font files load from fonts.gstatic.com per googleapis.com CSS.
             "font-src 'self' data: https://fonts.gstatic.com; "
-            # Socket.IO opens a WebSocket from the same origin (wss://), which
-            # connect-src 'self' allows by default in modern browsers — but be
-            # explicit for the WS/HTTPS handshakes.
-            "connect-src 'self' https://cdn.socket.io;",
+            "connect-src 'self';",
         )
         return response
 
