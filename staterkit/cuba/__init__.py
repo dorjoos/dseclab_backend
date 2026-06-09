@@ -12,6 +12,9 @@ from flask_socketio import SocketIO
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 db = SQLAlchemy()
 migrate = Migrate()
 jwt = JWTManager()
