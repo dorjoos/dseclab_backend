@@ -163,6 +163,65 @@
   <div class="vn-pagination" id="vulns-pagination"></div>
 </div>
 
+{# --- Detail modal (admin/analyst only — page route already returns 403 for member). --- #}
+{% if full_access %}
+<div class="vn-modal-backdrop" id="vn-modal-root" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="vn-modal-cve">
+  <div class="vn-modal">
+    <div class="vn-modal-head">
+      <div class="vn-modal-head-inner">
+        <h2 class="vn-modal-cve" id="vn-modal-cve">—</h2>
+        <p class="vn-modal-vuln" id="vn-modal-vuln">—</p>
+        <div class="vn-modal-chips" id="vn-modal-chips"></div>
+      </div>
+      <button type="button" class="vn-modal-close" id="vn-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="vn-modal-body">
+      <div class="vn-modal-meta">
+        <div class="vn-modal-meta-cell">
+          <div class="vn-modal-meta-label">Vendor</div>
+          <div class="vn-modal-meta-val" id="vn-modal-vendor">—</div>
+        </div>
+        <div class="vn-modal-meta-cell">
+          <div class="vn-modal-meta-label">Product</div>
+          <div class="vn-modal-meta-val" id="vn-modal-product">—</div>
+        </div>
+        <div class="vn-modal-meta-cell">
+          <div class="vn-modal-meta-label">Date Added</div>
+          <div class="vn-modal-meta-val" id="vn-modal-date-added">—</div>
+        </div>
+        <div class="vn-modal-meta-cell">
+          <div class="vn-modal-meta-label">Due Date</div>
+          <div class="vn-modal-meta-val" id="vn-modal-due-date">—</div>
+        </div>
+      </div>
+      <div class="vn-modal-section">
+        <div class="vn-modal-section-title">Description</div>
+        <div class="vn-modal-section-body" id="vn-modal-description">—</div>
+      </div>
+      <div class="vn-modal-section">
+        <div class="vn-modal-section-title">Required Action</div>
+        <div class="vn-modal-section-body" id="vn-modal-action">—</div>
+      </div>
+      <div class="vn-modal-section">
+        <div class="vn-modal-section-title">References</div>
+        <div class="vn-modal-section-body" id="vn-modal-notes">—</div>
+      </div>
+      <div class="vn-modal-section">
+        <div class="vn-modal-section-title">CWEs</div>
+        <div class="vn-modal-section-body" id="vn-modal-cwes">—</div>
+      </div>
+    </div>
+    <div class="vn-modal-foot">
+      <div class="vn-modal-foot-left" id="vn-modal-status">Loading…</div>
+      <div class="vn-modal-foot-right">
+        <a href="#" class="vn-btn" id="vn-modal-open-full" target="_blank" rel="noopener">Open in new tab</a>
+        <button type="button" class="vn-btn" id="vn-modal-close-2">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <script>
 (function() {
   var FULL_ACCESS = {{ 'true' if full_access else 'false' }};
@@ -312,6 +371,107 @@
     document.getElementById('vulns-ransomware').value = '';
     state.page = 1; load();
   });
+
+  // ---- Detail modal (full-access only — markup is gated server-side) ----
+  var modalRoot = document.getElementById('vn-modal-root');
+
+  function fmtDate(s) { return s == null || s === '' ? '—' : String(s); }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function linkifyNotes(text) {
+    if (!text) return '—';
+    var safe = escapeHtml(text);
+    // Wrap http(s) URLs in <a>. Notes often have ' ; ' separators.
+    return safe.replace(/(https?:\/\/[^\s;<>"']+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  }
+
+  function openModal(cveId) {
+    if (!modalRoot) return;  // member — no modal markup
+    modalRoot.style.display = 'flex';
+    // Force reflow so the .is-open transition fires.
+    void modalRoot.offsetWidth;
+    modalRoot.classList.add('is-open');
+
+    // Reset to loading state.
+    document.getElementById('vn-modal-cve').textContent = cveId;
+    document.getElementById('vn-modal-vuln').textContent = '';
+    document.getElementById('vn-modal-chips').innerHTML = '';
+    ['vendor', 'product', 'date-added', 'due-date'].forEach(function(k) {
+      document.getElementById('vn-modal-' + k).textContent = '—';
+    });
+    ['description', 'action', 'notes', 'cwes'].forEach(function(k) {
+      document.getElementById('vn-modal-' + k).textContent = '—';
+    });
+    document.getElementById('vn-modal-status').textContent = 'Loading…';
+    document.getElementById('vn-modal-open-full').href =
+      '/threat-intelligence/vulnerabilities/' + encodeURIComponent(cveId);
+
+    fetch('/api/vulnerabilities/' + encodeURIComponent(cveId), {
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' }
+    }).then(function(r) {
+      if (!r.ok) {
+        var e = new Error('HTTP ' + r.status); e.status = r.status; throw e;
+      }
+      return r.json();
+    }).then(function(d) {
+      document.getElementById('vn-modal-cve').textContent = d.cve_id || cveId;
+      document.getElementById('vn-modal-vuln').textContent = d.vulnerability_name || '';
+      var chips = document.getElementById('vn-modal-chips');
+      chips.innerHTML = '';
+      var statusHtml = statusChip(d.due_date);
+      var kevHtml = kevTag(d.known_ransomware_use);
+      chips.innerHTML = statusHtml + kevHtml;
+      document.getElementById('vn-modal-vendor').textContent = d.vendor || '—';
+      document.getElementById('vn-modal-product').textContent = d.product || '—';
+      document.getElementById('vn-modal-date-added').textContent = fmtDate(d.date_added);
+      document.getElementById('vn-modal-due-date').textContent = fmtDate(d.due_date);
+      document.getElementById('vn-modal-description').textContent = d.short_description || '—';
+      document.getElementById('vn-modal-action').textContent = d.required_action || '—';
+      document.getElementById('vn-modal-notes').innerHTML = linkifyNotes(d.notes);
+      var cwes = d.cwes && d.cwes.length ? d.cwes.join(', ') : '—';
+      document.getElementById('vn-modal-cwes').textContent = cwes;
+      document.getElementById('vn-modal-status').textContent = 'Loaded';
+    }).catch(function(err) {
+      var msg = 'Could not load.';
+      if (err && err.status === 404) msg = 'CVE not found.';
+      else if (err && (err.status === 401 || err.status === 403)) msg = 'Session expired. Refresh the page.';
+      else if (err && err.status >= 500) msg = 'Server error. Try again.';
+      document.getElementById('vn-modal-status').textContent = msg;
+    });
+  }
+
+  function closeModal() {
+    if (!modalRoot) return;
+    modalRoot.classList.remove('is-open');
+    setTimeout(function() { modalRoot.style.display = 'none'; }, 180);
+  }
+
+  if (modalRoot) {
+    document.getElementById('vn-modal-close').addEventListener('click', closeModal);
+    document.getElementById('vn-modal-close-2').addEventListener('click', closeModal);
+    modalRoot.addEventListener('click', function(e) {
+      if (e.target === modalRoot) closeModal();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modalRoot.classList.contains('is-open')) closeModal();
+    });
+    // Delegate CVE link clicks from the table body.
+    document.getElementById('vulns-body').addEventListener('click', function(e) {
+      var a = e.target.closest('a[href^="/threat-intelligence/vulnerabilities/"]');
+      if (!a) return;
+      // Allow Cmd/Ctrl+click and middle-click to open the page in a new tab as usual.
+      if (e.metaKey || e.ctrlKey || e.button === 1) return;
+      e.preventDefault();
+      var href = a.getAttribute('href');
+      var cveId = decodeURIComponent(href.replace('/threat-intelligence/vulnerabilities/', ''));
+      openModal(cveId);
+    });
+  }
+
   load();
 })();
 </script>

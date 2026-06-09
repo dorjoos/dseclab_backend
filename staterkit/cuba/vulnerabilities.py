@@ -99,6 +99,22 @@ def search_api():
     })
 
 
+@vulnerabilities.route('/api/vulnerabilities/<cve_id>')
+@login_required
+@limiter.limit('60/minute')
+def detail_api(cve_id):
+    """JSON for the detail modal — analysts and admins only."""
+    if not _is_full_access():
+        return jsonify({'error': 'forbidden'}), 403
+    doc = cisa_kev_service.get_by_id(cve_id)
+    if not doc:
+        return jsonify({'error': 'not_found'}), 404
+    log_audit('vulnerabilities_view', 'cisa_kev', doc.cve_id,
+              f'User {current_user.username} viewed {doc.cve_id} (modal)')
+    db.session.commit()
+    return jsonify(_serialize(doc, FULL_FIELDS))
+
+
 @vulnerabilities.route('/threat-intelligence/vulnerabilities/<cve_id>')
 @login_required
 def detail_page(cve_id):

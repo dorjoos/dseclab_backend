@@ -244,6 +244,43 @@ def test_member_sees_aggregate_stats_no_export(client, member_acme, fake_kev, mo
     assert b'export.csv' not in r.data
 
 
+DETAIL_API_PATH = f'/api/vulnerabilities/{CVE_A}'
+
+
+def test_detail_api_admin_returns_full(client, db, admin_user, fake_kev):
+    """JSON detail endpoint returns the full doc to admin and audits the access."""
+    from cuba.models import AuditLog
+    fake_kev(SAMPLE)
+    login(client, admin_user.email)
+    r = client.get(DETAIL_API_PATH)
+    assert r.status_code == 200
+    d = r.get_json()
+    assert d['cve_id'] == CVE_A
+    assert d['short_description']
+    assert d['required_action']
+    assert 'cwes' in d
+    rows = AuditLog.query.filter_by(action_type='vulnerabilities_view').all()
+    assert len(rows) == 1
+
+
+def test_detail_api_member_denied(client, db, member_acme, fake_kev):
+    from cuba.models import AuditLog
+    fake_kev(SAMPLE)
+    login(client, member_acme.email)
+    r = client.get(DETAIL_API_PATH)
+    assert r.status_code == 403
+    assert b'Use-after-free' not in r.data
+    # No audit row should be written for a denied modal request.
+    assert AuditLog.query.filter_by(action_type='vulnerabilities_view').count() == 0
+
+
+def test_detail_api_unknown_cve_returns_404(client, admin_user, fake_kev):
+    fake_kev({})
+    login(client, admin_user.email)
+    r = client.get('/api/vulnerabilities/CVE-9999-9999')
+    assert r.status_code == 404
+
+
 def test_get_stats_includes_due_counts(app, monkeypatch):
     """get_stats() must surface due_soon and overdue integer counts."""
     from cuba.services import cisa_kev_service as svc_mod
