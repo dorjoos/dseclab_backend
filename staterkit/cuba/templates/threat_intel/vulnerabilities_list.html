@@ -214,7 +214,7 @@
     <div class="vn-modal-foot">
       <div class="vn-modal-foot-left" id="vn-modal-status">Loading…</div>
       <div class="vn-modal-foot-right">
-        <a href="#" class="vn-btn" id="vn-modal-open-full" target="_blank" rel="noopener">Open in new tab</a>
+        <a href="#" class="vn-btn" id="vn-modal-open-full" target="_blank" rel="noopener noreferrer">View Reference ↗</a>
         <button type="button" class="vn-btn" id="vn-modal-close-2">Close</button>
       </div>
     </div>
@@ -420,8 +420,10 @@
       document.getElementById('vn-modal-' + k).textContent = '—';
     });
     document.getElementById('vn-modal-status').textContent = 'Loading…';
+    // Default the external link to NVD; will be replaced with the first
+    // reference URL from the notes field once data arrives.
     document.getElementById('vn-modal-open-full').href =
-      '/threat-intelligence/vulnerabilities/' + encodeURIComponent(cveId);
+      'https://nvd.nist.gov/vuln/detail/' + encodeURIComponent(cveId);
 
     fetch('/api/vulnerabilities/' + encodeURIComponent(cveId), {
       credentials: 'same-origin',
@@ -448,6 +450,14 @@
       document.getElementById('vn-modal-notes').innerHTML = linkifyNotes(d.notes);
       var cwes = d.cwes && d.cwes.length ? d.cwes.join(', ') : '—';
       document.getElementById('vn-modal-cwes').textContent = cwes;
+      // Point "View Reference" at the first URL from notes; fall back to NVD.
+      var firstUrl = null;
+      if (d.notes) {
+        var m = String(d.notes).match(/https?:\/\/[^\s;<>"']+/);
+        if (m) firstUrl = m[0];
+      }
+      document.getElementById('vn-modal-open-full').href =
+        firstUrl || ('https://nvd.nist.gov/vuln/detail/' + encodeURIComponent(d.cve_id || cveId));
       document.getElementById('vn-modal-status').textContent = 'Loaded';
     }).catch(function(err) {
       var msg = 'Could not load.';
