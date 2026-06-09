@@ -21,6 +21,7 @@ class BaseConfig:
     ELASTICSEARCH_USER = os.environ.get('ELASTICSEARCH_USER', 'elastic')
     ELASTICSEARCH_PASSWORD = os.environ.get('ELASTICSEARCH_PASSWORD', '')
     ELASTICSEARCH_INDEX = os.environ.get('ELASTICSEARCH_INDEX', 'main')
+    CISA_KEV_INDEX = os.environ.get('CISA_KEV_INDEX', 'cisa-kev')
     ELASTICSEARCH_VERIFY_CERTS = os.environ.get('ELASTICSEARCH_VERIFY_CERTS', 'false').lower() == 'true'
 
     # Email (SMTP)
