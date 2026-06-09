@@ -85,7 +85,8 @@ def test_admin_search_returns_full_fields(client, admin_user, fake_kev):
     assert 'cwes' in sample_row
 
 
-def test_member_search_omits_sensitive_fields(client, member_acme, fake_kev):
+def test_member_search_includes_full_fields(client, member_acme, fake_kev):
+    """CISA KEV is public — members see the same fields as admin."""
     fake_kev(SAMPLE)
     login(client, member_acme.email)
     token = _csrf_token(client)
@@ -98,10 +99,10 @@ def test_member_search_omits_sensitive_fields(client, member_acme, fake_kev):
     assert 'cve_id' in sample_row
     assert 'vendor' in sample_row
     assert 'product' in sample_row
-    assert 'short_description' not in sample_row
-    assert 'required_action' not in sample_row
-    assert 'notes' not in sample_row
-    assert 'cwes' not in sample_row
+    assert 'short_description' in sample_row
+    assert 'required_action' in sample_row
+    assert 'notes' in sample_row
+    assert 'cwes' in sample_row
 
 
 def test_filter_by_vendor(client, admin_user, fake_kev):
@@ -130,12 +131,13 @@ def test_filter_by_ransomware_use(client, admin_user, fake_kev):
 
 # --- detail page ---
 
-def test_member_denied_on_detail(client, member_acme, fake_kev):
+def test_member_can_view_detail(client, member_acme, fake_kev):
+    """Members can view the per-CVE detail page (CISA KEV is public)."""
     fake_kev(SAMPLE)
     login(client, member_acme.email)
-    r = client.get(f'{LIST_PATH}/{CVE_A}', follow_redirects=False)
-    assert r.status_code in (302, 403)
-    assert b'Use-after-free' not in r.data
+    r = client.get(f'{LIST_PATH}/{CVE_A}')
+    assert r.status_code == 200
+    assert b'Use-after-free' in r.data
 
 
 def test_analyst_can_view_detail(client, analyst_user, fake_kev):
@@ -156,12 +158,14 @@ def test_unknown_cve_returns_404(client, admin_user, fake_kev):
 
 # --- export ---
 
-def test_member_denied_on_export(client, member_acme, fake_kev):
+def test_member_can_export(client, member_acme, fake_kev):
+    """Members can export the CISA KEV catalog (public data)."""
     fake_kev(SAMPLE)
     login(client, member_acme.email)
-    r = client.get(EXPORT_PATH, follow_redirects=False)
-    assert r.status_code in (302, 403)
-    assert b'CVE-2024-0001' not in r.data
+    r = client.get(EXPORT_PATH)
+    assert r.status_code == 200
+    assert r.mimetype.startswith('text/csv')
+    assert CVE_A in r.data.decode()
 
 
 def test_admin_can_export(client, admin_user, fake_kev):
@@ -226,8 +230,8 @@ def test_list_page_renders_ssr_stats(client, admin_user, fake_kev, monkeypatch):
     assert b'325' in body  # Known KEV count from the stub
 
 
-def test_member_sees_aggregate_stats_no_export(client, member_acme, fake_kev, monkeypatch):
-    """Member sees stats + table shell. Member must NOT see Export link."""
+def test_member_sees_full_dashboard(client, member_acme, fake_kev, monkeypatch):
+    """Member sees the full dashboard including the Export link (CISA KEV is public)."""
     fake_kev(SAMPLE)
     from cuba.services import cisa_kev_service as svc_mod
     monkeypatch.setattr(svc_mod.cisa_kev_service, 'get_stats',
@@ -239,9 +243,8 @@ def test_member_sees_aggregate_stats_no_export(client, member_acme, fake_kev, mo
     assert r.status_code == 200
     assert b'Total' in r.data
     assert b'1607' in r.data
-    # Export button must be hidden for member. The href to the export endpoint
-    # is the load-bearing string; "Export" as a word could appear elsewhere.
-    assert b'export.csv' not in r.data
+    # Export link IS visible to members in the flat-access model.
+    assert b'export.csv' in r.data
 
 
 DETAIL_API_PATH = f'/api/vulnerabilities/{CVE_A}'
@@ -263,15 +266,18 @@ def test_detail_api_admin_returns_full(client, db, admin_user, fake_kev):
     assert len(rows) == 1
 
 
-def test_detail_api_member_denied(client, db, member_acme, fake_kev):
+def test_detail_api_member_allowed(client, db, member_acme, fake_kev):
+    """Members can fetch the JSON detail for the modal (public data)."""
     from cuba.models import AuditLog
     fake_kev(SAMPLE)
     login(client, member_acme.email)
     r = client.get(DETAIL_API_PATH)
-    assert r.status_code == 403
-    assert b'Use-after-free' not in r.data
-    # No audit row should be written for a denied modal request.
-    assert AuditLog.query.filter_by(action_type='vulnerabilities_view').count() == 0
+    assert r.status_code == 200
+    d = r.get_json()
+    assert d['cve_id'] == CVE_A
+    assert d['short_description']
+    # Audit row is written for any successful modal request.
+    assert AuditLog.query.filter_by(action_type='vulnerabilities_view').count() == 1
 
 
 def test_detail_api_unknown_cve_returns_404(client, admin_user, fake_kev):

@@ -19,17 +19,20 @@ logger = logging.getLogger(__name__)
 vulnerabilities = Blueprint('vulnerabilities', __name__)
 
 
-MEMBER_FIELDS = {
+FULL_FIELDS = {
     'cve_id', 'vendor', 'product', 'vulnerability_name',
     'date_added', 'due_date', 'known_ransomware_use',
-}
-FULL_FIELDS = MEMBER_FIELDS | {
     'short_description', 'required_action', 'notes', 'cwes',
 }
+# Public CISA KEV data — every logged-in user gets the full record.
+MEMBER_FIELDS = FULL_FIELDS
 
 
 def _is_full_access():
-    return current_user.role in ('admin', 'analyst')
+    # Retained as a single seam in case a future page in this blueprint
+    # needs per-role gating again. CISA KEV itself is public — everyone
+    # logged-in is "full access".
+    return True
 
 
 def _serialize(doc, fields):
