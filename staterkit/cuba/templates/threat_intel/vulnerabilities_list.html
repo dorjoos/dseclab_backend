@@ -1,36 +1,129 @@
 {% extends "base.html" %}
 {% block title %}D-SECLAB | Vulnerabilities{% endblock %}
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/vulnerabilities.css') }}">
+{% endblock %}
 {% block content %}
-<div class="av-page" id="vulns-page">
-  <div class="av-page-header">
-    <h1 class="av-page-title">Vulnerabilities (CISA KEV)</h1>
-    <p class="av-page-subtitle">Known Exploited Vulnerabilities catalog</p>
+<div class="container-fluid p-0 vn-page">
+
+  {# --- Hero with stats row --- #}
+  <div class="vn-hero">
+    <div class="vn-hero-inner">
+      <div class="vn-hero-top">
+        <div>
+          <div class="vn-hero-title-row">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+                 viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <div class="vn-hero-title">Vulnerabilities (CISA KEV)</div>
+          </div>
+          <div class="vn-hero-subtitle">Known Exploited Vulnerabilities catalog</div>
+        </div>
+        <div class="vn-hero-badge">
+          <span class="vn-hero-badge-dot"></span>
+          {{ stats.by_ransomware.get('Known', 0) }} Ransomware-tagged
+        </div>
+      </div>
+
+      <div class="vn-stats-row">
+        <div class="vn-stat">
+          <div class="vn-stat-val">{{ stats.total }}</div>
+          <div class="vn-stat-label">Total CVEs</div>
+        </div>
+        <div class="vn-stat-divider"></div>
+        <div class="vn-stat">
+          <div class="vn-stat-val">{{ stats.by_ransomware.get('Known', 0) }}</div>
+          <div class="vn-stat-label">Ransomware Use</div>
+        </div>
+        <div class="vn-stat-divider"></div>
+        <div class="vn-stat">
+          <div class="vn-stat-val">{{ stats.due_soon }}</div>
+          <div class="vn-stat-label">Due &le; 7 Days</div>
+        </div>
+        <div class="vn-stat-divider"></div>
+        <div class="vn-stat">
+          <div class="vn-stat-val">{{ stats.overdue }}</div>
+          <div class="vn-stat-label">Overdue</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="av-toolbar">
-    <div class="av-toolbar-left">
-      <span class="av-count" id="vulns-total">Loading...</span>
+  {# --- Two cards: top vendors + ransomware use --- #}
+  {% set max_vendor = (stats.by_vendor | map(attribute=1) | max | default(1)) if stats.by_vendor else 1 %}
+  {% set known = stats.by_ransomware.get('Known', 0) %}
+  {% set unknown = stats.by_ransomware.get('Unknown', 0) %}
+  {% set rmax = (known if known > unknown else unknown) or 1 %}
+
+  <div class="vn-row">
+    <div class="vn-card">
+      <div class="vn-card-title">Top Vendors</div>
+      {% for vendor, count in stats.by_vendor[:5] %}
+      <div class="vn-bar-row">
+        <div class="vn-bar-label" title="{{ vendor }}">{{ vendor }}</div>
+        <div class="vn-bar">
+          <div class="vn-bar-fill" style="width: {{ (count * 100 / max_vendor) | round(0, 'floor') }}%;"></div>
+        </div>
+        <div class="vn-bar-count">{{ count }}</div>
+      </div>
+      {% else %}
+      <div class="vn-empty">No data</div>
+      {% endfor %}
     </div>
-    <div class="av-toolbar-right">
-      <div class="av-search">
+
+    <div class="vn-card">
+      <div class="vn-card-title">Ransomware Use</div>
+      <div class="vn-bar-row">
+        <div class="vn-bar-label">Known</div>
+        <div class="vn-bar">
+          <div class="vn-bar-fill vn-bar-fill--ransomware"
+               style="width: {{ (known * 100 / rmax) | round(0, 'floor') }}%;"></div>
+        </div>
+        <div class="vn-bar-count">{{ known }}</div>
+      </div>
+      <div class="vn-bar-row">
+        <div class="vn-bar-label">Unknown</div>
+        <div class="vn-bar">
+          <div class="vn-bar-fill" style="width: {{ (unknown * 100 / rmax) | round(0, 'floor') }}%;"></div>
+        </div>
+        <div class="vn-bar-count">{{ unknown }}</div>
+      </div>
+    </div>
+  </div>
+
+  {# --- Toolbar --- #}
+  <div class="vn-toolbar">
+    <div class="vn-toolbar-left">
+      <span class="vn-count" id="vulns-total">Loading...</span>
+    </div>
+    <div class="vn-toolbar-right">
+      <div class="vn-search">
         <input type="text" id="vulns-search" placeholder="Search CVE / name / description...">
       </div>
-      <select id="vulns-vendor" class="av-filter">
+      <select id="vulns-vendor" class="vn-filter">
         <option value="">All vendors</option>
+        {% for vendor, _ in stats.by_vendor[:20] %}
+        <option value="{{ vendor }}">{{ vendor }}</option>
+        {% endfor %}
       </select>
-      <select id="vulns-ransomware" class="av-filter">
+      <select id="vulns-ransomware" class="vn-filter">
         <option value="">Any ransomware-use</option>
         <option value="Known">Known</option>
         <option value="Unknown">Unknown</option>
       </select>
       {% if full_access %}
-      <a href="{{ url_for('vulnerabilities.export_csv') }}" class="av-btn">Export CSV</a>
+      <a href="{{ url_for('vulnerabilities.export_csv') }}" class="vn-btn">Export CSV</a>
       {% endif %}
     </div>
   </div>
 
-  <div class="av-table-wrap">
-    <table class="av-table" id="vulns-table">
+  {# --- Table --- #}
+  <div class="vn-table-wrap">
+    <table class="vn-table" id="vulns-table">
       <thead>
         <tr>
           <th>#</th>
@@ -40,15 +133,16 @@
           <th>Vulnerability</th>
           <th>Added</th>
           <th>Due</th>
-          <th>Ransomware</th>
+          <th>Status</th>
+          <th>Tag</th>
         </tr>
       </thead>
       <tbody id="vulns-body"></tbody>
     </table>
-    <div class="av-empty" id="vulns-empty" style="display:none;">No results found</div>
+    <div class="vn-empty" id="vulns-empty" style="display:none;">No results found</div>
   </div>
 
-  <div class="av-pagination" id="vulns-pagination"></div>
+  <div class="vn-pagination" id="vulns-pagination"></div>
 </div>
 
 <script>
@@ -57,6 +151,28 @@
   var state = { page: 1, per_page: 20 };
 
   function fmt(s) { return s == null ? '' : String(s); }
+
+  function statusChip(dueStr) {
+    if (!dueStr) return '';
+    var due = new Date(dueStr + 'T00:00:00Z');
+    if (isNaN(due.getTime())) return '';
+    var today = new Date(); today.setUTCHours(0,0,0,0);
+    var diffMs = due - today;
+    var diffDays = Math.round(diffMs / 86400000);
+    if (diffDays < 0) {
+      return '<span class="vn-chip vn-status--overdue">Overdue ' + (-diffDays) + 'd</span>';
+    }
+    if (diffDays <= 7) {
+      return '<span class="vn-chip vn-status--soon">Due ' + diffDays + 'd</span>';
+    }
+    return '<span class="vn-chip vn-status--ok">' + diffDays + 'd</span>';
+  }
+
+  function kevTag(known) {
+    return known === 'Known'
+      ? '<span class="vn-chip vn-tag-kev">&#9733; KEV</span>'
+      : '';
+  }
 
   function load() {
     var body = {
@@ -77,7 +193,11 @@
       body: JSON.stringify(body)
     }).then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
-        if (!data) { document.getElementById('vulns-empty').style.display = ''; return; }
+        if (!data) {
+          document.getElementById('vulns-empty').style.display = '';
+          document.getElementById('vulns-total').textContent = 'Could not load';
+          return;
+        }
         document.getElementById('vulns-total').textContent = data.total + ' total';
         var tbody = document.getElementById('vulns-body');
         tbody.innerHTML = '';
@@ -99,7 +219,8 @@
             '<td>' + fmt(row.vulnerability_name) + '</td>' +
             '<td>' + fmt(row.date_added) + '</td>' +
             '<td>' + fmt(row.due_date) + '</td>' +
-            '<td>' + fmt(row.known_ransomware_use) + '</td>';
+            '<td>' + statusChip(row.due_date) + '</td>' +
+            '<td>' + kevTag(row.known_ransomware_use) + '</td>';
           tbody.appendChild(tr);
         });
       });

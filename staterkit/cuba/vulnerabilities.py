@@ -54,10 +54,17 @@ def _serialize(doc, fields):
 @vulnerabilities.route('/threat-intelligence/vulnerabilities')
 @login_required
 def list_page():
+    try:
+        stats = cisa_kev_service.get_stats()
+    except Exception:
+        logger.exception('vulnerabilities list_page: get_stats failed')
+        stats = {'total': 0, 'by_vendor': [], 'by_ransomware': {},
+                 'due_soon': 0, 'overdue': 0}
     breadcrumb = {'parent': 'Threat Intelligence', 'child': 'Vulnerabilities'}
     return render_template('threat_intel/vulnerabilities_list.html',
                           breadcrumb=breadcrumb,
-                          full_access=_is_full_access())
+                          full_access=_is_full_access(),
+                          stats=stats)
 
 
 @vulnerabilities.route('/api/vulnerabilities/search', methods=['POST'])

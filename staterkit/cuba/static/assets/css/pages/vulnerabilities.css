@@ -1,0 +1,179 @@
+/* ==========================================================================
+   Vulnerabilities (CISA KEV) — /threat-intelligence/vulnerabilities
+   Prefix: vn-
+   ========================================================================== */
+
+/* Hero */
+.vn-hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #1e40af 100%);
+  border-radius: 16px;
+  padding: 32px;
+  color: #fff;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.vn-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 250px; height: 250px; border-radius: 50%;
+  background: rgba(250, 204, 21, 0.08);
+}
+.vn-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: 20%;
+  width: 300px; height: 300px; border-radius: 50%;
+  background: rgba(248, 113, 113, 0.06);
+}
+.vn-hero-inner { position: relative; z-index: 1; }
+.vn-hero-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  flex-wrap: wrap; gap: 16px;
+}
+.vn-hero-title-row { display: flex; align-items: center; gap: 10px; }
+.vn-hero-title { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+.vn-hero-subtitle { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+.vn-hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fff; padding: 6px 14px; border-radius: 999px;
+  font-size: 13px; font-weight: 600;
+}
+.vn-hero-badge-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+}
+
+/* Stats row */
+.vn-stats-row {
+  display: flex; flex-wrap: wrap; gap: 0;
+  margin-top: 24px; padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.vn-stat { flex: 1; min-width: 120px; text-align: center; }
+.vn-stat-val { font-size: 28px; font-weight: 800; line-height: 1.1; color: #fff; }
+.vn-stat-label {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em;
+  opacity: 0.7; margin-top: 4px;
+}
+.vn-stat-divider {
+  width: 1px; background: rgba(255, 255, 255, 0.1); margin: 0 8px;
+}
+
+/* Card row */
+.vn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+@media (max-width: 768px) { .vn-row { grid-template-columns: 1fr; } }
+.vn-card {
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  border-radius: 12px;
+  padding: 20px;
+}
+.vn-card-title {
+  font-size: 13px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--bs-secondary-color, #6b7280);
+  margin-bottom: 14px;
+}
+.vn-bar-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 50px;
+  align-items: center; gap: 10px;
+  padding: 6px 0; font-size: 13px;
+}
+.vn-bar-label {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--bs-body-color, #111827);
+}
+.vn-bar {
+  height: 8px; border-radius: 999px;
+  background: var(--bs-tertiary-bg, #f3f4f6); overflow: hidden;
+}
+.vn-bar-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+}
+.vn-bar-fill--ransomware { background: linear-gradient(90deg, #ef4444, #f97316); }
+.vn-bar-count {
+  text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--bs-secondary-color, #6b7280);
+}
+
+/* Toolbar + table */
+.vn-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  border-radius: 12px 12px 0 0; border-bottom: none;
+}
+.vn-toolbar-left, .vn-toolbar-right {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+}
+.vn-count { font-size: 13px; color: var(--bs-secondary-color, #6b7280); }
+.vn-search input, .vn-filter {
+  height: 36px; padding: 0 12px;
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  border-radius: 8px;
+  background: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #111827);
+  font-size: 13px;
+}
+.vn-search input { min-width: 220px; }
+.vn-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 14px; border-radius: 8px;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  color: var(--bs-body-color, #111827);
+  font-size: 13px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+}
+.vn-btn:hover { background: var(--bs-tertiary-bg, #f3f4f6); }
+
+.vn-table-wrap {
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+}
+.vn-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vn-table thead th {
+  text-align: left; padding: 10px 16px; font-weight: 700;
+  font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--bs-secondary-color, #6b7280);
+  background: var(--bs-tertiary-bg, #f9fafb);
+  border-bottom: 1px solid var(--bs-border-color, #e5e7eb);
+}
+.vn-table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bs-border-color, #f3f4f6);
+  vertical-align: middle;
+}
+.vn-table tbody tr:hover { background: var(--bs-tertiary-bg, #f9fafb); }
+.vn-table a { color: #2563eb; text-decoration: none; font-weight: 600; }
+.vn-table a:hover { text-decoration: underline; }
+
+/* Status & KEV chips */
+.vn-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+}
+.vn-status--overdue { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+.vn-status--soon    { background: rgba(245, 158, 11, 0.14); color: #b45309; }
+.vn-status--ok      { background: rgba(107, 114, 128, 0.12); color: #4b5563; }
+.vn-tag-kev {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #b91c1c;
+}
+
+.vn-empty {
+  padding: 40px; text-align: center;
+  color: var(--bs-secondary-color, #6b7280);
+  font-size: 14px;
+}

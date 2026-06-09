@@ -207,6 +207,43 @@ def test_unauthenticated_search_does_not_leak(client, fake_kev):
     assert b'Use-after-free' not in r.data
 
 
+def test_list_page_renders_ssr_stats(client, admin_user, fake_kev, monkeypatch):
+    """The list shell must include the SSR stats row text so the page is
+    informative even before the table AJAX resolves."""
+    fake_kev(SAMPLE)
+    from cuba.services import cisa_kev_service as svc_mod
+    monkeypatch.setattr(svc_mod.cisa_kev_service, 'get_stats',
+                        lambda: {'total': 1607, 'by_vendor': [('Microsoft', 377)],
+                                 'by_ransomware': {'Known': 325, 'Unknown': 1282},
+                                 'due_soon': 47, 'overdue': 12})
+    login(client, admin_user.email)
+    r = client.get(LIST_PATH)
+    assert r.status_code == 200
+    body = r.data
+    assert b'Total' in body
+    assert b'1607' in body
+    assert b'Ransom' in body or b'KEV' in body
+    assert b'325' in body  # Known KEV count from the stub
+
+
+def test_member_sees_aggregate_stats_no_export(client, member_acme, fake_kev, monkeypatch):
+    """Member sees stats + table shell. Member must NOT see Export link."""
+    fake_kev(SAMPLE)
+    from cuba.services import cisa_kev_service as svc_mod
+    monkeypatch.setattr(svc_mod.cisa_kev_service, 'get_stats',
+                        lambda: {'total': 1607, 'by_vendor': [('Microsoft', 377)],
+                                 'by_ransomware': {'Known': 325, 'Unknown': 1282},
+                                 'due_soon': 47, 'overdue': 12})
+    login(client, member_acme.email)
+    r = client.get(LIST_PATH)
+    assert r.status_code == 200
+    assert b'Total' in r.data
+    assert b'1607' in r.data
+    # Export button must be hidden for member. The href to the export endpoint
+    # is the load-bearing string; "Export" as a word could appear elsewhere.
+    assert b'export.csv' not in r.data
+
+
 def test_get_stats_includes_due_counts(app, monkeypatch):
     """get_stats() must surface due_soon and overdue integer counts."""
     from cuba.services import cisa_kev_service as svc_mod
