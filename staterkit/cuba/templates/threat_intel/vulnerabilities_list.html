@@ -207,18 +207,8 @@
     );
   }
 
-  function load() {
-    var body = {
-      page: state.page,
-      per_page: state.per_page,
-      search: document.getElementById('vulns-search').value,
-      vendor: document.getElementById('vulns-vendor').value,
-      ransomware_use: document.getElementById('vulns-ransomware').value
-    };
-    setState('loading');
-    document.getElementById('vulns-total').textContent = 'Loading…';
-
-    fetch('/api/vulnerabilities/search', {
+  function doFetch(body) {
+    return fetch('/api/vulnerabilities/search', {
       method: 'POST',
       credentials: 'same-origin',
       headers: {
@@ -234,6 +224,29 @@
         throw e;
       }
       return r.json();
+    });
+  }
+
+  function load() {
+    var body = {
+      page: state.page,
+      per_page: state.per_page,
+      search: document.getElementById('vulns-search').value,
+      vendor: document.getElementById('vulns-vendor').value,
+      ransomware_use: document.getElementById('vulns-ransomware').value
+    };
+    setState('loading');
+    document.getElementById('vulns-total').textContent = 'Loading…';
+
+    // Auto-retry once on transient 400 — covers the page-load race where
+    // the session cookie hasn't settled before the JS auto-fires the search.
+    doFetch(body).catch(function(err) {
+      if (err && err.status === 400) {
+        return new Promise(function(r) { setTimeout(r, 200); }).then(function() {
+          return doFetch(body);
+        });
+      }
+      throw err;
     }).then(function(data) {
       document.getElementById('vulns-total').textContent = data.total + ' total';
       var tbody = document.getElementById('vulns-body');
