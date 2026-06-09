@@ -258,6 +258,56 @@
     });
   }
 
+  function renderPagination(data) {
+    var el = document.getElementById('vulns-pagination');
+    if (!el) return;
+    el.innerHTML = '';
+    if (!data || data.pages <= 1) return;
+
+    var page = data.page, pages = data.pages;
+    var btn = function(label, target, opts) {
+      opts = opts || {};
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'vn-page-btn' + (opts.active ? ' vn-page-btn--active' : '');
+      b.disabled = !!opts.disabled;
+      b.textContent = label;
+      if (!opts.disabled && !opts.active) {
+        b.addEventListener('click', function() {
+          state.page = target;
+          load();
+          // Scroll to top of the table so the user sees page change.
+          document.getElementById('vulns-table').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      }
+      return b;
+    };
+
+    el.appendChild(btn('‹ Prev', page - 1, { disabled: !data.has_prev }));
+
+    // Compact page-number window: first, last, current ±2, with '…' gaps.
+    var nums = new Set([1, pages, page, page - 1, page + 1, page - 2, page + 2]);
+    var sorted = Array.from(nums).filter(function(n) { return n >= 1 && n <= pages; }).sort(function(a, b) { return a - b; });
+    var prev = 0;
+    sorted.forEach(function(n) {
+      if (n - prev > 1) {
+        var gap = document.createElement('span');
+        gap.className = 'vn-page-gap';
+        gap.textContent = '…';
+        el.appendChild(gap);
+      }
+      el.appendChild(btn(String(n), n, { active: n === page }));
+      prev = n;
+    });
+
+    el.appendChild(btn('Next ›', page + 1, { disabled: !data.has_next }));
+
+    var info = document.createElement('span');
+    info.className = 'vn-page-info';
+    info.textContent = 'Page ' + page + ' of ' + pages;
+    el.appendChild(info);
+  }
+
   function hasActiveFilters() {
     return !!(
       document.getElementById('vulns-search').value ||
@@ -338,6 +388,7 @@
           '<td>' + kevTag(row.known_ransomware_use) + '</td>';
         tbody.appendChild(tr);
       });
+      renderPagination(data);
     }).catch(function(err) {
       setState('error');
       var status = err && err.status;

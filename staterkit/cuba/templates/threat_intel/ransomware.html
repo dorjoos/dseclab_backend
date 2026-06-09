@@ -89,34 +89,31 @@
           <div class="rw-card-title-lg">Recent Attacks</div>
           <span class="rw-card-title-hint">Latest disclosures</span>
         </div>
-        <div class="rw-recent-list">
+        <div class="rw-tl-list">
           {% for r in recent %}
-          <div class="rw-recent-item {% if r.description %}rw-recent-item--clickable{% endif %}"
+          <div class="rw-tl-item {% if r.description %}rw-tl-item--clickable{% endif %}"
                style="--vn-chip:{{ r.group_color }};"
                {% if r.description %}data-rw-index="{{ loop.index0 }}"{% endif %}>
-            <div class="rw-recent-accent"></div>
-            <div class="rw-recent-body">
-              <div class="rw-recent-top">
-                <span class="rw-recent-group">
-                  <span class="rw-recent-group-dot"></span>
-                  {{ r.group }}
-                </span>
+            <div class="rw-tl-rail">
+              <span class="rw-tl-node"></span>
+            </div>
+            <div class="rw-tl-content">
+              <div class="rw-tl-top">
+                <span class="rw-tl-group">{{ r.group }}</span>
+                {% if r.date %}<span class="rw-tl-dot" aria-hidden="true">•</span><span class="rw-tl-date">{{ r.date }}</span>{% endif %}
+                {% if r.country %}<span class="rw-tl-dot" aria-hidden="true">•</span><span class="rw-tl-country">{{ r.country }}</span>{% endif %}
                 {% if r.source_url %}
                 <a href="{{ r.source_url }}" target="_blank" rel="noopener noreferrer"
-                   class="rw-recent-source" title="Open source: {{ r.feed_source or 'feed' }}"
-                   data-rw-nopopup="1">
-                  Source <span aria-hidden="true">↗</span>
-                </a>
+                   class="rw-tl-source" title="Open source: {{ r.feed_source or 'feed' }}"
+                   data-rw-nopopup="1" aria-label="Open source">↗</a>
                 {% endif %}
               </div>
-              <div class="rw-recent-victim">{{ r.victim }}</div>
-              <div class="rw-recent-meta">
-                {% if r.victim_website %}<span class="rw-recent-website">{{ r.victim_website }}</span>{% endif %}
-                {% if r.country %}<span class="rw-recent-sep" aria-hidden="true">·</span><span class="rw-recent-country">{{ r.country }}</span>{% endif %}
-                {% if r.date %}<span class="rw-recent-sep" aria-hidden="true">·</span><span class="rw-recent-date">{{ r.date }}</span>{% endif %}
-              </div>
+              <div class="rw-tl-victim">{{ r.victim }}</div>
+              {% if r.victim_website %}
+              <div class="rw-tl-website">{{ r.victim_website }}</div>
+              {% endif %}
               {% if r.description_short %}
-              <div class="rw-recent-desc">{{ r.description_short }}</div>
+              <div class="rw-tl-desc">{{ r.description_short }}</div>
               {% endif %}
             </div>
           </div>
@@ -267,7 +264,7 @@
       setTimeout(function() { rootEl.style.display = 'none'; }, 180);
     }
 
-    document.querySelectorAll('.rw-recent-item--clickable').forEach(function(el) {
+    document.querySelectorAll('.rw-tl-item--clickable').forEach(function(el) {
       el.addEventListener('click', function(e) {
         if (e.target.closest('[data-rw-nopopup]')) return;  // Source link
         var idx = parseInt(el.getAttribute('data-rw-index'), 10);

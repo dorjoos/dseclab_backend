@@ -200,6 +200,46 @@
 }
 .vn-state-text--error { color: #b91c1c; font-weight: 600; }
 
+/* Pagination */
+.vn-pagination {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 14px 4px;
+}
+.vn-page-btn {
+  min-width: 32px; height: 32px; padding: 0 10px;
+  border: 1px solid var(--bs-border-color, #e5e7eb);
+  background: var(--bs-body-bg, #fff);
+  color: var(--bs-body-color, #111827);
+  font-size: 13px; font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.vn-page-btn:hover:not(:disabled):not(.vn-page-btn--active) {
+  background: var(--bs-tertiary-bg, #f3f4f6);
+  border-color: #94a3b8;
+}
+.vn-page-btn:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.vn-page-btn--active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+  cursor: default;
+}
+.vn-page-gap {
+  padding: 0 4px;
+  color: var(--bs-secondary-color, #6b7280);
+  font-weight: 600;
+}
+.vn-page-info {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--bs-secondary-color, #6b7280);
+}
+
 /* CVE ID column: no wrap so identifiers stay on one line. */
 .vn-table td:nth-child(2),
 .vn-table th:nth-child(2) {
