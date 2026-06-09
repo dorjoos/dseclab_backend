@@ -102,7 +102,12 @@
                 <span class="rw-tl-group">{{ r.group }}</span>
                 {% if r.country %}<span class="rw-tl-dot" aria-hidden="true">•</span><span class="rw-tl-country">{{ r.country }}</span>{% endif %}
                 {% if r.date %}
-                  {% if r.source_url %}
+                  {# Belt-and-braces: r.source_url is also scheme-validated by
+                     _safe_http_url() in the service before it reaches the
+                     template. Re-checking here means the template still won't
+                     emit a javascript:/data: href if that helper is ever
+                     dropped during a future refactor. #}
+                  {% if r.source_url and (r.source_url.startswith('http://') or r.source_url.startswith('https://')) %}
                   <a href="{{ r.source_url }}" target="_blank" rel="noopener noreferrer"
                      class="rw-tl-date-tag" data-rw-nopopup="1"
                      title="Open source: {{ r.feed_source or 'feed' }}">{{ r.date }}</a>
