@@ -316,3 +316,112 @@
   padding: 24px;
   margin-bottom: 20px;
 }
+
+/* ==========================================================================
+   Recent Attacks — modern list
+   ========================================================================== */
+.rw-card-title-lg-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.rw-recent-list {
+  max-height: 460px;
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.rw-recent-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--bs-border-color, #f1f5f9);
+  transition: background 0.15s;
+}
+.rw-recent-item:last-child { border-bottom: none; }
+.rw-recent-item:hover { background: rgba(59, 130, 246, 0.04); }
+
+.rw-recent-group-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--vn-chip) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--vn-chip) 35%, transparent);
+  font-size: 11px; font-weight: 700;
+  text-transform: lowercase; letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--vn-chip);
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+}
+.rw-recent-group-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--vn-chip);
+}
+
+.rw-recent-main { min-width: 0; }
+.rw-recent-victim {
+  font-size: 14px; font-weight: 700;
+  color: var(--bs-body-color, #0f172a);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rw-recent-website {
+  font-size: 12px;
+  color: var(--bs-secondary-color, #64748b);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.rw-recent-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px;
+  color: var(--bs-secondary-color, #64748b);
+  white-space: nowrap;
+}
+.rw-recent-chip {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--bs-tertiary-bg, #f1f5f9);
+  font-weight: 600;
+  color: var(--bs-body-color, #334155);
+}
+.rw-recent-date { font-variant-numeric: tabular-nums; }
+
+.rw-recent-source {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: var(--bs-tertiary-bg, #f1f5f9);
+  color: var(--bs-secondary-color, #475569);
+  font-weight: 700; font-size: 14px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.rw-recent-source:hover {
+  background: #3b82f6;
+  color: #fff;
+}
+.rw-recent-source--disabled {
+  background: transparent; color: var(--bs-border-color, #e2e8f0);
+  cursor: default;
+}
+
+.rw-recent-empty {
+  padding: 40px; text-align: center;
+  color: var(--bs-secondary-color, #64748b);
+  font-size: 13px;
+}
+
+/* Fallback for browsers without color-mix (Safari <16.4 etc.) */
+@supports not (color: color-mix(in srgb, red 50%, transparent)) {
+  .rw-recent-group-chip {
+    background: rgba(99, 102, 241, 0.10);
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+}
+
+@media (max-width: 640px) {
+  .rw-recent-item { grid-template-columns: auto 1fr; }
+  .rw-recent-meta { grid-column: 2; padding-left: 0; }
+  .rw-recent-source { grid-column: 1 / -1; justify-self: end; }
+}

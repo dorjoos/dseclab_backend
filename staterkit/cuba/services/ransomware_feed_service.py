@@ -184,13 +184,18 @@ class RansomwareFeedService(ESIndexService):
         out = []
         for h in hits:
             doc = RansomwareDoc(h['_id'], h.get('_source', {}))
+            group = doc.group or 'unknown'
             out.append({
-                'group': doc.group or '—',
+                'group': group,
+                'group_color': _color_for(group),
                 'victim': doc.victim or '—',
+                'victim_website': doc.victim_website or '',
                 'country': doc.country or '',
                 'sector': doc.sector or '',
                 'date': _fmt_date(doc.discovered),
                 'data_size': _fmt_size(doc.data_size),
+                'source_url': doc.url or '',
+                'feed_source': doc.feed_source or '',
             })
         return out
 

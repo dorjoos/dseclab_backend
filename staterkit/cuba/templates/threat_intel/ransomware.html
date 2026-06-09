@@ -55,7 +55,7 @@
     </div>
     <div class="col-lg-4">
       <div class="card rw-card-body">
-        <div class="rw-card-title">Top Sectors</div>
+        <div class="rw-card-title">Top Countries</div>
         <div id="rw-sector-chart"></div>
       </div>
     </div>
@@ -85,30 +85,45 @@
     </div>
     <div class="col-lg-7">
       <div class="card rw-card-body">
-        <div class="rw-card-title-lg">Recent Attacks</div>
-        {% for r in recent %}
-        <div class="rw-victim-row">
-          <div class="rw-victim-info">
-            <div class="rw-victim-header">
-              <span class="rw-victim-name">{{ r.victim }}</span>
-              <span class="rw-badge {% if r.sector == 'Banking' %}rw-badge--banking{% elif r.sector == 'Healthcare' %}rw-badge--healthcare{% elif r.sector == 'Government' %}rw-badge--government{% elif r.sector == 'Technology' %}rw-badge--technology{% else %}rw-badge--default{% endif %}">{{ r.sector }}</span>
-            </div>
-            <div class="rw-victim-meta">
-              <span class="rw-victim-meta-group">{{ r.group }}</span>
-              &middot; {{ r.country }}
-              &middot; {{ r.data_size }}
-              &middot; {{ r.date }}
-            </div>
-          </div>
+        <div class="rw-card-title-lg-row">
+          <div class="rw-card-title-lg">Recent Attacks</div>
+          <span class="rw-card-title-hint">Latest disclosures</span>
         </div>
-        {% endfor %}
+        <div class="rw-recent-list">
+          {% for r in recent %}
+          <div class="rw-recent-item">
+            <div class="rw-recent-group-chip" style="--vn-chip:{{ r.group_color }};">
+              <span class="rw-recent-group-dot"></span>
+              <span class="rw-recent-group-name">{{ r.group }}</span>
+            </div>
+            <div class="rw-recent-main">
+              <div class="rw-recent-victim">{{ r.victim }}</div>
+              {% if r.victim_website %}
+              <div class="rw-recent-website">{{ r.victim_website }}</div>
+              {% endif %}
+            </div>
+            <div class="rw-recent-meta">
+              {% if r.country %}<span class="rw-recent-chip">{{ r.country }}</span>{% endif %}
+              <span class="rw-recent-date">{{ r.date }}</span>
+            </div>
+            {% if r.source_url %}
+            <a href="{{ r.source_url }}" target="_blank" rel="noopener noreferrer"
+               class="rw-recent-source" title="Open source: {{ r.feed_source or 'feed' }}">↗</a>
+            {% else %}
+            <span class="rw-recent-source rw-recent-source--disabled">·</span>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="rw-recent-empty">No recent attacks indexed yet.</div>
+          {% endfor %}
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Sector breakdown -->
   <div class="card rw-section-card">
-    <div class="rw-card-title-lg">Sector Breakdown</div>
+    <div class="rw-card-title-lg">Top Affected Countries</div>
     {% set max_sector = stats.sectors.values()|max if stats.sectors else 1 %}
     {% set bar_grads = ['linear-gradient(90deg,#dc2626,#f43f5e)','linear-gradient(90deg,#4f46e5,#7c3aed)','linear-gradient(90deg,#d97706,#f59e0b)','linear-gradient(90deg,#059669,#0891b2)','linear-gradient(90deg,#ec4899,#f472b6)','linear-gradient(90deg,#0891b2,#22d3ee)','linear-gradient(90deg,#7c3aed,#a855f7)','linear-gradient(90deg,#475569,#94a3b8)','linear-gradient(90deg,#84cc16,#a3e635)','linear-gradient(90deg,#f97316,#fb923c)'] %}
     {% for sector, count in stats.sectors.items() %}
