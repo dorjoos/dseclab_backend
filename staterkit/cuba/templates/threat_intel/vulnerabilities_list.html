@@ -383,9 +383,19 @@
   }
   function linkifyNotes(text) {
     if (!text) return '—';
-    var safe = escapeHtml(text);
-    // Wrap http(s) URLs in <a>. Notes often have ' ; ' separators.
-    return safe.replace(/(https?:\/\/[^\s;<>"']+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+    // CISA notes typically join references with ' ; '. Split on that first,
+    // then wrap any URL-looking chunk in an anchor that opens in a new tab.
+    // Splitting first avoids regex truncation on '&' inside URLs.
+    var parts = String(text).split(/\s*;\s*/);
+    return parts.map(function(p) {
+      p = p.trim();
+      if (!p) return '';
+      if (/^https?:\/\//i.test(p)) {
+        return '<a href="' + escapeHtml(p) + '" target="_blank" rel="noopener noreferrer">'
+             + escapeHtml(p) + '</a>';
+      }
+      return escapeHtml(p);
+    }).filter(function(x) { return x; }).join('<br>');
   }
 
   function openModal(cveId) {
