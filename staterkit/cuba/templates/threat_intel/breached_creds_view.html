@@ -62,9 +62,10 @@
           <div class="av-detail-cell">
             <div class="av-detail-label">Password</div>
             {% if breached_cred.password %}
-            <div class="password-mask">
+            <div class="password-mask" data-cred-id="{{ breached_cred.es_id }}">
               <span class="masked-password">Click to reveal</span>
-              <span class="revealed-password">{{ breached_cred.password }}</span>
+              <span class="revealed-password" data-placeholder="********">********</span>
+              <span class="password-reveal-error" style="display:none;color:#c00;font-size:0.85em;"></span>
             </div>
             {% else %}
             <div class="av-detail-value av-detail-value--muted">—</div>

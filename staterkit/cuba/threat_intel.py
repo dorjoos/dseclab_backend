@@ -317,8 +317,11 @@ def breached_creds_view(doc_id):
         flash('Access denied.', 'danger')
         return redirect(url_for('threat_intel.breached_creds_list'))
     _attach_metadata([cred])
-    # Apply data masking to password field based on user role
-    cred.password = mask_value('password', cred.password)
+    # Server never renders plaintext password into HTML for any role.
+    # Plaintext is delivered only via the reveal-password endpoint, which
+    # re-runs _check_cred_access and writes an audit row per reveal.
+    if cred.password:
+        cred.password = '********'
     breadcrumb = {"parent": "Threat Intelligence", "child": "Credential Details"}
     return render_template('threat_intel/breached_creds_view.html',
                           breached_cred=cred, breadcrumb=breadcrumb)
