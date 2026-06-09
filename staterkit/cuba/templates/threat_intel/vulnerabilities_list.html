@@ -322,6 +322,10 @@
         var cveCell = FULL_ACCESS
           ? '<a href="/threat-intelligence/vulnerabilities/' + encodeURIComponent(row.cve_id) + '">' + fmt(row.cve_id) + '</a>'
           : fmt(row.cve_id);
+        if (FULL_ACCESS) {
+          tr.classList.add('vn-row-clickable');
+          tr.dataset.cveId = row.cve_id;
+        }
         tr.innerHTML =
           '<td>' + ((state.page - 1) * state.per_page + i + 1) + '</td>' +
           '<td>' + cveCell + '</td>' +
@@ -469,16 +473,25 @@
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape' && modalRoot.classList.contains('is-open')) closeModal();
     });
-    // Delegate CVE link clicks from the table body.
+    // Delegate clicks anywhere on a clickable row to the modal opener.
+    // Cmd/Ctrl+click and middle-click still navigate (or open new tab via the CVE <a>).
     document.getElementById('vulns-body').addEventListener('click', function(e) {
-      var a = e.target.closest('a[href^="/threat-intelligence/vulnerabilities/"]');
-      if (!a) return;
-      // Allow Cmd/Ctrl+click and middle-click to open the page in a new tab as usual.
       if (e.metaKey || e.ctrlKey || e.button === 1) return;
-      e.preventDefault();
-      var href = a.getAttribute('href');
-      var cveId = decodeURIComponent(href.replace('/threat-intelligence/vulnerabilities/', ''));
-      openModal(cveId);
+      // If the click was on a real link (the CVE column or a future ref link),
+      // hijack to the modal but still respect modifier-keys above.
+      var link = e.target.closest('a[href^="/threat-intelligence/vulnerabilities/"]');
+      if (link) {
+        e.preventDefault();
+        var hrefCve = decodeURIComponent(link.getAttribute('href').replace('/threat-intelligence/vulnerabilities/', ''));
+        openModal(hrefCve);
+        return;
+      }
+      // Otherwise: did the user click anywhere inside a vn-row-clickable <tr>?
+      var tr = e.target.closest('tr.vn-row-clickable');
+      if (!tr || !tr.dataset.cveId) return;
+      // Don't hijack text-selection drags or button/input clicks inside the row.
+      if (e.target.closest('button, input, select, textarea, label')) return;
+      openModal(tr.dataset.cveId);
     });
   }
 

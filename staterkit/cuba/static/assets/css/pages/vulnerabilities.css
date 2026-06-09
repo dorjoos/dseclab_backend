@@ -154,6 +154,8 @@
   vertical-align: middle;
 }
 .vn-table tbody tr:hover { background: var(--bs-tertiary-bg, #f9fafb); }
+.vn-table tbody tr.vn-row-clickable { cursor: pointer; }
+.vn-table tbody tr.vn-row-clickable:hover { background: rgba(59, 130, 246, 0.06); }
 .vn-table a { color: #2563eb; text-decoration: none; font-weight: 600; }
 .vn-table a:hover { text-decoration: underline; }
 
