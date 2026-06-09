@@ -139,7 +139,22 @@
       </thead>
       <tbody id="vulns-body"></tbody>
     </table>
-    <div class="vn-empty" id="vulns-empty" style="display:none;">No results found</div>
+    {# Default state: loading. Other states are toggled by JS. #}
+    <div class="vn-state" id="vulns-state-loading">
+      <div class="vn-state-spinner"></div>
+      <div class="vn-state-text">Loading vulnerabilities…</div>
+    </div>
+    <div class="vn-state" id="vulns-state-error" style="display:none;">
+      <div class="vn-state-text vn-state-text--error">Could not load vulnerabilities.</div>
+      <button type="button" class="vn-btn" id="vulns-retry">Retry</button>
+    </div>
+    <div class="vn-state" id="vulns-state-filtered" style="display:none;">
+      <div class="vn-state-text">No CVEs match your filters.</div>
+      <button type="button" class="vn-btn" id="vulns-clear-filters">Clear filters</button>
+    </div>
+    <div class="vn-state" id="vulns-state-empty" style="display:none;">
+      <div class="vn-state-text">No vulnerabilities indexed yet.</div>
+    </div>
   </div>
 
   <div class="vn-pagination" id="vulns-pagination"></div>
@@ -174,6 +189,21 @@
       : '';
   }
 
+  function setState(name) {
+    ['loading', 'error', 'filtered', 'empty'].forEach(function(n) {
+      var el = document.getElementById('vulns-state-' + n);
+      if (el) el.style.display = (n === name) ? '' : 'none';
+    });
+  }
+
+  function hasActiveFilters() {
+    return !!(
+      document.getElementById('vulns-search').value ||
+      document.getElementById('vulns-vendor').value ||
+      document.getElementById('vulns-ransomware').value
+    );
+  }
+
   function load() {
     var body = {
       page: state.page,
@@ -182,6 +212,9 @@
       vendor: document.getElementById('vulns-vendor').value,
       ransomware_use: document.getElementById('vulns-ransomware').value
     };
+    setState('loading');
+    document.getElementById('vulns-total').textContent = 'Loading…';
+
     fetch('/api/vulnerabilities/search', {
       method: 'POST',
       credentials: 'same-origin',
@@ -191,39 +224,41 @@
         'Accept': 'application/json'
       },
       body: JSON.stringify(body)
-    }).then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(data) {
-        if (!data) {
-          document.getElementById('vulns-empty').style.display = '';
-          document.getElementById('vulns-total').textContent = 'Could not load';
-          return;
-        }
-        document.getElementById('vulns-total').textContent = data.total + ' total';
-        var tbody = document.getElementById('vulns-body');
-        tbody.innerHTML = '';
-        if (!data.rows.length) {
-          document.getElementById('vulns-empty').style.display = '';
-          return;
-        }
-        document.getElementById('vulns-empty').style.display = 'none';
-        data.rows.forEach(function(row, i) {
-          var tr = document.createElement('tr');
-          var cveCell = FULL_ACCESS
-            ? '<a href="/threat-intelligence/vulnerabilities/' + encodeURIComponent(row.cve_id) + '">' + fmt(row.cve_id) + '</a>'
-            : fmt(row.cve_id);
-          tr.innerHTML =
-            '<td>' + ((state.page - 1) * state.per_page + i + 1) + '</td>' +
-            '<td>' + cveCell + '</td>' +
-            '<td>' + fmt(row.vendor) + '</td>' +
-            '<td>' + fmt(row.product) + '</td>' +
-            '<td>' + fmt(row.vulnerability_name) + '</td>' +
-            '<td>' + fmt(row.date_added) + '</td>' +
-            '<td>' + fmt(row.due_date) + '</td>' +
-            '<td>' + statusChip(row.due_date) + '</td>' +
-            '<td>' + kevTag(row.known_ransomware_use) + '</td>';
-          tbody.appendChild(tr);
-        });
+    }).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function(data) {
+      document.getElementById('vulns-total').textContent = data.total + ' total';
+      var tbody = document.getElementById('vulns-body');
+      tbody.innerHTML = '';
+      if (!data.rows.length) {
+        // Differentiate "empty because filter" vs "empty because no data".
+        setState(hasActiveFilters() ? 'filtered' : 'empty');
+        return;
+      }
+      // Got rows — hide every empty/error/loading state.
+      setState(null);
+      data.rows.forEach(function(row, i) {
+        var tr = document.createElement('tr');
+        var cveCell = FULL_ACCESS
+          ? '<a href="/threat-intelligence/vulnerabilities/' + encodeURIComponent(row.cve_id) + '">' + fmt(row.cve_id) + '</a>'
+          : fmt(row.cve_id);
+        tr.innerHTML =
+          '<td>' + ((state.page - 1) * state.per_page + i + 1) + '</td>' +
+          '<td>' + cveCell + '</td>' +
+          '<td>' + fmt(row.vendor) + '</td>' +
+          '<td>' + fmt(row.product) + '</td>' +
+          '<td>' + fmt(row.vulnerability_name) + '</td>' +
+          '<td>' + fmt(row.date_added) + '</td>' +
+          '<td>' + fmt(row.due_date) + '</td>' +
+          '<td>' + statusChip(row.due_date) + '</td>' +
+          '<td>' + kevTag(row.known_ransomware_use) + '</td>';
+        tbody.appendChild(tr);
       });
+    }).catch(function() {
+      setState('error');
+      document.getElementById('vulns-total').textContent = 'Could not load';
+    });
   }
 
   document.getElementById('vulns-search').addEventListener('input', function() {
@@ -233,6 +268,15 @@
     state.page = 1; load();
   });
   document.getElementById('vulns-ransomware').addEventListener('change', function() {
+    state.page = 1; load();
+  });
+  document.getElementById('vulns-retry').addEventListener('click', function() {
+    load();
+  });
+  document.getElementById('vulns-clear-filters').addEventListener('click', function() {
+    document.getElementById('vulns-search').value = '';
+    document.getElementById('vulns-vendor').value = '';
+    document.getElementById('vulns-ransomware').value = '';
     state.page = 1; load();
   });
   load();

@@ -177,3 +177,31 @@
   color: var(--bs-secondary-color, #6b7280);
   font-size: 14px;
 }
+
+/* Inline state slots below the table: loading / error / filtered / empty */
+.vn-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: var(--bs-secondary-color, #6b7280);
+  font-size: 14px;
+}
+.vn-state-spinner {
+  width: 22px; height: 22px;
+  border: 2px solid var(--bs-tertiary-bg, #f3f4f6);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: vn-spin 0.8s linear infinite;
+}
+@keyframes vn-spin {
+  to { transform: rotate(360deg); }
+}
+.vn-state-text--error { color: #b91c1c; font-weight: 600; }
+
+/* CVE ID column: no wrap so identifiers stay on one line. */
+.vn-table td:nth-child(2),
+.vn-table th:nth-child(2) {
+  white-space: nowrap;
+  min-width: 130px;
+  font-variant-numeric: tabular-nums;
+}
