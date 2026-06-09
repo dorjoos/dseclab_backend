@@ -67,6 +67,17 @@ def _fmt_date(d):
     return d.strftime('%Y-%m-%d')
 
 
+def _short(text, n=140):
+    """Truncate text to roughly `n` characters, ending on a word boundary."""
+    if not text:
+        return ''
+    t = ' '.join(str(text).split())  # collapse whitespace
+    if len(t) <= n:
+        return t
+    cut = t[:n].rsplit(' ', 1)[0]
+    return cut.rstrip(',.;:!? ') + '…'
+
+
 def _safe_http_url(val):
     """Return val only if it is an http(s) URL — strip javascript:, data:,
     file:, etc. to neutralise XSS via attacker-controlled href in the feed."""
@@ -197,6 +208,7 @@ class RansomwareFeedService(ESIndexService):
         for h in hits:
             doc = RansomwareDoc(h['_id'], h.get('_source', {}))
             group = doc.group or 'unknown'
+            description_full = doc.description or ''
             out.append({
                 'group': group,
                 'group_color': _color_for(group),
@@ -211,6 +223,8 @@ class RansomwareFeedService(ESIndexService):
                 # never reaches a template href.
                 'source_url': _safe_http_url(doc.url),
                 'feed_source': doc.feed_source or '',
+                'description': description_full,
+                'description_short': _short(description_full, 120),
             })
         return out
 

@@ -91,7 +91,9 @@
         </div>
         <div class="rw-recent-list">
           {% for r in recent %}
-          <div class="rw-recent-item" style="--vn-chip:{{ r.group_color }};">
+          <div class="rw-recent-item {% if r.description %}rw-recent-item--clickable{% endif %}"
+               style="--vn-chip:{{ r.group_color }};"
+               {% if r.description %}data-rw-index="{{ loop.index0 }}"{% endif %}>
             <div class="rw-recent-accent"></div>
             <div class="rw-recent-body">
               <div class="rw-recent-top">
@@ -101,7 +103,8 @@
                 </span>
                 {% if r.source_url %}
                 <a href="{{ r.source_url }}" target="_blank" rel="noopener noreferrer"
-                   class="rw-recent-source" title="Open source: {{ r.feed_source or 'feed' }}">
+                   class="rw-recent-source" title="Open source: {{ r.feed_source or 'feed' }}"
+                   data-rw-nopopup="1">
                   Source <span aria-hidden="true">↗</span>
                 </a>
                 {% endif %}
@@ -112,12 +115,54 @@
                 {% if r.country %}<span class="rw-recent-sep" aria-hidden="true">·</span><span class="rw-recent-country">{{ r.country }}</span>{% endif %}
                 {% if r.date %}<span class="rw-recent-sep" aria-hidden="true">·</span><span class="rw-recent-date">{{ r.date }}</span>{% endif %}
               </div>
+              {% if r.description_short %}
+              <div class="rw-recent-desc">{{ r.description_short }}</div>
+              {% endif %}
             </div>
           </div>
           {% else %}
           <div class="rw-recent-empty">No recent attacks indexed yet.</div>
           {% endfor %}
         </div>
+
+        {# --- Detail modal (populated client-side from JS) --- #}
+        <div class="rw-modal-backdrop" id="rw-modal-root" style="display:none;"
+             role="dialog" aria-modal="true" aria-labelledby="rw-modal-victim">
+          <div class="rw-modal" id="rw-modal-card" style="--vn-chip:#475569;">
+            <div class="rw-modal-accent"></div>
+            <div class="rw-modal-content">
+              <div class="rw-modal-head">
+                <div>
+                  <div class="rw-modal-group" id="rw-modal-group">—</div>
+                  <h2 class="rw-modal-victim" id="rw-modal-victim">—</h2>
+                </div>
+                <button type="button" class="rw-modal-close" id="rw-modal-close"
+                        aria-label="Close">&times;</button>
+              </div>
+              <div class="rw-modal-meta">
+                <div><span class="rw-modal-meta-label">Website</span>
+                     <span class="rw-modal-meta-val" id="rw-modal-website">—</span></div>
+                <div><span class="rw-modal-meta-label">Country</span>
+                     <span class="rw-modal-meta-val" id="rw-modal-country">—</span></div>
+                <div><span class="rw-modal-meta-label">Date</span>
+                     <span class="rw-modal-meta-val" id="rw-modal-date">—</span></div>
+                <div><span class="rw-modal-meta-label">Feed</span>
+                     <span class="rw-modal-meta-val" id="rw-modal-feed">—</span></div>
+              </div>
+              <div class="rw-modal-section-title">Description</div>
+              <div class="rw-modal-desc" id="rw-modal-desc">—</div>
+              <div class="rw-modal-foot">
+                <a href="#" id="rw-modal-source" class="rw-modal-source-btn"
+                   target="_blank" rel="noopener noreferrer">View source ↗</a>
+                <button type="button" class="rw-modal-close-btn" id="rw-modal-close-2">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {# Inline JSON payload keyed by data-rw-index. Jinja's |tojson escapes
+           </script> sequences and HTML metacharacters. #}
+        <script id="rw-recent-data" type="application/json">{{ recent | tojson | safe }}</script>
       </div>
     </div>
   </div>
@@ -176,5 +221,65 @@
   }
 
   if (typeof feather !== 'undefined') feather.replace();
+
+  // ---- Recent Attacks: click row to open description modal ----
+  (function() {
+    var dataEl = document.getElementById('rw-recent-data');
+    var rootEl = document.getElementById('rw-modal-root');
+    if (!dataEl || !rootEl) return;
+    var rows;
+    try { rows = JSON.parse(dataEl.textContent || '[]'); } catch (_) { rows = []; }
+
+    var cardEl   = document.getElementById('rw-modal-card');
+    var groupEl  = document.getElementById('rw-modal-group');
+    var victimEl = document.getElementById('rw-modal-victim');
+    var wEl      = document.getElementById('rw-modal-website');
+    var cEl      = document.getElementById('rw-modal-country');
+    var dEl      = document.getElementById('rw-modal-date');
+    var fEl      = document.getElementById('rw-modal-feed');
+    var descEl   = document.getElementById('rw-modal-desc');
+    var srcEl    = document.getElementById('rw-modal-source');
+
+    function open(idx) {
+      var r = rows[idx];
+      if (!r) return;
+      cardEl.style.setProperty('--vn-chip', r.group_color || '#475569');
+      groupEl.textContent = r.group || '—';
+      victimEl.textContent = r.victim || '—';
+      wEl.textContent = r.victim_website || '—';
+      cEl.textContent = r.country || '—';
+      dEl.textContent = r.date || '—';
+      fEl.textContent = r.feed_source || '—';
+      descEl.textContent = r.description || 'No description available.';
+      if (r.source_url) {
+        srcEl.href = r.source_url;
+        srcEl.style.display = '';
+      } else {
+        srcEl.style.display = 'none';
+      }
+      rootEl.style.display = 'flex';
+      // force reflow so transition fires
+      void rootEl.offsetWidth;
+      rootEl.classList.add('is-open');
+    }
+    function close() {
+      rootEl.classList.remove('is-open');
+      setTimeout(function() { rootEl.style.display = 'none'; }, 180);
+    }
+
+    document.querySelectorAll('.rw-recent-item--clickable').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        if (e.target.closest('[data-rw-nopopup]')) return;  // Source link
+        var idx = parseInt(el.getAttribute('data-rw-index'), 10);
+        if (!isNaN(idx)) open(idx);
+      });
+    });
+    document.getElementById('rw-modal-close').addEventListener('click', close);
+    document.getElementById('rw-modal-close-2').addEventListener('click', close);
+    rootEl.addEventListener('click', function(e) { if (e.target === rootEl) close(); });
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && rootEl.classList.contains('is-open')) close();
+    });
+  })();
 </script>
 {% endblock %}
