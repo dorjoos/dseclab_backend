@@ -2,11 +2,27 @@
 
 Uses an in-memory SQLite DB and a monkey-patched es_service so tests
 don't depend on Elasticsearch being available locally.
+
+CRITICAL: We MUST set DATABASE_URL *before* importing cuba. The
+DevelopmentConfig reads DATABASE_URL at class-load time and Flask-SQLAlchemy
+binds the engine during create_app(). If we override the URI only after
+create_app(), drop_all() in the test teardown will destroy the real dev DB.
 """
 import os
-import pytest
 
+# Force tests to use a throwaway file-backed SQLite DB so the engine is
+# decisively NOT bound to instance/cuba.db. A shared in-memory URI ("?cache=shared")
+# is fragile across Flask-SQLAlchemy sessions, so use a tempfile-backed DB.
+import tempfile as _tempfile
+_TEST_DB_FD, _TEST_DB_PATH = _tempfile.mkstemp(prefix="dseclab_test_", suffix=".db")
+os.close(_TEST_DB_FD)
+os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB_PATH}"
 os.environ.setdefault("FLASK_CONFIG", "development")
+
+import atexit
+atexit.register(lambda p=_TEST_DB_PATH: os.path.exists(p) and os.unlink(p))
+
+import pytest
 
 from cuba import create_app, db as _db
 from cuba.models import Company, User
@@ -18,10 +34,17 @@ def app():
     app = create_app()
     app.config.update(
         TESTING=True,
-        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
         WTF_CSRF_ENABLED=True,
         SERVER_NAME="localhost.localdomain",
         SECRET_KEY="test-secret",
+    )
+    # Belt-and-braces guard: refuse to run if the engine is somehow bound
+    # to the dev DB. Should never trip given the DATABASE_URL override at
+    # module import — but if it does, we want a loud failure, not silent
+    # data loss.
+    uri = str(app.config.get("SQLALCHEMY_DATABASE_URI", ""))
+    assert "instance/cuba.db" not in uri and "/instance/" not in uri, (
+        f"Test DB URI must not point at the dev DB. Got: {uri}"
     )
     with app.app_context():
         _db.create_all()

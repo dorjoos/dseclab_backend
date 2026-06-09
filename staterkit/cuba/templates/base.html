@@ -121,16 +121,63 @@
         });
       });
 
-      // Password hover reveal
+      // Password reveal: click to fetch plaintext via audited endpoint.
+      // Server never sends plaintext on page load; we fetch only on demand.
       document.querySelectorAll('.password-mask').forEach(function(mask) {
         var m = mask.querySelector('.masked-password');
         var r = mask.querySelector('.revealed-password');
-        if (m && r) {
-          m.style.display = 'inline';
+        var err = mask.querySelector('.password-reveal-error');
+        var credId = mask.getAttribute('data-cred-id');
+        if (!m || !r || !credId) return;
+
+        m.style.display = 'inline';
+        r.style.display = 'none';
+        mask.style.cursor = 'pointer';
+
+        function reMask() {
+          var placeholder = r.getAttribute('data-placeholder') || '********';
+          r.textContent = placeholder;
           r.style.display = 'none';
-          mask.addEventListener('mouseenter', function() { m.style.display='none'; r.style.display='inline'; });
-          mask.addEventListener('mouseleave', function() { m.style.display='inline'; r.style.display='none'; });
+          m.style.display = 'inline';
+          if (err) { err.style.display = 'none'; err.textContent = ''; }
         }
+
+        function showError(msg) {
+          if (err) {
+            err.textContent = msg;
+            err.style.display = 'inline';
+          }
+        }
+
+        mask.addEventListener('click', function(e) {
+          e.preventDefault();
+          var isRevealed = r.style.display !== 'none';
+          if (isRevealed) { reMask(); return; }
+
+          if (err) { err.style.display = 'none'; err.textContent = ''; }
+          fetch('/threat-intelligence/breached-creds/' + encodeURIComponent(credId) + '/reveal-password', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'X-CSRFToken': window.CSRF_TOKEN || '',
+              'Accept': 'application/json'
+            }
+          }).then(function(resp) {
+            if (resp.status === 401) { showError('Session expired. Please log in again.'); return null; }
+            if (resp.status === 403) { showError('Access denied.'); return null; }
+            if (resp.status === 404) { showError('Credential no longer exists.'); return null; }
+            if (resp.status === 429) { showError('Too many reveal attempts. Try again in a minute.'); return null; }
+            if (!resp.ok) { showError('Could not reveal password. Try again.'); return null; }
+            return resp.json();
+          }).then(function(data) {
+            if (!data || typeof data.password !== 'string') return;
+            r.textContent = data.password;
+            r.style.display = 'inline';
+            m.style.display = 'none';
+          }).catch(function() {
+            showError('Network error. Try again.');
+          });
+        });
       });
 
       // Keyboard shortcuts
