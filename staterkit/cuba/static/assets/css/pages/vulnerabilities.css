@@ -202,6 +202,7 @@
 .vn-table td:nth-child(2),
 .vn-table th:nth-child(2) {
   white-space: nowrap;
-  min-width: 130px;
+  min-width: 170px;
+  width: 170px;
   font-variant-numeric: tabular-nums;
 }
