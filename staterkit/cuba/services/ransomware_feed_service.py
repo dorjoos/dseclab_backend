@@ -254,6 +254,7 @@ class RansomwareFeedService(ESIndexService):
     def get_dashboard_stats(self) -> dict:
         now = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
         month_start = now.replace(day=1).isoformat()
+        week_ago = (now - timedelta(days=7)).isoformat()
         twelve_months_ago = (now - timedelta(days=365)).isoformat()
 
         body = {
@@ -312,11 +313,24 @@ class RansomwareFeedService(ESIndexService):
             'range': {'@timestamp': {'gte': month_start}}
         })
 
+        # Distinct groups that posted in the last 7 days — operational signal
+        # for 'who is currently active'. More useful than the hardcoded
+        # 'Data Leaked: 0TB' since the feed has no size field.
+        active_week_resp = self._search({
+            'size': 0,
+            'query': {'range': {'@timestamp': {'gte': week_ago}}},
+            'aggs': {'g': {'cardinality': {'field': 'ransomware_group'}}},
+        })
+        active_this_week = int(
+            active_week_resp.get('aggregations', {}).get('g', {}).get('value') or 0
+        )
+
         return {
             'total_attacks': int(total),
             'active_groups': int(aggs.get('groups', {}).get('value') or 0),
             'countries_affected': int(aggs.get('countries', {}).get('value') or 0),
-            'data_leaked_tb': 0,  # Not reliably present in feeds.
+            'data_leaked_tb': 0,  # DEPRECATED — kept for back-compat.
+            'active_this_week': active_this_week,
             'attacks_this_month': int(attacks_this_month_resp or 0),
             'sectors': dict(sectors) or {'Unknown': 0},
             'monthly_trend': monthly_trend or [0] * 12,

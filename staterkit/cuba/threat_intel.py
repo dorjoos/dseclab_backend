@@ -711,7 +711,7 @@ def ransomware_dashboard():
     recent = recent_p['items']
     empty_stats = {
         'total_attacks': 0, 'active_groups': 0, 'countries_affected': 0,
-        'data_leaked_tb': 0, 'attacks_this_month': 0,
+        'data_leaked_tb': 0, 'active_this_week': 0, 'attacks_this_month': 0,
         'sectors': {'Unknown': 0},
         'monthly_trend': [0] * 12,
         'monthly_labels': [''] * 12,
