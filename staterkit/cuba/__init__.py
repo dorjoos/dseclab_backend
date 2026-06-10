@@ -169,6 +169,9 @@ def create_app(config_name=None):
     from .notification_routes import notification_bp
     app.register_blueprint(notification_bp)
 
+    from .cli import register_cli
+    register_cli(app)
+
     # Register WebSocket events
     from . import ws_events  # noqa: F401
 
