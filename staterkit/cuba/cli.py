@@ -14,7 +14,7 @@ from flask import current_app
 from flask.cli import AppGroup
 
 from . import db
-from .models import AuditLog, UserActivity
+from .models import AuditLog, Company, Notification, User, UserActivity, WatchlistEntry
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,130 @@ def cleanup_activity(days, dry_run):
     deleted = q.delete(synchronize_session=False)
     db.session.commit()
     click.echo(f'Deleted {deleted} UserActivity rows.')
+
+
+def _host_belongs_to(host: str, domain: str) -> bool:
+    """Suffix-aware host match — same logic as threat_intel._host_belongs_to."""
+    if not host or not domain:
+        return False
+    host = host.lower().strip().rstrip('.')
+    domain = domain.lower().strip().lstrip('.').rstrip('.')
+    if not host or not domain:
+        return False
+    return host == domain or host.endswith('.' + domain)
+
+
+def _victim_matches_watchlist(victim_website: str, victim_name: str,
+                              entry_value: str, entry_type: str) -> bool:
+    """True if a ransomware-feed row's victim should trigger an alert for
+    a given watchlist entry. Handles domain entries (suffix match) and
+    plain-text entries (case-insensitive substring in victim_name)."""
+    value = (entry_value or '').strip()
+    if not value:
+        return False
+    etype = (entry_type or 'domain').lower()
+    if etype == 'domain':
+        if _host_belongs_to(victim_website or '', value):
+            return True
+        # Some feeds put the website in the victim_name field as the title.
+        if victim_name and value.lower() in victim_name.lower():
+            return True
+        return False
+    # Non-domain entries (keyword watch, etc.) — substring on victim name.
+    return value.lower() in (victim_name or '').lower()
+
+
+@dseclab.command('match-ransomware')
+@click.option('--since-hours', default=24, show_default=True, type=int,
+              help='Look back this many hours for new ransomware-feed docs.')
+@click.option('--dry-run', is_flag=True, help='Show matches without writing notifications.')
+def match_ransomware(since_hours, dry_run):
+    """Scan recent ransomware-feed docs, create Notifications when a victim
+    matches any company's WatchlistEntry. Idempotent: deduplicates on the
+    link URL so re-runs don't spam users."""
+    from .services.ransomware_feed_service import ransomware_feed_service
+
+    if since_hours < 1:
+        raise click.UsageError('--since-hours must be >= 1')
+
+    cutoff = datetime.utcnow() - timedelta(hours=since_hours)
+    cutoff_iso = cutoff.isoformat()
+
+    # Pull every doc in the window. The feed lands ~tens/day so even a
+    # 7-day backfill is small — no pagination needed for the scan.
+    body = {
+        'size': 1000,
+        'query': {'range': {'@timestamp': {'gte': cutoff_iso}}},
+        'sort': [{'@timestamp': {'order': 'desc', 'unmapped_type': 'date'}}],
+        'track_total_hits': True,
+    }
+    resp = ransomware_feed_service._search(body)
+    hits = resp.get('hits', {}).get('hits', [])
+    click.echo(f'Scanning {len(hits)} ransomware docs since {cutoff_iso}.')
+
+    # All watchlist entries up-front; we have O(few hundred) of them, so the
+    # cartesian product against ~tens of docs is cheap.
+    watch_rows = (
+        db.session.query(WatchlistEntry, Company)
+        .join(Company, Company.id == WatchlistEntry.company_id)
+        .all()
+    )
+    if not watch_rows:
+        click.echo('No WatchlistEntry rows configured — nothing to match.')
+        return
+
+    matched = 0
+    created = 0
+    for h in hits:
+        src = h.get('_source', {}) or {}
+        victim_website = (src.get('victim_website') or '').strip()
+        victim_name = (src.get('victim_name') or '').strip()
+        ransomware_group = (src.get('ransomware_group') or 'unknown').strip()
+        link = (src.get('source_url') or '').strip()
+
+        for entry, company in watch_rows:
+            if not _victim_matches_watchlist(
+                victim_website, victim_name, entry.entry_value, entry.entry_type
+            ):
+                continue
+            matched += 1
+
+            # Notify every active user of the matching company.
+            users = User.query.filter(
+                User.company_id == company.id,
+                User.is_active == True,
+            ).all()
+            for u in users:
+                # Dedup: skip if this user already has a notification for the
+                # same source link (the feed's unique post URL).
+                if link:
+                    existing = Notification.query.filter_by(
+                        user_id=u.id, link=link,
+                    ).first()
+                    if existing:
+                        continue
+                if dry_run:
+                    click.echo(
+                        f'  WOULD notify {u.email}: {ransomware_group} → '
+                        f'{victim_name or victim_website} (company={company.name})'
+                    )
+                    continue
+                n = Notification(
+                    user_id=u.id,
+                    notification_type='warning',
+                    title=f'Ransomware: {ransomware_group} claims attack',
+                    message=f'{victim_name or victim_website} '
+                            f'(matched watchlist entry: {entry.entry_value})',
+                    link=link or None,
+                )
+                db.session.add(n)
+                created += 1
+
+    if not dry_run:
+        db.session.commit()
+        click.echo(f'Matched {matched} watchlist hits; wrote {created} notifications.')
+    else:
+        click.echo(f'Matched {matched} watchlist hits; --dry-run set, no notifications written.')
 
 
 def register_cli(app):
