@@ -699,15 +699,22 @@ def ransomware_dashboard():
 
     groups = _safe(lambda: ransomware_feed_service.get_groups(top_n=8), [])
 
-    # Pagination for Recent Attacks — `rp` (recent page) query string param.
+    # Pagination + filters for Recent Attacks via query string.
     try:
         rp = max(1, int(request.args.get('rp', 1) or 1))
     except ValueError:
         rp = 1
+    rg = sanitize_input(request.args.get('rg', '') or '') or None      # group
+    rc = sanitize_input(request.args.get('rc', '') or '') or None      # country
+    rq = sanitize_input(request.args.get('rq', '') or '') or None      # query text
     empty_recent = {'items': [], 'page': 1, 'per_page': 10, 'total': 0,
-                    'pages': 1, 'has_prev': False, 'has_next': False}
-    recent_p = _safe(lambda: ransomware_feed_service.get_recent(page=rp, per_page=10),
-                     empty_recent)
+                    'pages': 1, 'has_prev': False, 'has_next': False,
+                    'filters': {'group': '', 'country': '', 'q': ''}}
+    recent_p = _safe(
+        lambda: ransomware_feed_service.get_recent(
+            page=rp, per_page=10, group=rg, country=rc, query_text=rq),
+        empty_recent,
+    )
     recent = recent_p['items']
     empty_stats = {
         'total_attacks': 0, 'active_groups': 0, 'countries_affected': 0,

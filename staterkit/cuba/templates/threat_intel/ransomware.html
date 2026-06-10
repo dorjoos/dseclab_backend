@@ -69,6 +69,30 @@
           <div class="rw-card-title-lg">Recent Attacks</div>
           <span class="rw-card-title-hint">Latest disclosures</span>
         </div>
+
+        {% set rf = (recent_pagination.filters if recent_pagination else {'group':'','country':'','q':''}) %}
+        <form class="rw-tl-filters" method="get" action="#recent-attacks">
+          <input type="text" name="rq" value="{{ rf.q }}"
+                 class="rw-tl-filter rw-tl-filter--text"
+                 placeholder="Search victim name / website">
+          <select name="rg" class="rw-tl-filter">
+            <option value="">All groups</option>
+            {% for g in groups %}
+            <option value="{{ g.name }}" {% if g.name == rf.group %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+          <select name="rc" class="rw-tl-filter">
+            <option value="">All countries</option>
+            {% for country, _ in (stats.sectors.items() if stats.sectors else []) %}
+            <option value="{{ country }}" {% if country == rf.country %}selected{% endif %}>{{ country }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" class="rw-tl-filter-btn">Apply</button>
+          {% if rf.group or rf.country or rf.q %}
+            <a href="?#recent-attacks" class="rw-tl-filter-clear" title="Clear filters">×</a>
+          {% endif %}
+        </form>
+
         <div class="rw-tl-list">
           {% for r in recent %}
           <div class="rw-tl-item {% if r.description %}rw-tl-item--clickable{% endif %}"
@@ -99,7 +123,7 @@
         {% set pages = recent_pagination.pages %}
         <div class="rw-tl-pagination">
           {% if recent_pagination.has_prev %}
-            <a href="?rp={{ p - 1 }}#recent-attacks" class="rw-tl-page-btn">‹ Prev</a>
+            <a href="?rp={{ p - 1 }}{% if rf.group %}&rg={{ rf.group }}{% endif %}{% if rf.country %}&rc={{ rf.country }}{% endif %}{% if rf.q %}&rq={{ rf.q }}{% endif %}#recent-attacks" class="rw-tl-page-btn">‹ Prev</a>
           {% else %}
             <span class="rw-tl-page-btn rw-tl-page-btn--disabled">‹ Prev</span>
           {% endif %}
@@ -118,13 +142,13 @@
             {% if n == p %}
               <span class="rw-tl-page-btn rw-tl-page-btn--active">{{ n }}</span>
             {% else %}
-              <a href="?rp={{ n }}#recent-attacks" class="rw-tl-page-btn">{{ n }}</a>
+              <a href="?rp={{ n }}{% if rf.group %}&rg={{ rf.group }}{% endif %}{% if rf.country %}&rc={{ rf.country }}{% endif %}{% if rf.q %}&rq={{ rf.q }}{% endif %}#recent-attacks" class="rw-tl-page-btn">{{ n }}</a>
             {% endif %}
             {% set ns.prev = n %}
           {% endfor %}
 
           {% if recent_pagination.has_next %}
-            <a href="?rp={{ p + 1 }}#recent-attacks" class="rw-tl-page-btn">Next ›</a>
+            <a href="?rp={{ p + 1 }}{% if rf.group %}&rg={{ rf.group }}{% endif %}{% if rf.country %}&rc={{ rf.country }}{% endif %}{% if rf.q %}&rq={{ rf.q }}{% endif %}#recent-attacks" class="rw-tl-page-btn">Next ›</a>
           {% else %}
             <span class="rw-tl-page-btn rw-tl-page-btn--disabled">Next ›</span>
           {% endif %}

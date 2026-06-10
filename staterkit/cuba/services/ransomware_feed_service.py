@@ -196,16 +196,48 @@ class RansomwareFeedService(ESIndexService):
     # Recent posts
     # ------------------------------------------------------------------
 
-    def get_recent(self, page: int = 1, per_page: int = 10) -> dict:
-        """Paginated recent attacks. Returns {items, page, per_page, total,
-        pages, has_prev, has_next}."""
+    def get_recent(self, page: int = 1, per_page: int = 10,
+                   group: Optional[str] = None,
+                   country: Optional[str] = None,
+                   query_text: Optional[str] = None) -> dict:
+        """Paginated recent attacks with optional filters. Returns
+        {items, page, per_page, total, pages, has_prev, has_next,
+         filters: {group, country, q}}."""
         page = max(1, int(page or 1))
         per_page = max(1, min(100, int(per_page or 10)))
+
+        filter_clauses = []
+        if group:
+            filter_clauses.append({'term': {'ransomware_group': group}})
+        if country:
+            filter_clauses.append({'term': {'victim_country': country}})
+        must = []
+        if query_text and query_text.strip():
+            q = query_text.strip().lower()
+            must.append({
+                'bool': {
+                    'should': [
+                        {'wildcard': {'victim_name.keyword': {'value': f'*{q}*', 'case_insensitive': True}}},
+                        {'wildcard': {'victim_website': {'value': f'*{q}*', 'case_insensitive': True}}},
+                        {'match': {'victim_name': q}},
+                    ],
+                    'minimum_should_match': 1,
+                }
+            })
+
+        query = {'bool': {}}
+        if must:
+            query['bool']['must'] = must
+        if filter_clauses:
+            query['bool']['filter'] = filter_clauses
+        if not query['bool']:
+            query = {'match_all': {}}
+
         body = {
             'size': per_page,
             'from': (page - 1) * per_page,
             'sort': [{'@timestamp': {'order': 'desc', 'unmapped_type': 'date'}}],
-            'query': {'match_all': {}},
+            'query': query,
             'track_total_hits': True,
         }
         resp = self._search(body)
@@ -245,6 +277,11 @@ class RansomwareFeedService(ESIndexService):
             'pages': pages,
             'has_prev': page > 1,
             'has_next': page < pages,
+            'filters': {
+                'group': group or '',
+                'country': country or '',
+                'q': query_text or '',
+            },
         }
 
     # ------------------------------------------------------------------
