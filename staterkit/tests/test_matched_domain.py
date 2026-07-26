@@ -63,3 +63,9 @@ def test_domain_filter_treats_domain_and_matched_domain_alike():
     assert "domain.keyword" in blob
     assert "username.keyword" in blob
     assert '"url"' in blob
+
+
+def test_domain_filter_strips_leading_at():
+    """'@khanbank.mn' must behave identically to 'khanbank.mn'."""
+    assert svc._build_query(filters={"domain": "@acme.com"}) == \
+           svc._build_query(filters={"domain": "acme.com"})

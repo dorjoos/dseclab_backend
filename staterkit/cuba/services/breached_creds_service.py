@@ -268,8 +268,9 @@ class BreachedCredsService(ESIndexService):
             if filters.get("domain"):
                 # Treat domain and matched_domain as equivalent: match the
                 # domain field, the email-username host, or the URL host — the
-                # same fields matched_domain is derived from.
-                dv = filters["domain"]
+                # same fields matched_domain is derived from. A leading '@'
+                # (e.g. "@khanbank.mn") is stripped so it still matches.
+                dv = filters["domain"].strip().lstrip("@")
                 filter_clauses.append({"bool": {"should": [
                     {"wildcard": {"domain.keyword": {"value": f"*{dv}*", "case_insensitive": True}}},
                     {"wildcard": {"username.keyword": {"value": f"*@*{dv}*", "case_insensitive": True}}},
