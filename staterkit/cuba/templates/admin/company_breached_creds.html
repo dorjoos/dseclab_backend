@@ -9,6 +9,27 @@
       <span class="cb-header-label">{{ company.name }} — <span class="av-domain">{{ company.domain }}</span></span>
       <a href="{{ url_for('admin.edit_company', company_id=company.id) }}" class="btn btn-outline-primary btn-sm cb-edit-btn">Edit Company</a>
     </div>
+
+    <div class="adm-toolbar--left" style="gap:12px;flex-wrap:wrap;">
+      <form method="get" action="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" class="d-flex align-items-center" style="gap:8px;">
+        <label for="watchlist" class="m-0" style="color:#6b7280;">Watchlist domain</label>
+        <select name="watchlist" id="watchlist" class="form-select form-select-sm" style="width:auto;" onchange="this.form.submit()">
+          <option value="">All ({{ watchlist_domains|length }})</option>
+          {% for d in watchlist_domains %}
+          <option value="{{ d }}" {% if d == selected_watchlist %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+        {% if selected_watchlist %}
+        <a href="{{ url_for('admin.company_breached_creds', company_id=company.id) }}" class="btn btn-link btn-sm">clear</a>
+        {% endif %}
+      </form>
+
+      <form method="post" action="{{ url_for('admin.notify_company_breaches', company_id=company.id) }}" class="ms-auto">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-primary btn-sm">Notify company</button>
+      </form>
+    </div>
+
     <div class="adm-overflow">
       <table class="av-table">
         <thead>
@@ -16,6 +37,8 @@
             <th class="adm-col-num">#</th>
             <th class="adm-col-first">Username</th>
             <th>Domain</th>
+            <th>Matched domain</th>
+            <th>File name</th>
             <th>Source</th>
             <th class="c">Type</th>
             <th class="r">Date</th>
@@ -28,13 +51,19 @@
             <td class="adm-col-num m">{{ loop.index }}</td>
             <td class="adm-col-first adm-cell-bold">{{ cred.username or '—' }}</td>
             <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
+            <td>{% if cred.matched_domain %}<span class="av-tag av-tag-blue">{{ cred.matched_domain }}</span>{% else %}—{% endif %}</td>
+            <td class="m">{{ cred.file_name or '—' }}</td>
             <td class="m">{{ cred.source or '—' }}</td>
             <td class="c"><span class="av-tag av-tag-blue">{{ cred.type or '—' }}</span></td>
             <td class="m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
             <td><a href="{{ url_for('threat_intel.breached_creds_view', doc_id=cred.es_id) }}" class="av-view-link">View</a></td>
           </tr>
           {% endfor %}
-          {% if not breached_creds %}<tr><td colspan="7" class="av-empty">No breached credentials for this company</td></tr>{% endif %}
+          {% if not breached_creds %}
+          <tr><td colspan="9" class="av-empty">
+            {% if pagination and pagination.error %}Search backend unavailable — check Elasticsearch.{% else %}No breached credentials for this company{% endif %}
+          </td></tr>
+          {% endif %}
         </tbody>
       </table>
     </div>
@@ -42,11 +71,11 @@
     <div class="av-pag">
       <span>{{ pagination.page }} of {{ pagination.pages }}</span>
       <div class="av-pag-nav">
-        <a class="{% if not pagination.has_prev %}dis{% endif %}" href="?page={{ pagination.prev_num or 1 }}">&lsaquo;</a>
+        <a class="{% if not pagination.has_prev %}dis{% endif %}" href="?page={{ pagination.prev_num or 1 }}{% if selected_watchlist %}&watchlist={{ selected_watchlist }}{% endif %}">&lsaquo;</a>
         {% for p in range(1, pagination.pages + 1) %}{% if p <= 10 %}
-        <a class="{% if p == pagination.page %}act{% endif %}" href="?page={{ p }}">{{ p }}</a>
+        <a class="{% if p == pagination.page %}act{% endif %}" href="?page={{ p }}{% if selected_watchlist %}&watchlist={{ selected_watchlist }}{% endif %}">{{ p }}</a>
         {% endif %}{% endfor %}
-        <a class="{% if not pagination.has_next %}dis{% endif %}" href="?page={{ pagination.next_num or pagination.pages }}">&rsaquo;</a>
+        <a class="{% if not pagination.has_next %}dis{% endif %}" href="?page={{ pagination.next_num or pagination.pages }}{% if selected_watchlist %}&watchlist={{ selected_watchlist }}{% endif %}">&rsaquo;</a>
       </div>
     </div>
     {% endif %}

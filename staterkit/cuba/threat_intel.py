@@ -107,8 +107,28 @@ def _attach_metadata(items):
             item.notes = meta.notes
 
 
-def _notify_new_breach(credential_id, company_domain, company_name, email):
-    """Notify all users in a company about a new breach."""
+def _send_breach_emails(users, company_name, creds):
+    """Best-effort email of matched breaches to users. Never raises."""
+    try:
+        from .services.email_service import build_breach_email, send_email, is_email_configured
+        if not is_email_configured():
+            logger.info("Email not configured; skipping breach email for %s", company_name)
+            return 0
+        from flask import has_request_context
+        base_url = request.url_root if has_request_context() else None
+        subject, body = build_breach_email(company_name, creds, base_url=base_url)
+        sent = 0
+        for user in users:
+            if user.email and send_email(user.email, subject, body):
+                sent += 1
+        return sent
+    except Exception as e:
+        logger.error("Breach email send failed: %s", e)
+        return 0
+
+
+def _notify_new_breach(credential_id, company_domain, company_name, email, file_name=None):
+    """Notify all users in a company about a new breach (in-app + email)."""
     try:
         if not company_domain:
             users = User.query.filter(
@@ -144,6 +164,20 @@ def _notify_new_breach(credential_id, company_domain, company_name, email):
     except Exception as e:
         logger.error("Error creating notifications: %s", e)
         db.session.rollback()
+        return
+
+    # Email delivery is best-effort and must not affect the in-app flow above.
+    cred = es_service.get_by_id(credential_id)
+    if cred is None:
+        from types import SimpleNamespace
+        cred = SimpleNamespace(
+            es_id=credential_id, username=email, domain=company_domain,
+            file_name=file_name, source=None, type=None, created_at=None,
+        )
+    cred.matched_domain = company_domain
+    if file_name and not getattr(cred, 'file_name', None):
+        cred.file_name = file_name
+    _send_breach_emails(users, company_name, [cred])
 
 
 @threat_intel.route('/threat-intelligence/breached-creds')
@@ -179,6 +213,9 @@ def breached_creds_list():
         page=page,
         per_page=per_page
     )
+    if pagination.error:
+        flash('Search backend (Elasticsearch) is unavailable — results may be incomplete. '
+              'Please check that Elasticsearch is running.', 'danger')
     _attach_metadata(pagination.items)
 
     stats_data = es_service.get_stats(domain_filters=domain_filters)
@@ -310,6 +347,7 @@ def breached_creds_api():
         per_page=per_page
     )
     _attach_metadata(pagination.items)
+    es_service.attach_matched_domain(pagination.items, domain_filters or [])
 
     rows = []
     for i, cred in enumerate(pagination.items):
@@ -318,6 +356,8 @@ def breached_creds_api():
             'es_id': cred.es_id,
             'username': cred.username or '',
             'domain': cred.domain or '',
+            'matched_domain': cred.matched_domain or '',
+            'file_name': cred.file_name or '',
             'password': '********' if cred.password else '',  # Always masked in list API
             'source': cred.source or '',
             'type': cred.type or '',
@@ -332,6 +372,7 @@ def breached_creds_api():
         'total': pagination.total,
         'has_prev': pagination.has_prev,
         'has_next': pagination.has_next,
+        'error': pagination.error,
     })
 
 
