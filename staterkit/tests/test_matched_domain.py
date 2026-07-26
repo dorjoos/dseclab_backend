@@ -52,3 +52,14 @@ def test_attach_matched_domain_sets_attribute():
     svc.attach_matched_domain(items, DOMAINS)
     assert items[0].matched_domain == "acme.com"
     assert items[1].matched_domain is None
+
+
+def test_domain_filter_treats_domain_and_matched_domain_alike():
+    """Filtering by a domain must match the domain field, email-username host,
+    and URL host (matched_domain semantics), not just domain.keyword."""
+    import json
+    q = svc._build_query(filters={"domain": "acme.com"})
+    blob = json.dumps(q)
+    assert "domain.keyword" in blob
+    assert "username.keyword" in blob
+    assert '"url"' in blob

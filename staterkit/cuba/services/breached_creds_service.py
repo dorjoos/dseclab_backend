@@ -266,7 +266,15 @@ class BreachedCredsService(ESIndexService):
             if filters.get("source"):
                 filter_clauses.append({"wildcard": {"source.keyword": {"value": f"*{filters['source']}*", "case_insensitive": True}}})
             if filters.get("domain"):
-                filter_clauses.append({"wildcard": {"domain.keyword": {"value": f"*{filters['domain']}*", "case_insensitive": True}}})
+                # Treat domain and matched_domain as equivalent: match the
+                # domain field, the email-username host, or the URL host — the
+                # same fields matched_domain is derived from.
+                dv = filters["domain"]
+                filter_clauses.append({"bool": {"should": [
+                    {"wildcard": {"domain.keyword": {"value": f"*{dv}*", "case_insensitive": True}}},
+                    {"wildcard": {"username.keyword": {"value": f"*@*{dv}*", "case_insensitive": True}}},
+                    {"wildcard": {"url": {"value": f"*{dv}*", "case_insensitive": True}}},
+                ], "minimum_should_match": 1}})
 
             date_filter = filters.get("date_filter")
             if date_filter:
