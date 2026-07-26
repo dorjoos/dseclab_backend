@@ -357,7 +357,6 @@ def breached_creds_api():
             'username': cred.username or '',
             'domain': cred.domain or '',
             'matched_domain': cred.matched_domain or '',
-            'file_name': cred.file_name or '',
             'password': '********' if cred.password else '',  # Always masked in list API
             'source': cred.source or '',
             'type': cred.type or '',

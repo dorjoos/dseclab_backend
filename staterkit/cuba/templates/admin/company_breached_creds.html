@@ -38,7 +38,6 @@
             <th class="adm-col-first">Username</th>
             <th>Domain</th>
             <th>Matched domain</th>
-            <th>File name</th>
             <th>Source</th>
             <th class="c">Type</th>
             <th class="r">Date</th>
@@ -52,7 +51,6 @@
             <td class="adm-col-first adm-cell-bold">{{ cred.username or '—' }}</td>
             <td><span class="av-domain">{{ cred.domain or '—' }}</span></td>
             <td>{% if cred.matched_domain %}<span class="av-tag av-tag-blue">{{ cred.matched_domain }}</span>{% else %}—{% endif %}</td>
-            <td class="m">{{ cred.file_name or '—' }}</td>
             <td class="m">{{ cred.source or '—' }}</td>
             <td class="c"><span class="av-tag av-tag-blue">{{ cred.type or '—' }}</span></td>
             <td class="m r">{{ cred.created_at.strftime('%b %d') if cred.created_at else '—' }}</td>
@@ -60,7 +58,7 @@
           </tr>
           {% endfor %}
           {% if not breached_creds %}
-          <tr><td colspan="9" class="av-empty">
+          <tr><td colspan="8" class="av-empty">
             {% if pagination and pagination.error %}Search backend unavailable — check Elasticsearch.{% else %}No breached credentials for this company{% endif %}
           </td></tr>
           {% endif %}
