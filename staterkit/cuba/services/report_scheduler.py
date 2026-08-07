@@ -377,8 +377,14 @@ def start_scheduler(app):
     app too, and a migration should not also be mailing reports.
     """
     import os
+    import sys
 
     if not app.config.get("SCHEDULER_ENABLED", True) or app.config.get("TESTING"):
+        return None
+    # conftest sets TESTING *after* create_app returns, so the check above is
+    # too late under pytest — without this, every test that builds an app
+    # leaves a live polling thread behind.
+    if "pytest" in sys.modules:
         return None
     if os.environ.get("FLASK_RUN_FROM_CLI") == "true":
         logger.info("Running under the Flask CLI; report scheduler not started")
