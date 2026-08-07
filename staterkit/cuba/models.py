@@ -30,6 +30,12 @@ class Company(db.Model):
     # than as the company's staff or customers.
     THIRD_PARTY_ENTRY_TYPE = 'third_party'
 
+    # Individual addresses an admin has approved to receive this company's
+    # reports even though they sit off its domains — an external CISO, say.
+    # Deliberately exact addresses, never domains: a domain here would
+    # re-open the very hole the domain binding closes.
+    REPORT_RECIPIENT_ENTRY_TYPE = 'report_recipient'
+
     def get_match_domains(self):
         """Return deduped, lowercased list of domains from company domain + watchlist entries."""
         domains = set()
@@ -48,6 +54,14 @@ class Company(db.Model):
             entry.entry_value.strip().lower()
             for entry in self.watchlist_entries
             if entry.entry_type == self.THIRD_PARTY_ENTRY_TYPE and entry.entry_value
+        ]
+
+    def get_report_recipient_allowlist(self):
+        """Exact addresses an admin approved for this company's reports."""
+        return [
+            entry.entry_value.strip().lower()
+            for entry in self.watchlist_entries
+            if entry.entry_type == self.REPORT_RECIPIENT_ENTRY_TYPE and entry.entry_value
         ]
 
     def get_own_domains(self):

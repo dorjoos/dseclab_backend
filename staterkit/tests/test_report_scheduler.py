@@ -334,6 +334,37 @@ def test_pdf_never_contains_a_password(app):
         assert pdf and b"SuperSecret123!" not in pdf
 
 
+def test_admin_allowlisted_address_bypasses_the_domain_rule(app, db, company_acme,
+                                                            admin_user):
+    """An admin can approve one exact off-domain address per company."""
+    from cuba.models import Company
+    db.session.add(WatchlistEntry(company_id=company_acme.id,
+                                  entry_type="report_recipient",
+                                  entry_value="ciso@consultancy.example"))
+    db.session.commit()
+    with app.app_context():
+        company = db.session.get(Company, company_acme.id)
+        row = _sched_for(company, admin_user,
+                         "ciso@consultancy.example,other@consultancy.example")
+        allowed, rejected = rs.validate_recipients(row)
+        assert allowed == ["ciso@consultancy.example"]
+        assert [a for a, _ in rejected] == ["other@consultancy.example"]
+
+
+def test_allowlist_is_per_company(app, db, company_acme, company_other, admin_user):
+    """Approving an address for one client must not approve it for another."""
+    from cuba.models import Company
+    db.session.add(WatchlistEntry(company_id=company_acme.id,
+                                  entry_type="report_recipient",
+                                  entry_value="ciso@consultancy.example"))
+    db.session.commit()
+    with app.app_context():
+        other = db.session.get(Company, company_other.id)
+        row = _sched_for(other, admin_user, "ciso@consultancy.example")
+        allowed, _ = rs.validate_recipients(row)
+        assert allowed == []
+
+
 # --- delivery ---
 
 def test_run_due_sends_and_records_history(app, db, schedule, company_acme, monkeypatch):

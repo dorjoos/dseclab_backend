@@ -422,7 +422,7 @@ def add_company():
         
         # Process watchlist entries (multiple entries per type)
         watchlist_entries = []
-        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address']:
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party', 'report_recipient']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
@@ -527,7 +527,7 @@ def edit_company(company_id):
         
         # Process new watchlist entries (multiple entries per type)
         watchlist_entries = []
-        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address']:
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party', 'report_recipient']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
@@ -573,8 +573,17 @@ def add_watchlist_entry(company_id):
     description = request.form.get('description', '').strip() or None
     
     # Validate entry type
-    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address']:
+    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address',
+                          'third_party', 'report_recipient']:
         return jsonify({'success': False, 'error': 'Invalid entry type'}), 400
+
+    # An approved recipient must be one exact address. Accepting a domain here
+    # would undo the domain binding it is meant to make an exception to.
+    if entry_type == 'report_recipient':
+        from .services.report_scheduler import _EMAIL_RE
+        if not _EMAIL_RE.match(entry_value):
+            return jsonify({'success': False,
+                            'error': 'Approved recipient must be a single email address'}), 400
     
     # Validate entry value
     if not entry_value:

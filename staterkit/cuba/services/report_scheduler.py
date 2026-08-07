@@ -123,19 +123,25 @@ def validate_recipients(schedule, addresses=None):
         candidates = [str(a).strip() for a in raw if str(a).strip()]
 
     allowed, rejected = [], []
+    company = getattr(schedule, "company", None)
     domains = allowed_recipient_domains(schedule)
+    allowlist = set(company.get_report_recipient_allowlist()) if company else set()
     creator_email = (getattr(schedule.creator, "email", "") or "").lower()
 
     for address in candidates:
         low = address.lower()
         if not _EMAIL_RE.match(address):
             rejected.append((address, "not a valid email address"))
+        elif low in allowlist:
+            # Admin-approved exception to the domain rule.
+            allowed.append(address)
         elif domains:
             if any(_domain_allows(_host_of(low), d) for d in domains):
                 allowed.append(address)
             else:
                 rejected.append(
-                    (address, "not on " + ", ".join(domains)))
+                    (address, "not on " + ", ".join(domains)
+                     + ", and not on the company's approved recipient list"))
         elif low == creator_email and creator_email:
             # No company to anchor to: the creator may still mail themselves.
             allowed.append(address)
