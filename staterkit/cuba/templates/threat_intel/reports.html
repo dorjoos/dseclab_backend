@@ -100,9 +100,24 @@
               <option value="xlsx">Excel</option>
             </select>
           </div>
-          <div class="rp-form-field rp-form-field--datetime">
-            <label>Day/Time</label>
-            <input type="datetime-local" name="cron_hint">
+          <div class="rp-form-field" data-when="weekly" style="display:none;">
+            <label>Days</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:6px;">
+              {% for num, label in [(1,'Mon'),(2,'Tue'),(3,'Wed'),(4,'Thu'),(5,'Fri'),(6,'Sat'),(7,'Sun')] %}
+              <label style="display:flex;align-items:center;gap:3px;font-size:12px;font-weight:500;">
+                <input type="checkbox" name="run_days" value="{{ num }}"
+                       {% if num == 1 %}checked{% endif %}> {{ label }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="rp-form-field" data-when="monthly" style="display:none;">
+            <label>Day of month</label>
+            <input type="number" name="run_day_of_month" min="1" max="31" value="1">
+          </div>
+          <div class="rp-form-field">
+            <label>Time</label>
+            <input type="time" name="run_time" value="09:00" step="1800" required>
           </div>
           <div class="rp-form-field rp-form-field--grow">
             <label>Email To (optional)</label>
@@ -111,6 +126,21 @@
           <button type="submit" class="btn btn-primary btn-sm rpt-btn-submit">Create</button>
         </div>
       </form>
+      <script>
+        // Show only the fields that mean something for the chosen frequency:
+        // weekdays for weekly, a day of the month for monthly, neither for daily.
+        (function () {
+          var form = document.currentScript.parentElement;
+          var freq = form.querySelector('select[name="frequency"]');
+          function sync() {
+            form.querySelectorAll('[data-when]').forEach(function (el) {
+              el.style.display = el.dataset.when === freq.value ? '' : 'none';
+            });
+          }
+          freq.addEventListener('change', sync);
+          sync();
+        })();
+      </script>
     </div>
 
     {% if schedules %}
@@ -135,9 +165,16 @@
           <span>&middot;</span>
           <span>{{ s.format|upper }}</span>
           <span>&middot; {% if s.company %}{{ s.company.name }}{% else %}All visible{% endif %}</span>
+          {% set day_names = {'1':'Mon','2':'Tue','3':'Wed','4':'Thu','5':'Fri','6':'Sat','7':'Sun'} %}
+          {% if s.run_days and s.frequency == 'weekly' %}
+            <span>&middot; {% for d in s.run_days.split(',') %}{{ day_names.get(d.strip(), d) }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+          {% elif s.run_days and s.frequency == 'monthly' %}
+            <span>&middot; day {{ s.run_days }}</span>
+          {% endif %}
+          {% if s.run_time %}<span>&middot; {{ s.run_time }}</span>{% endif %}
           {% if s.email_to %}<span>&middot; &rarr; {{ s.email_to }}</span>{% endif %}
-          {% if s.next_run %}<span>&middot; Next: {{ s.next_run.strftime('%b %d %H:%M') }} UTC</span>{% endif %}
-          {% if s.last_run %}<span>&middot; Last: {{ s.last_run.strftime('%b %d %H:%M') }}</span>{% endif %}
+          {% if s.next_run %}<span>&middot; Next: {{ s.next_run | localtime }}</span>{% endif %}
+          {% if s.last_run %}<span>&middot; Last: {{ s.last_run | localtime }}</span>{% endif %}
         </div>
       </div>
       <!-- Actions -->

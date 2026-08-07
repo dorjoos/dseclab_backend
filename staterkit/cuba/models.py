@@ -265,6 +265,12 @@ class ScheduledReport(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = db.Column(db.String(200), nullable=False)
     frequency = db.Column(db.String(20), nullable=False)  # daily, weekly, monthly
+    # Local wall-clock time of day, "HH:MM". Stored as the operator typed it —
+    # next_run holds the UTC instant it resolves to, so a schedule keeps its
+    # local time rather than shifting when the offset changes.
+    run_time = db.Column(db.String(5), nullable=True)
+    # weekly: ISO weekdays, "1,5" = Mon and Fri. monthly: day of month, "15".
+    run_days = db.Column(db.String(50), nullable=True)
     format = db.Column(db.String(10), default='pdf')  # csv, xlsx, pdf, json
     filters = db.Column(db.Text, nullable=True)  # JSON filters
     email_to = db.Column(db.String(500), nullable=True)  # comma-separated emails

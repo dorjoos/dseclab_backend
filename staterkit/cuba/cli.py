@@ -196,6 +196,8 @@ def match_ransomware(since_hours, dry_run):
 # and re-runnable.
 _ADDITIVE_COLUMNS = [
     ('scheduled_report', 'company_id', 'VARCHAR(36) REFERENCES company(id)'),
+    ('scheduled_report', 'run_time', 'VARCHAR(5)'),
+    ('scheduled_report', 'run_days', 'VARCHAR(50)'),
 ]
 
 

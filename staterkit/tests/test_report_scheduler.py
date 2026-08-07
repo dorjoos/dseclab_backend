@@ -40,14 +40,19 @@ def test_parse_schedule_time(raw, expected):
     assert rs.parse_schedule_time(raw) == expected
 
 
-@pytest.mark.parametrize("freq,delta", [
-    ("daily", timedelta(days=1)),
-    ("weekly", timedelta(weeks=1)),
-    ("monthly", timedelta(days=30)),
+@pytest.mark.parametrize("freq,max_days", [
+    ("daily", 1),
+    ("weekly", 7),
+    ("monthly", 31),
 ])
-def test_compute_next_run(freq, delta):
-    base = datetime(2026, 8, 7, 13, 0)
-    assert rs.compute_next_run(freq, base) == base + delta
+def test_compute_next_run_advances_within_its_period(app, freq, max_days):
+    """Times are wall-clock now, so assert the period rather than a fixed delta."""
+    with app.app_context():
+        base = datetime(2026, 8, 7, 13, 0)
+        nxt = rs.compute_next_run(freq, base, "09:00",
+                                  "" if freq == "daily" else "1")
+        assert nxt > base
+        assert (nxt - base).days <= max_days
 
 
 def test_compute_next_run_unknown_frequency_is_none():
@@ -101,6 +106,7 @@ def test_only_one_worker_can_claim_a_due_run(app, schedule):
         # holds the old next_run. Modelled as a detached stand-in so it isn't
         # the same identity-mapped object the winner just mutated.
         other_worker = SimpleNamespace(id=row.id, frequency=row.frequency,
+                                       run_time=row.run_time, run_days=row.run_days,
                                        next_run=original_next_run)
         assert rs.claim_schedule(other_worker) is False
 
@@ -421,9 +427,10 @@ def test_parsed_times_snap_to_a_slot(raw, expected):
     assert rs.parse_schedule_time(raw) == expected
 
 
-def test_next_run_stays_on_its_slot():
-    assert rs.compute_next_run("weekly", datetime(2026, 8, 7, 20, 9)) == \
-        datetime(2026, 8, 14, 20, 0)
+def test_next_run_lands_on_a_slot(app):
+    with app.app_context():
+        nxt = rs.compute_next_run("daily", datetime(2026, 8, 7, 20, 9), "09:30", "")
+        assert nxt.minute in (0, 30) and nxt.second == 0
 
 
 def test_claim_advances_from_the_slot_not_from_now(app, schedule):
@@ -437,3 +444,64 @@ def test_claim_advances_from_the_slot_not_from_now(app, schedule):
         assert row.next_run > datetime.utcnow()      # never leaves it in the past
         assert row.next_run.minute in (0, 30)        # still on a slot
         assert row.next_run.second == 0
+
+
+# --- local wall-clock scheduling ---
+
+from zoneinfo import ZoneInfo
+
+UB = ZoneInfo("Asia/Ulaanbaatar")   # UTC+8
+
+
+def test_daily_time_is_local_not_utc(app):
+    """09:00 means 09:00 in Ulaanbaatar, which is 01:00 UTC."""
+    with app.app_context():
+        nxt = rs.next_occurrence("daily", "09:00", "",
+                                 datetime(2026, 8, 7, 0, 0), tz=UB)
+        assert nxt == datetime(2026, 8, 7, 1, 0)      # 09:00 +08 == 01:00Z
+        assert rs.to_local(nxt, UB).hour == 9
+
+
+def test_daily_rolls_to_tomorrow_once_past(app):
+    with app.app_context():
+        nxt = rs.next_occurrence("daily", "09:00", "",
+                                 datetime(2026, 8, 7, 2, 0), tz=UB)
+        assert nxt == datetime(2026, 8, 8, 1, 0)
+
+
+def test_weekly_picks_the_next_selected_weekday(app):
+    """Mon+Fri from a Wednesday should land on Friday."""
+    with app.app_context():
+        wednesday = datetime(2026, 8, 5, 0, 0)       # 08:00 local Wed
+        nxt = rs.next_occurrence("weekly", "09:00", "1,5", wednesday, tz=UB)
+        assert rs.to_local(nxt, UB).isoweekday() == 5
+
+
+def test_weekly_wraps_to_next_week(app):
+    """Monday-only, asked on a Monday afternoon, goes to next Monday."""
+    with app.app_context():
+        monday_late = datetime(2026, 8, 3, 6, 0)     # 14:00 local Mon
+        nxt = rs.next_occurrence("weekly", "09:00", "1", monday_late, tz=UB)
+        local = rs.to_local(nxt, UB)
+        assert local.isoweekday() == 1 and local.day == 10
+
+
+def test_monthly_uses_the_chosen_day(app):
+    with app.app_context():
+        nxt = rs.next_occurrence("monthly", "09:00", "15",
+                                 datetime(2026, 8, 7, 0, 0), tz=UB)
+        assert rs.to_local(nxt, UB).day == 15
+
+
+def test_monthly_31st_clamps_to_a_short_month(app):
+    """A 31st must land on the last day rather than skipping the month."""
+    with app.app_context():
+        nxt = rs.next_occurrence("monthly", "09:00", "31",
+                                 datetime(2026, 9, 5, 0, 0), tz=UB)
+        local = rs.to_local(nxt, UB)
+        assert (local.month, local.day) == (9, 30)
+
+
+def test_unknown_frequency_has_no_occurrence(app):
+    with app.app_context():
+        assert rs.next_occurrence("hourly", "09:00", "", datetime(2026, 8, 7), tz=UB) is None

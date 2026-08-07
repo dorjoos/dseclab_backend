@@ -11,6 +11,8 @@ import logging
 import re
 from datetime import datetime, timedelta
 
+from flask import current_app
+
 from .. import db
 
 logger = logging.getLogger(__name__)
@@ -44,10 +46,118 @@ def round_to_slot(when, minutes=SLOT_MINUTES):
     return when - timedelta(minutes=remainder)
 
 
-def compute_next_run(frequency, after):
-    """Next occurrence strictly after `after`, or None for unknown frequency."""
-    delta = _FREQUENCY_DELTAS.get((frequency or "").lower())
-    return round_to_slot(after + delta) if delta else None
+DEFAULT_TIMEZONE = "Asia/Ulaanbaatar"
+
+
+def app_timezone():
+    """The wall-clock zone schedules are expressed in."""
+    from zoneinfo import ZoneInfo
+    name = DEFAULT_TIMEZONE
+    try:
+        name = current_app.config.get("APP_TIMEZONE", DEFAULT_TIMEZONE)
+    except RuntimeError:
+        pass  # outside an app context (tests, CLI helpers)
+    try:
+        return ZoneInfo(name)
+    except Exception:
+        logger.warning("Unknown APP_TIMEZONE %r; falling back to UTC", name)
+        return ZoneInfo("UTC")
+
+
+def to_local(utc_naive, tz=None):
+    """Naive UTC instant -> aware local time, for display."""
+    from datetime import timezone
+    if utc_naive is None:
+        return None
+    return utc_naive.replace(tzinfo=timezone.utc).astimezone(tz or app_timezone())
+
+
+def _to_utc_naive(local_aware):
+    from datetime import timezone
+    return local_aware.astimezone(timezone.utc).replace(tzinfo=None)
+
+
+def _parse_run_time(run_time):
+    """'09:00' -> (9, 0). Defaults to 09:00 when absent or unparseable."""
+    try:
+        hour, minute = str(run_time).split(":")[:2]
+        hour, minute = int(hour), int(minute)
+        if 0 <= hour <= 23 and 0 <= minute <= 59:
+            return hour, minute
+    except (ValueError, AttributeError, TypeError):
+        pass
+    return 9, 0
+
+
+def _parse_run_days(run_days):
+    out = []
+    for part in str(run_days or "").split(","):
+        part = part.strip()
+        if part.isdigit():
+            out.append(int(part))
+    return out
+
+
+def _last_day_of_month(year, month):
+    import calendar
+    return calendar.monthrange(year, month)[1]
+
+
+def next_occurrence(frequency, run_time, run_days, after, tz=None):
+    """Next UTC instant for a schedule expressed in local wall-clock terms.
+
+    `after` is naive UTC. Returns naive UTC, or None for an unknown frequency.
+    The local time is what's preserved: a 09:00 report stays at 09:00 locally
+    rather than sliding when the UTC offset does.
+    """
+    from datetime import timezone
+    frequency = (frequency or "").lower()
+    if frequency not in _FREQUENCY_DELTAS:
+        return None
+
+    tz = tz or app_timezone()
+    hour, minute = _parse_run_time(run_time)
+    local_after = after.replace(tzinfo=timezone.utc).astimezone(tz)
+
+    def at(day):
+        return datetime(day.year, day.month, day.day, hour, minute, tzinfo=tz)
+
+    if frequency == "daily":
+        candidate = at(local_after)
+        if candidate <= local_after:
+            candidate = at(local_after + timedelta(days=1))
+        return round_to_slot(_to_utc_naive(candidate))
+
+    if frequency == "weekly":
+        wanted = {d for d in _parse_run_days(run_days) if 1 <= d <= 7}
+        if not wanted:
+            wanted = {local_after.isoweekday()}
+        for offset in range(0, 8):
+            day = local_after + timedelta(days=offset)
+            if day.isoweekday() in wanted:
+                candidate = at(day)
+                if candidate > local_after:
+                    return round_to_slot(_to_utc_naive(candidate))
+        return None
+
+    # monthly
+    days = [d for d in _parse_run_days(run_days) if 1 <= d <= 31]
+    wanted_day = days[0] if days else local_after.day
+    year, month = local_after.year, local_after.month
+    for _ in range(13):
+        # A 31st in a 30-day month lands on the last day rather than skipping.
+        day_num = min(wanted_day, _last_day_of_month(year, month))
+        candidate = datetime(year, month, day_num, hour, minute, tzinfo=tz)
+        if candidate > local_after:
+            return round_to_slot(_to_utc_naive(candidate))
+        month = 1 if month == 12 else month + 1
+        year = year + 1 if month == 1 else year
+    return None
+
+
+def compute_next_run(frequency, after, run_time=None, run_days=None, tz=None):
+    """Next occurrence strictly after `after` (naive UTC)."""
+    return next_occurrence(frequency, run_time, run_days, after, tz)
 
 
 def parse_schedule_time(raw):
@@ -90,9 +200,11 @@ def claim_schedule(schedule, now=None):
     # Advance from the slot that was due, not from the moment we happen to run,
     # so a daily report stays on its time instead of drifting later each day.
     # Skip forward past any slots missed while the app was down.
-    following = compute_next_run(schedule.frequency, expected)
+    following = compute_next_run(schedule.frequency, expected,
+                                 schedule.run_time, schedule.run_days)
     while following is not None and following <= now:
-        following = compute_next_run(schedule.frequency, following)
+        following = compute_next_run(schedule.frequency, following,
+                                     schedule.run_time, schedule.run_days)
 
     updated = (db.session.query(ScheduledReport)
                .filter(ScheduledReport.id == schedule.id,
