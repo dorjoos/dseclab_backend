@@ -1,4 +1,6 @@
 from flask import Flask
+from flask.templating import Environment as FlaskJinjaEnvironment
+from jinja2.sandbox import SandboxedEnvironment
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_assets import Environment
@@ -24,8 +26,30 @@ limiter = Limiter(key_func=get_remote_address)
 socketio = SocketIO()
 
 
+class SandboxedJinjaEnvironment(SandboxedEnvironment, FlaskJinjaEnvironment):
+    """Jinja's sandbox with Flask's loader wiring.
+
+    Both halves are required: Flask constructs its environment as
+    `jinja_environment(app, **options)` and supplies the template loader, so a
+    bare SandboxedEnvironment ends up with no loader at all.
+    """
+
+
+class SandboxedFlask(Flask):
+    """Flask that renders templates in Jinja's sandbox.
+
+    Defence in depth against SSTI. No template is built from user input today,
+    and nothing calls render_template_string — but if that ever changes, the
+    sandbox is what stops a payload reaching `__class__`, `__subclasses__` and
+    the usual route from an injected expression to arbitrary code. Our
+    templates only do ordinary attribute and item access, so nothing legitimate
+    is lost.
+    """
+    jinja_environment = SandboxedJinjaEnvironment
+
+
 def create_app(config_name=None):
-    app = Flask(__name__)
+    app = SandboxedFlask(__name__)
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     if config_name is None:
