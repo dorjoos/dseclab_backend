@@ -307,11 +307,17 @@ class BreachedCredsService(ESIndexService):
                 if gte:
                     filter_clauses.append({"range": {"timestamp": {"gte": gte.isoformat()}}})
 
-        # Domain-based access control
-        if domain_filters:
+        # Domain-based access control.
+        #
+        # None means unrestricted, and only an admin may pass it. A list means
+        # restrict to those domains — and an EMPTY list means the caller may
+        # see nothing, not everything. Treating [] as "no filter" would turn a
+        # user with no assigned scope into a user with total access, so the
+        # empty case gets an explicit match-nothing clause.
+        if domain_filters is not None:
             domain_q = self.build_domain_filter(domain_filters)
-            if domain_q:
-                filter_clauses.append(domain_q)
+            filter_clauses.append(
+                domain_q if domain_q else {"bool": {"must_not": {"match_all": {}}}})
 
         if not must and not filter_clauses:
             return {"match_all": {}}

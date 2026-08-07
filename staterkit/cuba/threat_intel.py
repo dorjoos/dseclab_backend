@@ -38,8 +38,15 @@ threat_intel = Blueprint('threat_intel', __name__)
 
 
 def _get_domain_filters():
-    user_domain = get_user_company_domain()
-    if not user_domain:
+    """Scope for the current user: None is unrestricted, a list restricts.
+
+    Only an admin may get None. Everyone else gets their company's domains,
+    and an empty list is a real answer meaning "no access" — _build_query
+    turns it into a match-nothing clause rather than dropping the filter.
+    """
+    if not current_user.is_authenticated:
+        return []
+    if current_user.is_admin_user:
         return None
     return get_user_watchlist_domains()
 

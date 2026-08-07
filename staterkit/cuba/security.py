@@ -38,19 +38,29 @@ def permission_required(perm):
 
 
 def get_user_company_domain():
-    """Get company domain for current user, None for admins."""
+    """Get company domain for current user, None for admins.
+
+    Deliberately does NOT fall back to the domain of the user's own email
+    address. That fallback granted a company-less user scope over their mail
+    provider's domain, so anyone on a free-mail address could read every
+    credential with a matching username — including other clients' customers.
+    A user with no company has no scope.
+    """
     if not current_user.is_authenticated:
         return None
     if current_user.is_admin_user:
         return None
-    return current_user.company_domain
+    return current_user.company.domain if current_user.company else None
 
 
 def get_user_watchlist_domains():
-    """Get list of domains/IPs/values to match for current user."""
-    user_domain = get_user_company_domain()
-    if not user_domain:
+    """Domains the current user may see.
+
+    An empty list means "nothing", never "everything" — callers must not
+    collapse it into an absent filter.
+    """
+    if not current_user.is_authenticated or current_user.is_admin_user:
         return []
     if current_user.company:
         return current_user.company.get_match_domains()
-    return [user_domain]
+    return []
