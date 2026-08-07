@@ -147,8 +147,9 @@ def validate_recipients(schedule, addresses=None):
             allowed.append(address)
         else:
             rejected.append(
-                (address, "schedule has no company, so only the creator's own "
-                          "address is permitted"))
+                (address, "no Company is selected for this schedule — pick one "
+                          "so its approved recipients and domain apply, or send "
+                          "only to your own address"))
 
     if len(allowed) > MAX_RECIPIENTS:
         for extra in allowed[MAX_RECIPIENTS:]:

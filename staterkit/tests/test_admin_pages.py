@@ -93,3 +93,23 @@ def _csrf(client, company_id):
     m = re.search(rb'name="csrf_token"[^>]*value="([^"]+)"', resp.data)
     assert m, f'no csrf token on the company page (status={resp.status_code})'
     return m.group(1).decode()
+
+
+# --- reports form: the Company default must not be the one that fails ---
+
+def test_member_reports_form_preselects_their_company(client, member_acme):
+    """The blank 'All I can see' option rejects every approved recipient, so a
+    member must not be shown it as the default."""
+    login(client, member_acme.email)
+    resp = client.get('/threat-intelligence/reports')
+    assert resp.status_code == 200
+    body = resp.data.decode()
+    assert 'All I can see' not in body
+    assert 'selected' in body and 'Acme Co' in body
+
+
+def test_admin_reports_form_still_offers_all(client, admin_user, company_acme):
+    login(client, admin_user.email)
+    resp = client.get('/threat-intelligence/reports')
+    assert resp.status_code == 200
+    assert 'All I can see' in resp.data.decode()
