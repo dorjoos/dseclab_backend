@@ -118,6 +118,41 @@
 .rp-form-field input:focus,
 .rp-form-field select:focus { border-color: var(--primary); }
 
+/* Day-of-week picker: toggle pills rather than raw checkboxes, so the row
+   sits on the same baseline and height as the inputs beside it. */
+.rp-days { display: flex; gap: 4px; }
+.rp-day { position: relative; cursor: pointer; user-select: none; }
+.rp-day input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.rp-day span {
+  display: block;
+  min-width: 38px;
+  padding: 7px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-white);
+  color: var(--text-muted, #667085);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.rp-day:hover span { border-color: var(--primary); color: var(--primary); }
+.rp-day input:checked + span {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+/* Keyboard users need to see focus; the real checkbox is visually hidden. */
+.rp-day input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 /* History status badges */
 .history-status { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
 .history-completed { background: #ecfdf5; color: #059669; }
