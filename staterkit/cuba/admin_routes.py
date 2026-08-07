@@ -422,7 +422,7 @@ def add_company():
         
         # Process watchlist entries (multiple entries per type)
         watchlist_entries = []
-        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party', 'report_recipient']:
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
@@ -527,7 +527,7 @@ def edit_company(company_id):
         
         # Process new watchlist entries (multiple entries per type)
         watchlist_entries = []
-        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party', 'report_recipient']:
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
@@ -573,17 +573,8 @@ def add_watchlist_entry(company_id):
     description = request.form.get('description', '').strip() or None
     
     # Validate entry type
-    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address',
-                          'third_party', 'report_recipient']:
+    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
         return jsonify({'success': False, 'error': 'Invalid entry type'}), 400
-
-    # An approved recipient must be one exact address. Accepting a domain here
-    # would undo the domain binding it is meant to make an exception to.
-    if entry_type == 'report_recipient':
-        from .services.report_scheduler import _EMAIL_RE
-        if not _EMAIL_RE.match(entry_value):
-            return jsonify({'success': False,
-                            'error': 'Approved recipient must be a single email address'}), 400
     
     # Validate entry value
     if not entry_value:
@@ -639,6 +630,56 @@ def delete_watchlist_entry(company_id, entry_id):
         db.session.rollback()
         logger.error("Error: %s", e)
         return jsonify({'success': False, 'error': 'An error occurred. Please try again.'}), 500
+
+
+@admin_bp.route('/admin/companies/<company_id>/report-recipients/add', methods=['POST'])
+@login_required
+@admin_required
+def add_report_recipient(company_id):
+    """Approve an address to receive this company's reports."""
+    from .models import ReportRecipient
+    from .services.report_scheduler import _EMAIL_RE
+
+    company = Company.query.get_or_404(company_id)
+    email = (request.form.get('email') or '').strip().lower()
+
+    # Exact addresses only. A domain here would undo the domain binding this
+    # list exists to make a narrow exception to.
+    if not _EMAIL_RE.match(email):
+        flash('Report recipient must be a single valid email address.', 'warning')
+        return redirect(url_for('admin.edit_company', company_id=company_id))
+
+    if ReportRecipient.query.filter_by(company_id=company.id, email=email).first():
+        flash(f'{email} is already an approved recipient.', 'info')
+        return redirect(url_for('admin.edit_company', company_id=company_id))
+
+    db.session.add(ReportRecipient(
+        company_id=company.id, email=email,
+        description=(request.form.get('description') or '').strip() or None,
+        created_by=current_user.id))
+    db.session.commit()
+    log_audit('report_recipient_add', 'company', company.id,
+              f'Approved {email} to receive {company.name} reports')
+    flash(f'{email} approved for {company.name} reports.', 'success')
+    return redirect(url_for('admin.edit_company', company_id=company_id))
+
+
+@admin_bp.route('/admin/companies/<company_id>/report-recipients/<recipient_id>/delete',
+                methods=['POST'])
+@login_required
+@admin_required
+def delete_report_recipient(company_id, recipient_id):
+    """Revoke an approved report recipient."""
+    from .models import ReportRecipient
+    recipient = ReportRecipient.query.filter_by(
+        id=recipient_id, company_id=company_id).first_or_404()
+    email = recipient.email
+    db.session.delete(recipient)
+    db.session.commit()
+    log_audit('report_recipient_remove', 'company', company_id,
+              f'Revoked {email}')
+    flash(f'{email} removed from approved recipients.', 'info')
+    return redirect(url_for('admin.edit_company', company_id=company_id))
 
 
 @admin_bp.route('/admin/audit-logs')

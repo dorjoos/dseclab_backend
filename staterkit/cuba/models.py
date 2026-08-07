@@ -30,12 +30,6 @@ class Company(db.Model):
     # than as the company's staff or customers.
     THIRD_PARTY_ENTRY_TYPE = 'third_party'
 
-    # Individual addresses an admin has approved to receive this company's
-    # reports even though they sit off its domains — an external CISO, say.
-    # Deliberately exact addresses, never domains: a domain here would
-    # re-open the very hole the domain binding closes.
-    REPORT_RECIPIENT_ENTRY_TYPE = 'report_recipient'
-
     def get_match_domains(self):
         """Return deduped, lowercased list of domains from company domain + watchlist entries."""
         domains = set()
@@ -58,11 +52,7 @@ class Company(db.Model):
 
     def get_report_recipient_allowlist(self):
         """Exact addresses an admin approved for this company's reports."""
-        return [
-            entry.entry_value.strip().lower()
-            for entry in self.watchlist_entries
-            if entry.entry_type == self.REPORT_RECIPIENT_ENTRY_TYPE and entry.entry_value
-        ]
+        return [r.email.strip().lower() for r in self.report_recipients if r.email]
 
     def get_own_domains(self):
         """Domains this company itself owns — never a supplier's.
@@ -183,6 +173,36 @@ class WatchlistEntry(db.Model):
 
     def __repr__(self):
         return f"WatchlistEntry('{self.entry_type}', '{self.entry_value}')"
+
+
+class ReportRecipient(db.Model):
+    """An address approved to receive a company's reports.
+
+    Distinct from WatchlistEntry on purpose. A watchlist entry is a *domain we
+    monitor for breaches* (statebank.mn and its subdomains); a report recipient
+    is a *person we send findings to*. Conflating them pollutes the watchlist
+    with addresses that were never meant to be searched.
+
+    Reports are normally bound to the company's own domains; rows here are the
+    admin-approved exceptions, so they are always exact addresses and never
+    domains — a domain here would reopen the hole that binding closes.
+    """
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=False)
+    email = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+    created_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=utcnow)
+
+    company = db.relationship('Company', backref=db.backref(
+        'report_recipients', lazy=True, cascade='all, delete-orphan'))
+
+    __table_args__ = (
+        db.UniqueConstraint('company_id', 'email', name='uq_report_recipient'),
+    )
+
+    def __repr__(self):
+        return f"ReportRecipient('{self.email}')"
 
 
 class Notification(db.Model):

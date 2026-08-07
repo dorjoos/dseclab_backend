@@ -66,10 +66,46 @@
               <option value="ip_address">IP</option>
               <option value="slug">Slug</option>
               <option value="third_party">Third-party domain</option>
-              <option value="report_recipient">Report recipient (email)</option>
             </select>
             <input type="text" name="entry_value" class="form-control cf-wl-add-input" placeholder="Value" required>
             <button type="submit" class="btn btn-primary btn-sm cf-wl-add-btn">Add</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card cf-wl-card">
+        <div class="cf-wl-header">
+          <div class="cf-wl-title">Report Recipients</div>
+          <span class="cf-wl-count">{{ company.report_recipients|length }} approved</span>
+        </div>
+        <div class="cf-wl-empty" style="padding-bottom:0;">
+          Reports for {{ company.name }} go to <strong>@{{ company.domain }}</strong>
+          addresses by default. Add an address here only to approve someone off
+          that domain.
+        </div>
+        {% if company.report_recipients %}
+        {% for r in company.report_recipients %}
+        <div class="cf-wl-entry{% if not loop.last %} cf-wl-entry--bordered{% endif %}">
+          <div class="cf-wl-entry-left">
+            <span class="av-tag cf-wl-entry-tag av-tag-teal">approved</span>
+            <span class="cf-wl-entry-val">{{ r.email }}</span>
+          </div>
+          <form method="POST" style="display:inline;"
+                action="{{ url_for('admin.delete_report_recipient', company_id=company.id, recipient_id=r.id) }}"
+                data-confirm="Remove {{ r.email }} from approved recipients?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="cf-wl-remove-btn" title="Remove">&times;</button>
+          </form>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <form method="POST" action="{{ url_for('admin.add_report_recipient', company_id=company.id) }}" class="cf-wl-add-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="cf-wl-add-row">
+            <input type="email" name="email" class="form-control cf-wl-add-input"
+                   placeholder="person@example.com" required>
+            <button type="submit" class="btn btn-primary btn-sm cf-wl-add-btn">Approve</button>
           </div>
         </form>
       </div>
