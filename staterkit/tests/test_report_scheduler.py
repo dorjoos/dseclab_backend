@@ -338,9 +338,9 @@ def test_admin_allowlisted_address_bypasses_the_domain_rule(app, db, company_acm
                                                             admin_user):
     """An admin can approve one exact off-domain address per company."""
     from cuba.models import Company
-    db.session.add(WatchlistEntry(company_id=company_acme.id,
-                                  entry_type="report_recipient",
-                                  entry_value="ciso@consultancy.example"))
+    from cuba.models import ReportRecipient
+    db.session.add(ReportRecipient(company_id=company_acme.id,
+                                   email="ciso@consultancy.example"))
     db.session.commit()
     with app.app_context():
         company = db.session.get(Company, company_acme.id)
@@ -354,9 +354,9 @@ def test_admin_allowlisted_address_bypasses_the_domain_rule(app, db, company_acm
 def test_allowlist_is_per_company(app, db, company_acme, company_other, admin_user):
     """Approving an address for one client must not approve it for another."""
     from cuba.models import Company
-    db.session.add(WatchlistEntry(company_id=company_acme.id,
-                                  entry_type="report_recipient",
-                                  entry_value="ciso@consultancy.example"))
+    from cuba.models import ReportRecipient
+    db.session.add(ReportRecipient(company_id=company_acme.id,
+                                   email="ciso@consultancy.example"))
     db.session.commit()
     with app.app_context():
         other = db.session.get(Company, company_other.id)
