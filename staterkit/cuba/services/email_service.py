@@ -36,8 +36,6 @@ ALERT = "#DC2626"
 _CARD_FIELDS = (
     ("Domain", "domain"),
     ("Matched domain", "matched_domain"),
-    ("File name", "file_name"),
-    ("Source", "source"),
     ("Type", "type"),
 )
 

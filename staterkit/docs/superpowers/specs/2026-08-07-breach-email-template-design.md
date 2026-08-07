@@ -79,9 +79,12 @@ updated: `cuba/threat_intel.py` and four in `tests/test_email_service.py`.
    host puts an attacker-controlled "View credential" link inside a breach alert —
    a high-yield phishing position, since recipients are primed to click urgently.
    Add `APP_BASE_URL` to config; use `request.url_root` only as a fallback when unset.
-2. **Explicit field allowlist.** Only username, domain, matched_domain, file_name,
-   source, type, date are rendered. If `BreachedCredDoc` later grows a `password`
-   attribute, the template remains structurally incapable of leaking it.
+2. **Explicit field allowlist.** Only username, domain, matched_domain, type and date
+   are rendered. If `BreachedCredDoc` later grows a `password` attribute, the template
+   remains structurally incapable of leaking it. `file_name` and `source` were dropped
+   from the notification on review — removing the `_CARD_FIELDS` entry takes them out
+   of the HTML and text parts together, which is the payoff of routing every field
+   through one allowlist.
 3. **Escape into attributes, not just text.** `quote=True` everywhere;
    `urllib.parse.quote` on `es_id` before it enters a URL path.
 4. **Strip CR/LF from subject and recipients**, and validate recipients before
@@ -94,7 +97,7 @@ updated: `cuba/threat_intel.py` and four in `tests/test_email_service.py`.
 Extend `tests/test_email_service.py`:
 
 - subject/count and card count match the input creds
-- `matched_domain` and `file_name` still surface (existing assertions)
+- `matched_domain` still surfaces; `file_name` and `source` never do
 - a `text/plain` part is produced and contains the credential data
 - values are wrapped in app-owned anchors (autolink defense)
 - a cred carrying a `password` attribute never leaks it into html or text

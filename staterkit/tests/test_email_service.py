@@ -33,14 +33,24 @@ def test_subject_includes_count_and_company():
     assert "2" in subject and "Acme Co" in subject
 
 
-def test_body_includes_matched_domain_and_file_name():
+def test_body_includes_matched_domain():
     cred = _cred(username="alice@acme.com", domain="acme.com",
-                 matched_domain="acme.com", file_name="stealer_log_2026.txt")
+                 matched_domain="acme.com")
     _, body, _ = build_breach_email("Acme Co", [cred])
     assert "acme.com" in body
-    assert "stealer_log_2026.txt" in body
     assert "Matched domain" in body
-    assert "File name" in body
+
+
+def test_file_name_and_source_are_not_surfaced():
+    """Both were dropped from the notification; the allowlist keeps them out."""
+    cred = _cred(username="alice@acme.com", domain="acme.com",
+                 file_name="stealer_log_2026.txt", source="RedLine Stealer")
+    _, body, text = build_breach_email("Acme Co", [cred])
+    for part in (body, text):
+        assert "stealer_log_2026.txt" not in part
+        assert "RedLine Stealer" not in part
+        assert "File name" not in part
+        assert "Source" not in part
 
 
 def test_body_includes_view_link_when_base_url_given():
@@ -67,11 +77,11 @@ def test_one_card_per_credential():
 
 def test_text_part_carries_the_same_data():
     cred = _cred(username="alice@acme.com", domain="acme.com",
-                 matched_domain="acme.com", file_name="dump.txt")
+                 matched_domain="acme.com", type="stealer_log")
     _, _, text = build_breach_email("Acme Co", [cred], base_url="https://app.example")
     assert "<" not in text  # no markup leaked into the plain part
     assert "alice@acme.com" in text
-    assert "dump.txt" in text
+    assert "stealer_log" in text
     assert "https://app.example/threat-intelligence/breached-creds/abc123" in text
 
 
