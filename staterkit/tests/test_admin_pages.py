@@ -147,3 +147,17 @@ def test_day_pills_render_as_toggles_not_bare_checkboxes(client, admin_user,
     body = client.get('/threat-intelligence/reports').data.decode()
     assert 'class="rp-days"' in body
     assert body.count('class="rp-day"') == 7
+
+
+def test_frequency_defaults_to_daily(client, admin_user):
+    login(client, admin_user.email)
+    body = client.get('/threat-intelligence/reports').data.decode()
+    assert '<option value="daily" selected>' in body
+
+
+def test_static_urls_carry_a_version(client, admin_user):
+    """nginx serves /static/ as immutable for 30 days, so an unversioned URL
+    means a changed stylesheet never reaches a returning browser."""
+    login(client, admin_user.email)
+    body = client.get('/threat-intelligence/reports').data.decode()
+    assert 'reports.css?v=' in body

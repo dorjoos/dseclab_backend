@@ -94,6 +94,31 @@ def create_app(config_name=None):
     def inject_default_breadcrumb():
         return dict(breadcrumb=None)
 
+    _static_versions = {}
+
+    @app.url_defaults
+    def add_static_version(endpoint, values):
+        """Stamp static URLs with the file's mtime.
+
+        nginx serves /static/ as `immutable` for 30 days, so without this a
+        changed stylesheet never reaches a returning browser — the URL is
+        identical, and `immutable` tells it not even to revalidate. Versioning
+        the URL is what makes that caching correct rather than harmful.
+        """
+        if endpoint != 'static' or 'filename' not in values:
+            return
+        filename = values['filename']
+        version = _static_versions.get(filename)
+        if version is None or app.debug:
+            try:
+                version = int(os.stat(os.path.join(app.static_folder,
+                                                   filename)).st_mtime)
+            except OSError:
+                version = 0
+            _static_versions[filename] = version
+        if version:
+            values['v'] = version
+
     @app.template_filter('localtime')
     def localtime_filter(value, fmt='%b %d %H:%M'):
         """Render a naive-UTC instant in the app's wall-clock zone.
