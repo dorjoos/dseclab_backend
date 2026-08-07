@@ -365,8 +365,17 @@ def run_due(app, now=None):
 
 
 def start_scheduler(app):
-    """Start the in-process poller. Returns the scheduler, or None if disabled."""
+    """Start the in-process poller. Returns the scheduler, or None if disabled.
+
+    Never starts under the `flask` CLI: `flask db upgrade` and friends build an
+    app too, and a migration should not also be mailing reports.
+    """
+    import os
+
     if not app.config.get("SCHEDULER_ENABLED", True) or app.config.get("TESTING"):
+        return None
+    if os.environ.get("FLASK_RUN_FROM_CLI") == "true":
+        logger.info("Running under the Flask CLI; report scheduler not started")
         return None
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
