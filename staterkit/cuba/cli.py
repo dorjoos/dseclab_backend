@@ -185,5 +185,65 @@ def match_ransomware(since_hours, dry_run):
         click.echo(f'Matched {matched} watchlist hits; --dry-run set, no notifications written.')
 
 
+# Additive schema changes applied by `ensure-schema`, oldest first.
+# (table, column, type) — the type must be valid on both SQLite and
+# PostgreSQL, and the column must be nullable so existing rows stay valid.
+#
+# This exists because deploys run `flask db upgrade`, which applies revisions
+# but never generates them, so a new model column reaches no server. Autogen
+# on a live database is worse: it diffs models against the schema and will
+# emit DROPs for any drift. Listing changes explicitly keeps deploys additive
+# and re-runnable.
+_ADDITIVE_COLUMNS = [
+    ('scheduled_report', 'company_id', 'VARCHAR(36) REFERENCES company(id)'),
+]
+
+
+@dseclab.command('ensure-schema')
+@click.option('--dry-run', is_flag=True, help='Report what is missing but change nothing.')
+def ensure_schema(dry_run):
+    """Create missing tables and add missing columns. Idempotent."""
+    from sqlalchemy import inspect, text
+
+    created = []
+    inspector = inspect(db.engine)
+    before = set(inspector.get_table_names())
+    if not dry_run:
+        # create_all only ever creates; it never drops or alters.
+        db.create_all()
+        inspector = inspect(db.engine)
+        created = sorted(set(inspector.get_table_names()) - before)
+    else:
+        missing = {t.name for t in db.metadata.sorted_tables} - before
+        created = sorted(missing)
+
+    for table in created:
+        click.echo(f'{"would create" if dry_run else "created"} table: {table}')
+
+    inspector = inspect(db.engine)
+    tables = set(inspector.get_table_names())
+    changed = 0
+    for table, column, coltype in _ADDITIVE_COLUMNS:
+        if table not in tables:
+            continue  # create_all will have built it with the column already
+        columns = {c['name'] for c in inspector.get_columns(table)}
+        if column in columns:
+            continue
+        changed += 1
+        if dry_run:
+            click.echo(f'would add column: {table}.{column}')
+            continue
+        db.session.execute(text(f'ALTER TABLE {table} ADD COLUMN {column} {coltype}'))
+        db.session.commit()
+        click.echo(f'added column: {table}.{column}')
+
+    if not created and not changed:
+        click.echo('Schema already up to date.')
+    elif dry_run:
+        click.echo(f'{len(created)} table(s) and {changed} column(s) pending.')
+    else:
+        click.echo(f'Schema updated: {len(created)} table(s), {changed} column(s).')
+
+
 def register_cli(app):
     app.cli.add_command(dseclab)
