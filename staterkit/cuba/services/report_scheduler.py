@@ -15,8 +15,11 @@ from .. import db
 
 logger = logging.getLogger(__name__)
 
-# How often the background job looks for due schedules.
-POLL_SECONDS = 60
+# Run times are rounded to this granularity and the poller fires on the same
+# boundaries, so a schedule lands on its slot rather than up to a poll late.
+# Second-level precision buys nothing for a daily report and would mean waking
+# up 1,440 times a day per worker to find nothing to do.
+SLOT_MINUTES = 30
 
 _FREQUENCY_DELTAS = {
     "daily": timedelta(days=1),
@@ -25,10 +28,26 @@ _FREQUENCY_DELTAS = {
 }
 
 
+def round_to_slot(when, minutes=SLOT_MINUTES):
+    """Snap a time to the nearest slot boundary, dropping seconds.
+
+    20:09 becomes 20:00, 20:20 becomes 20:30.
+    """
+    if when is None:
+        return None
+    when = when.replace(second=0, microsecond=0)
+    remainder = when.minute % minutes
+    if remainder == 0:
+        return when
+    if remainder * 2 >= minutes:
+        return when + timedelta(minutes=minutes - remainder)
+    return when - timedelta(minutes=remainder)
+
+
 def compute_next_run(frequency, after):
     """Next occurrence strictly after `after`, or None for unknown frequency."""
     delta = _FREQUENCY_DELTAS.get((frequency or "").lower())
-    return (after + delta) if delta else None
+    return round_to_slot(after + delta) if delta else None
 
 
 def parse_schedule_time(raw):
@@ -37,7 +56,7 @@ def parse_schedule_time(raw):
         return None
     for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
         try:
-            return datetime.strptime(raw.strip(), fmt)
+            return round_to_slot(datetime.strptime(raw.strip(), fmt))
         except ValueError:
             continue
     return None
@@ -68,7 +87,13 @@ def claim_schedule(schedule, now=None):
     if expected is None:
         return False
 
-    following = compute_next_run(schedule.frequency, now)
+    # Advance from the slot that was due, not from the moment we happen to run,
+    # so a daily report stays on its time instead of drifting later each day.
+    # Skip forward past any slots missed while the app was down.
+    following = compute_next_run(schedule.frequency, expected)
+    while following is not None and following <= now:
+        following = compute_next_run(schedule.frequency, following)
+
     updated = (db.session.query(ScheduledReport)
                .filter(ScheduledReport.id == schedule.id,
                        ScheduledReport.next_run == expected)
@@ -397,10 +422,15 @@ def start_scheduler(app):
         return None
 
     scheduler = BackgroundScheduler(daemon=True)
-    scheduler.add_job(lambda: run_due(app), "interval", seconds=POLL_SECONDS,
+    # cron rather than interval: an interval job starts counting from process
+    # start and would drift to arbitrary minutes, so a slot at :30 could wait
+    # most of a period. Firing on the same boundaries the slots use keeps a
+    # report punctual while waking only twice an hour.
+    minutes = ",".join(str(m) for m in range(0, 60, SLOT_MINUTES))
+    scheduler.add_job(lambda: run_due(app), "cron", minute=minutes, second=5,
                       id="dseclab-run-due-reports", max_instances=1,
                       coalesce=True, replace_existing=True)
     scheduler.start()
     app.extensions["report_scheduler"] = scheduler
-    logger.info("Report scheduler started (every %ss)", POLL_SECONDS)
+    logger.info("Report scheduler started (at minute %s of each hour)", minutes)
     return scheduler
