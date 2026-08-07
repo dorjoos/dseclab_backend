@@ -107,7 +107,8 @@ def _attach_metadata(items):
             item.notes = meta.notes
 
 
-def _send_breach_emails(users, company_name, creds):
+def _send_breach_emails(users, company_name, creds, company_domain=None,
+                        third_party_domains=None):
     """Best-effort email of matched breaches to users. Never raises."""
     try:
         from .services.email_service import build_breach_email, send_email, is_email_configured
@@ -121,7 +122,10 @@ def _send_breach_emails(users, company_name, creds):
         # which is exactly the mail a recipient is primed to click.
         base_url = current_app.config.get('APP_BASE_URL') or (
             request.url_root if has_request_context() else None)
-        subject, body, text = build_breach_email(company_name, creds, base_url=base_url)
+        subject, body, text = build_breach_email(
+            company_name, creds, base_url=base_url,
+            company_domain=company_domain,
+            third_party_domains=third_party_domains)
         sent = 0
         for user in users:
             # One message per recipient — never a shared To/CC, which would
@@ -182,9 +186,13 @@ def _notify_new_breach(credential_id, company_domain, company_name, email, file_
             file_name=file_name, source=None, type=None, created_at=None,
         )
     cred.matched_domain = company_domain
+    # Label how it matched so the email can bucket it as staff vs customer.
+    if not getattr(cred, 'match_path', None):
+        _, cred.match_path = es_service.compute_match_detail(
+            cred, [company_domain] if company_domain else [])
     if file_name and not getattr(cred, 'file_name', None):
         cred.file_name = file_name
-    _send_breach_emails(users, company_name, [cred])
+    _send_breach_emails(users, company_name, [cred], company_domain=company_domain)
 
 
 @threat_intel.route('/threat-intelligence/breached-creds')
@@ -811,10 +819,20 @@ def reports():
     if current_user.is_admin_user:
         history = ReportHistory.query.order_by(ReportHistory.created_at.desc()).limit(20).all()
 
+    # Companies a schedule may target: admins pick any client, everyone else is
+    # limited to their own so a schedule can't be pointed at another company.
+    from .models import Company
+    if current_user.is_admin_user:
+        companies = Company.query.order_by(Company.name).all()
+    elif current_user.company:
+        companies = [current_user.company]
+    else:
+        companies = []
+
     breadcrumb = {"parent": "Threat Intelligence", "child": "Reports"}
     return render_template('threat_intel/reports.html',
                           schedules=schedules, alerts=alerts, history=history,
-                          breadcrumb=breadcrumb)
+                          companies=companies, breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/threat-intelligence/reports/schedule/add', methods=['POST'])
@@ -830,15 +848,57 @@ def add_schedule():
         flash('Report name is required.', 'warning')
         return redirect(url_for('threat_intel.reports'))
 
+    from .services.report_scheduler import parse_schedule_time, compute_next_run
+    from .models import Company
+    from datetime import datetime as _dt
+
+    # Never trust the posted company: a non-admin may only target their own.
+    company_id = (request.form.get('company_id') or '').strip() or None
+    if company_id:
+        company = Company.query.get(company_id)
+        if company is None or (not current_user.is_admin_user
+                               and current_user.company_id != company.id):
+            flash('Invalid company selection.', 'danger')
+            return redirect(url_for('threat_intel.reports'))
+
     cron_hint = sanitize_input(request.form.get('cron_hint', ''))
+    # The form's day/time is the first run. Without one, start a full period
+    # out rather than firing the moment the row is created.
+    next_run = parse_schedule_time(cron_hint) or compute_next_run(frequency, _dt.utcnow())
+
     schedule = ScheduledReport(
         name=name, frequency=frequency, format=fmt,
-        email_to=email_to or None, filters=json.dumps({'cron_hint': cron_hint}) if cron_hint else None,
+        email_to=email_to or None,
+        filters=json.dumps({'cron_hint': cron_hint}) if cron_hint else None,
+        next_run=next_run, company_id=company_id,
         created_by=current_user.id, is_active=True
     )
+
+    # Recipients are bound to the target company's own domains, so a client's
+    # breach data cannot be scheduled out to an unrelated address. Rejected
+    # here rather than silently dropped at send time, so the mistake is visible.
+    if email_to:
+        from .services.report_scheduler import validate_recipients
+        schedule.creator = current_user
+        schedule.company = Company.query.get(company_id) if company_id else None
+        allowed, rejected = validate_recipients(schedule, email_to)
+        if rejected:
+            flash('Cannot send to ' + '; '.join(f'{a} ({why})' for a, why in rejected),
+                  'danger')
+            return redirect(url_for('threat_intel.reports'))
+        schedule.email_to = ','.join(allowed)
+
     db.session.add(schedule)
     db.session.commit()
-    flash(f'Scheduled report "{name}" created.', 'success')
+    log_audit('scheduled_report_create', 'scheduled_report', schedule.id,
+              f'{schedule.name} → {schedule.email_to or "no recipients"} '
+              f'({"company " + schedule.company.name if schedule.company else "creator scope"})')
+    if next_run:
+        flash(f'Scheduled report "{name}" created — first run '
+              f'{next_run.strftime("%Y-%m-%d %H:%M")} UTC.', 'success')
+    else:
+        flash(f'Scheduled report "{name}" created, but "{frequency}" is not a '
+              f'known frequency so it has no run time.', 'warning')
     return redirect(url_for('threat_intel.reports'))
 
 

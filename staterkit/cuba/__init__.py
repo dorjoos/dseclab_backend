@@ -172,6 +172,12 @@ def create_app(config_name=None):
     from .cli import register_cli
     register_cli(app)
 
+    # In-process poller for ScheduledReport rows. Every gunicorn worker starts
+    # one, so the runner claims each due schedule with a conditional UPDATE and
+    # only the winner sends. See services/report_scheduler.claim_schedule.
+    from .services.report_scheduler import start_scheduler
+    start_scheduler(app)
+
     # Register WebSocket events
     from . import ws_events  # noqa: F401
 
