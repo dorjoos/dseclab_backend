@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: staterkit
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.10 is what developers run locally, 3.12 is what production runs on
+        # Ubuntu 24.04. Version-specific breakage has cost us a deploy before,
+        # so both are checked.
+        python-version: ['3.10', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: staterkit/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        env:
+          # No Elasticsearch here: the fixtures replace the service, so the
+          # suite passes without one. Pointing at a dead port stops the client
+          # spending the run on connection retries.
+          ELASTICSEARCH_URL: http://127.0.0.1:59999
+          ELASTICSEARCH_PASSWORD: ci
+        # `python -m` puts the working directory on sys.path, so `import cuba`
+        # resolves without depending on pytest's rootdir inference.
+        run: python -m pytest -q
