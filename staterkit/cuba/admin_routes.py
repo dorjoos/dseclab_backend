@@ -564,31 +564,55 @@ def edit_company(company_id):
 @admin_bp.route('/admin/companies/<company_id>/watchlist/add', methods=['POST'])
 @login_required
 @admin_required
+def _wants_json():
+    """True when the caller is fetch/XHR rather than a plain form post.
+
+    The company form submits this endpoint as an ordinary <form>, so a bare
+    jsonify() navigates the browser to a page of raw JSON. Answer in whichever
+    form the caller actually asked for.
+    """
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return True
+    accept = request.accept_mimetypes
+    return accept['application/json'] > accept['text/html']
+
+
+def _watchlist_reply(company_id, payload, status=200, message=None, category='success'):
+    if _wants_json():
+        return jsonify(payload), status
+    if message:
+        flash(message, category)
+    return redirect(url_for('admin.edit_company', company_id=company_id))
+
+
 def add_watchlist_entry(company_id):
     """Add a single watchlist entry (auto-save)"""
     company = Company.query.get_or_404(company_id)
-    
+
     entry_type = request.form.get('entry_type', '').strip()
     entry_value = request.form.get('entry_value', '').strip()
     description = request.form.get('description', '').strip() or None
-    
+
     # Validate entry type
     if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
-        return jsonify({'success': False, 'error': 'Invalid entry type'}), 400
-    
+        return _watchlist_reply(company_id, {'success': False, 'error': 'Invalid entry type'},
+                                400, 'Invalid entry type.', 'warning')
+
     # Validate entry value
     if not entry_value:
-        return jsonify({'success': False, 'error': 'Entry value is required'}), 400
-    
+        return _watchlist_reply(company_id, {'success': False, 'error': 'Entry value is required'},
+                                400, 'Entry value is required.', 'warning')
+
     # Check for duplicates
     existing = WatchlistEntry.query.filter_by(
         company_id=company_id,
         entry_type=entry_type,
         entry_value=entry_value
     ).first()
-    
+
     if existing:
-        return jsonify({'success': False, 'error': 'This entry already exists'}), 400
+        return _watchlist_reply(company_id, {'success': False, 'error': 'This entry already exists'},
+                                400, f'{entry_value} is already on the watchlist.', 'info')
     
     # Create new entry
     entry = WatchlistEntry(
@@ -601,17 +625,19 @@ def add_watchlist_entry(company_id):
     try:
         db.session.add(entry)
         db.session.commit()
-        return jsonify({
+        return _watchlist_reply(company_id, {
             'success': True,
             'entry_id': entry.id,
             'entry_type': entry.entry_type,
             'entry_value': entry.entry_value,
-            'description': entry.description
-        })
+            'description': entry.description,
+        }, message=f'Added {entry.entry_value} to the watchlist.')
     except Exception as e:
         db.session.rollback()
         logger.error("Error: %s", e)
-        return jsonify({'success': False, 'error': 'An error occurred. Please try again.'}), 500
+        return _watchlist_reply(company_id,
+                                {'success': False, 'error': 'An error occurred. Please try again.'},
+                                500, 'Could not add the entry. Please try again.', 'danger')
 
 
 @admin_bp.route('/admin/companies/<company_id>/watchlist/<entry_id>/delete', methods=['POST'])
@@ -623,13 +649,17 @@ def delete_watchlist_entry(company_id, entry_id):
     entry = WatchlistEntry.query.filter_by(id=entry_id, company_id=company_id).first_or_404()
     
     try:
+        value = entry.entry_value
         db.session.delete(entry)
         db.session.commit()
-        return jsonify({'success': True})
+        return _watchlist_reply(company_id, {'success': True},
+                                message=f'Removed {value} from the watchlist.', category='info')
     except Exception as e:
         db.session.rollback()
         logger.error("Error: %s", e)
-        return jsonify({'success': False, 'error': 'An error occurred. Please try again.'}), 500
+        return _watchlist_reply(company_id,
+                                {'success': False, 'error': 'An error occurred. Please try again.'},
+                                500, 'Could not remove the entry. Please try again.', 'danger')
 
 
 @admin_bp.route('/admin/companies/<company_id>/report-recipients/add', methods=['POST'])
