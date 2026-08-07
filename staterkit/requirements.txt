@@ -25,5 +25,11 @@ APScheduler>=3.10
 # Serving. Required, not optional: dseclab.service execs venv/bin/gunicorn and
 # gunicorn.conf.py sets worker_class = "eventlet". Installing only the rest of
 # this file yields a venv whose service cannot start (systemd 203/EXEC).
-gunicorn>=21.0
+# Upper bound is load-bearing: gunicorn removed the eventlet worker in a
+# later release, and gunicorn.conf.py sets worker_class = "eventlet", so an
+# unpinned install boots into
+#   ImportError: Entry point ('gunicorn.workers', 'eventlet') not found
+# eventlet is also deprecated upstream — moving to gevent is the real fix,
+# and this pin is what holds the line until then.
+gunicorn>=21.2,<23
 eventlet>=0.35
