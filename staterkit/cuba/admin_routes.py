@@ -301,17 +301,84 @@ def company_breached_creds(company_id):
     company = Company.query.get_or_404(company_id)
     page = request.args.get('page', 1, type=int)
     per_page = 20
-    
+
     domains = company.get_match_domains()
-    pagination = es_service.search(domain_filters=domains, page=page, per_page=per_page)
+
+    # Optional watchlist filter: narrow to a single watched domain.
+    selected_watchlist = (request.args.get('watchlist') or '').strip().lower()
+    if selected_watchlist and selected_watchlist in domains:
+        active_domains = [selected_watchlist]
+    else:
+        selected_watchlist = ''
+        active_domains = domains
+
+    pagination = es_service.search(domain_filters=active_domains, page=page, per_page=per_page)
+    if pagination.error:
+        flash('Search backend (Elasticsearch) is unavailable — check that Elasticsearch '
+              'is running. Showing no results.', 'danger')
+    es_service.attach_matched_domain(pagination.items, active_domains)
     breached_creds = pagination.items
-    
+
     breadcrumb = {"parent": "Admin", "child": f"Breached Credentials - {company.name}"}
     return render_template('admin/company_breached_creds.html',
                          company=company,
                          breached_creds=breached_creds,
                          pagination=pagination,
+                         watchlist_domains=domains,
+                         selected_watchlist=selected_watchlist,
                          breadcrumb=breadcrumb)
+
+
+@admin_bp.route('/admin/companies/<company_id>/notify-breaches', methods=['POST'])
+@login_required
+@admin_required
+def notify_company_breaches(company_id):
+    """Email a company's active users a summary of their matched breaches."""
+    from .models import Notification
+    from .threat_intel import _send_breach_emails
+    from .services.email_service import is_email_configured
+
+    company = Company.query.get_or_404(company_id)
+    domains = company.get_match_domains()
+
+    pagination = es_service.search(domain_filters=domains, page=1, per_page=50)
+    if pagination.error:
+        flash('Cannot notify: Elasticsearch is unavailable.', 'danger')
+        return redirect(url_for('admin.company_breached_creds', company_id=company_id))
+
+    creds = es_service.attach_matched_domain(pagination.items, domains)
+    if not creds:
+        flash('No matched breaches to notify about.', 'warning')
+        return redirect(url_for('admin.company_breached_creds', company_id=company_id))
+
+    users = User.query.filter(
+        or_(User.company_id == company.id, User.role == 'admin'),
+        User.is_active == True
+    ).all()
+
+    if not is_email_configured():
+        flash('Email is not configured (set MAIL_USERNAME / MAIL_PASSWORD). '
+              'No emails were sent.', 'warning')
+        return redirect(url_for('admin.company_breached_creds', company_id=company_id))
+
+    sent = _send_breach_emails(
+        users, company.name, creds,
+        company_domain=company.domain,
+        third_party_domains=company.get_third_party_domains())
+    # In-app notification for each recipient as well.
+    for user in users:
+        db.session.add(Notification(
+            user_id=user.id,
+            notification_type='warning',
+            title=f'Breach summary sent: {company.name}',
+            message=f'{len(creds)} matched credential(s).',
+            link=url_for('admin.company_breached_creds', company_id=company_id),
+        ))
+    db.session.commit()
+    log_audit('notify_company', 'company', company_id,
+              f'Emailed {sent} user(s) about {len(creds)} breach(es)')
+    flash(f'Notified {sent} user(s) about {len(creds)} matched breach(es).', 'success')
+    return redirect(url_for('admin.company_breached_creds', company_id=company_id))
 
 
 @admin_bp.route('/admin/companies/add', methods=['GET', 'POST'])
@@ -355,7 +422,7 @@ def add_company():
         
         # Process watchlist entries (multiple entries per type)
         watchlist_entries = []
-        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address']:
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party', 'report_recipient']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
@@ -460,7 +527,7 @@ def edit_company(company_id):
         
         # Process new watchlist entries (multiple entries per type)
         watchlist_entries = []
-        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address']:
+        for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party', 'report_recipient']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
@@ -506,8 +573,17 @@ def add_watchlist_entry(company_id):
     description = request.form.get('description', '').strip() or None
     
     # Validate entry type
-    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address']:
+    if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address',
+                          'third_party', 'report_recipient']:
         return jsonify({'success': False, 'error': 'Invalid entry type'}), 400
+
+    # An approved recipient must be one exact address. Accepting a domain here
+    # would undo the domain binding it is meant to make an exception to.
+    if entry_type == 'report_recipient':
+        from .services.report_scheduler import _EMAIL_RE
+        if not _EMAIL_RE.match(entry_value):
+            return jsonify({'success': False,
+                            'error': 'Approved recipient must be a single email address'}), 400
     
     # Validate entry value
     if not entry_value:

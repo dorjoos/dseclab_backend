@@ -66,6 +66,15 @@
             <input type="text" name="name" placeholder="e.g. Weekly Breach Summary" required>
           </div>
           <div class="rp-form-field">
+            <label>Company</label>
+            <select name="company_id">
+              <option value="">All I can see</option>
+              {% for c in companies %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="rp-form-field">
             <label>Frequency</label>
             <select name="frequency">
               <option value="daily">Daily</option>
@@ -115,8 +124,10 @@
           <span class="rpt-item-meta__freq" style="color:{{ fc }}">{{ s.frequency|title }}</span>
           <span>&middot;</span>
           <span>{{ s.format|upper }}</span>
+          <span>&middot; {% if s.company %}{{ s.company.name }}{% else %}All visible{% endif %}</span>
           {% if s.email_to %}<span>&middot; &rarr; {{ s.email_to }}</span>{% endif %}
-          {% if s.last_run %}<span>&middot; Last: {{ s.last_run.strftime('%b %d') }}</span>{% endif %}
+          {% if s.next_run %}<span>&middot; Next: {{ s.next_run.strftime('%b %d %H:%M') }} UTC</span>{% endif %}
+          {% if s.last_run %}<span>&middot; Last: {{ s.last_run.strftime('%b %d %H:%M') }}</span>{% endif %}
         </div>
       </div>
       <!-- Actions -->

@@ -13,11 +13,15 @@ logger = logging.getLogger(__name__)
 class ESPagination:
     """Mimics Flask-SQLAlchemy pagination so templates work unchanged."""
 
-    def __init__(self, items, page, per_page, total):
+    def __init__(self, items, page, per_page, total, error=False):
         self.items = items
         self.page = page
         self.per_page = per_page
         self.total = total
+        # True when the search backend (Elasticsearch) was unreachable or
+        # errored. Lets views distinguish "no matches" from "backend down"
+        # instead of silently showing an empty table.
+        self.error = error
         self.pages = max(1, math.ceil(total / per_page)) if per_page else 1
         self.has_prev = page > 1
         self.has_next = page < self.pages
@@ -77,6 +81,9 @@ class BreachedCredDoc:
         self.marked_at = None
         self.marker = None
         self.notes = None
+        # Which watched domain this credential matched (set by callers that
+        # know the relevant watchlist). None when unknown / no match.
+        self.matched_domain = None
 
     @staticmethod
     def _clean(val):
@@ -184,6 +191,66 @@ class BreachedCredsService(ESIndexService):
             return None
         return {"bool": {"should": should, "minimum_should_match": 1}}
 
+    @staticmethod
+    def compute_match_detail(doc, domains):
+        """Return (matched_domain, match_path), or (None, None) if nothing matched.
+
+        Mirrors build_domain_filter's suffix-aware logic in Python so callers
+        can label each result. A domain matches when the credential's domain,
+        the host of its email username, or the host of its URL equals the
+        watched domain or is a subdomain of it. Substring collisions such as
+        'ibank.mn' vs 'nibank.mn' must not match.
+        """
+        if not domains:
+            return None, None
+
+        def _host_matches(value, domain):
+            return bool(value) and (value == domain or value.endswith("." + domain))
+
+        domain_val = (getattr(doc, "domain", None) or "").lower().strip()
+        username = (getattr(doc, "username", None) or "").lower().strip()
+        email_host = username.split("@", 1)[1] if "@" in username else ""
+
+        url_host = ""
+        url = getattr(doc, "url", None)
+        if url:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(url if "://" in url else "//" + url)
+                url_host = (parsed.hostname or "").lower().strip()
+            except Exception:
+                url_host = ""
+
+        for domain in domains:
+            if not domain:
+                continue
+            domain = domain.lower().strip().lstrip(".").rstrip(".")
+            if not domain or len(domain) < 4:
+                continue
+            # Username first: an account *at* the watched domain is a stronger
+            # statement than one merely harvested from its site.
+            if _host_matches(email_host, domain):
+                return domain, "username"
+            if _host_matches(domain_val, domain) or _host_matches(url_host, domain):
+                return domain, "site"
+        return None, None
+
+    @staticmethod
+    def compute_matched_domain(doc, domains):
+        """Return the watched domain this credential matched, else None."""
+        return BreachedCredsService.compute_match_detail(doc, domains)[0]
+
+    def attach_matched_domain(self, items, domains):
+        """Set .matched_domain and .match_path on each item.
+
+        match_path is what separates an organisation's own staff from its
+        customers: 'username' means the account lives at the watched domain,
+        'site' means the credential was captured against it.
+        """
+        for item in items:
+            item.matched_domain, item.match_path = self.compute_match_detail(item, domains)
+        return items
+
     def _build_query(self, query_text=None, filters=None, domain_filters=None):
         """Build an ES bool query from search text, filters, and domain filters."""
         must = []
@@ -211,12 +278,25 @@ class BreachedCredsService(ESIndexService):
             if filters.get("source"):
                 filter_clauses.append({"wildcard": {"source.keyword": {"value": f"*{filters['source']}*", "case_insensitive": True}}})
             if filters.get("domain"):
-                filter_clauses.append({"wildcard": {"domain.keyword": {"value": f"*{filters['domain']}*", "case_insensitive": True}}})
+                # Treat domain and matched_domain as equivalent: match the
+                # domain field, the email-username host, or the URL host — the
+                # same fields matched_domain is derived from. A leading '@'
+                # (e.g. "@khanbank.mn") is stripped so it still matches.
+                dv = filters["domain"].strip().lstrip("@")
+                filter_clauses.append({"bool": {"should": [
+                    {"wildcard": {"domain.keyword": {"value": f"*{dv}*", "case_insensitive": True}}},
+                    {"wildcard": {"username.keyword": {"value": f"*@*{dv}*", "case_insensitive": True}}},
+                    {"wildcard": {"url": {"value": f"*{dv}*", "case_insensitive": True}}},
+                ], "minimum_should_match": 1}})
 
             date_filter = filters.get("date_filter")
             if date_filter:
                 now = datetime.utcnow()
-                if date_filter == "today":
+                if date_filter == "24h":
+                    # Rolling 24 hours, which is what the notification reports on;
+                    # "today" resets at midnight and would report a different set.
+                    gte = now - timedelta(hours=24)
+                elif date_filter == "today":
                     gte = now.replace(hour=0, minute=0, second=0, microsecond=0)
                 elif date_filter == "week":
                     gte = now - timedelta(days=7)
@@ -227,11 +307,17 @@ class BreachedCredsService(ESIndexService):
                 if gte:
                     filter_clauses.append({"range": {"timestamp": {"gte": gte.isoformat()}}})
 
-        # Domain-based access control
-        if domain_filters:
+        # Domain-based access control.
+        #
+        # None means unrestricted, and only an admin may pass it. A list means
+        # restrict to those domains — and an EMPTY list means the caller may
+        # see nothing, not everything. Treating [] as "no filter" would turn a
+        # user with no assigned scope into a user with total access, so the
+        # empty case gets an explicit match-nothing clause.
+        if domain_filters is not None:
             domain_q = self.build_domain_filter(domain_filters)
-            if domain_q:
-                filter_clauses.append(domain_q)
+            filter_clauses.append(
+                domain_q if domain_q else {"bool": {"must_not": {"match_all": {}}}})
 
         if not must and not filter_clauses:
             return {"match_all": {}}
@@ -276,7 +362,7 @@ class BreachedCredsService(ESIndexService):
             return ESPagination(items, page, per_page, total)
         except Exception:
             logger.exception("ES search failed")
-            return ESPagination([], page, per_page, 0)
+            return ESPagination([], page, per_page, 0, error=True)
 
     def get_by_id(self, doc_id):
         """Fetch a single document by _id."""

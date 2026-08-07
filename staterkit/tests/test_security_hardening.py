@@ -92,3 +92,17 @@ def test_failures_outside_window_do_not_lock(client, db, member_acme):
 # headers tests above already cover the meaningful hardening surface, and
 # the manual smoke (curl through /login, compare cookie values) is in the
 # spec's verification notes.
+
+
+def test_login_leaves_a_usable_csrf_token_in_session(client, admin_user):
+    """The fixation clear must not strand a stale CSRF token.
+
+    generate_csrf() memoises the signed token on `g` and keeps its raw half in
+    the session; the two are only valid as a pair. Clearing the session without
+    dropping the `g` copy leaves later renders emitting a token whose session
+    half is gone, and the next POST dies on 'The CSRF session token is missing'.
+    """
+    login(client, admin_user.email)
+    client.get('/threat-intelligence/breached-creds', follow_redirects=True)
+    with client.session_transaction() as s:
+        assert 'csrf_token' in s

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, g, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
@@ -23,6 +23,19 @@ def is_safe_url(target):
         return False
     parsed = urlparse(target)
     return not parsed.netloc and not parsed.scheme and target.startswith('/')
+
+
+def clear_session():
+    """Clear the session, dropping the memoised CSRF token along with it.
+
+    generate_csrf() keeps the signed token on `g` and its raw half in the
+    session; the two are only valid as a pair. Clearing the session alone
+    strands the `g` copy, so anything rendered later in the request emits a
+    token whose session half is gone — and validating it fails with
+    "The CSRF session token is missing".
+    """
+    session.clear()
+    g.pop(current_app.config.get("WTF_CSRF_FIELD_NAME", "csrf_token"), None)
 
 
 @auth.route("/login", methods=["GET", "POST"])
@@ -96,7 +109,7 @@ def login():
         # (set by a passing attacker, or stale state from a previous session)
         # are dropped. Flask then issues a fresh signed session cookie on the
         # next response, so an attacker who pre-set the SID gets nothing.
-        session.clear()
+        clear_session()
         login_user(user, remember=remember)
 
         # Geo lookup for login location
@@ -279,7 +292,7 @@ def logout():
     log_audit("logout", "user", user_id, f"User {current_user.username} logged out")
     
     # Clear session data
-    session.clear()
+    clear_session()
     logout_user()
     flash("You have been signed out successfully.", "success")
     return redirect(url_for("auth.login"))
@@ -435,7 +448,7 @@ def verify_2fa():
             # for session-fixation protection (mirrors the non-2FA login path).
             next_url = session.pop("2fa_next", None)
             remember = session.pop("2fa_remember", False)
-            session.clear()
+            clear_session()
             if next_url:
                 session["2fa_next"] = next_url  # re-stash so the post-login redirect below still works
             login_user(user, remember=remember)

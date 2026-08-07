@@ -25,8 +25,53 @@ class Company(db.Model):
     def __repr__(self):
         return f"Company('{self.name}', '{self.domain}')"
 
+    # Watchlist entries of this type hold a supplier's domain rather than the
+    # company's own, so matches against them are counted as third-party rather
+    # than as the company's staff or customers.
+    THIRD_PARTY_ENTRY_TYPE = 'third_party'
+
+    # Individual addresses an admin has approved to receive this company's
+    # reports even though they sit off its domains — an external CISO, say.
+    # Deliberately exact addresses, never domains: a domain here would
+    # re-open the very hole the domain binding closes.
+    REPORT_RECIPIENT_ENTRY_TYPE = 'report_recipient'
+
     def get_match_domains(self):
         """Return deduped, lowercased list of domains from company domain + watchlist entries."""
+        domains = set()
+        if self.domain:
+            domains.add(self.domain.lower().strip())
+        for entry in self.watchlist_entries:
+            if entry.entry_type in ('domain', self.THIRD_PARTY_ENTRY_TYPE) and entry.entry_value:
+                val = entry.entry_value.strip().lower()
+                if val:
+                    domains.add(val)
+        return list(domains)
+
+    def get_third_party_domains(self):
+        """Watched domains belonging to vendors/contractors rather than to us."""
+        return [
+            entry.entry_value.strip().lower()
+            for entry in self.watchlist_entries
+            if entry.entry_type == self.THIRD_PARTY_ENTRY_TYPE and entry.entry_value
+        ]
+
+    def get_report_recipient_allowlist(self):
+        """Exact addresses an admin approved for this company's reports."""
+        return [
+            entry.entry_value.strip().lower()
+            for entry in self.watchlist_entries
+            if entry.entry_type == self.REPORT_RECIPIENT_ENTRY_TYPE and entry.entry_value
+        ]
+
+    def get_own_domains(self):
+        """Domains this company itself owns — never a supplier's.
+
+        Report recipients are bound to these: a company's breach data may only
+        be mailed to addresses at that company. Third-party watchlist domains
+        are deliberately excluded, since a supplier being watched does not make
+        them entitled to the client's findings.
+        """
         domains = set()
         if self.domain:
             domains.add(self.domain.lower().strip())
@@ -35,7 +80,7 @@ class Company(db.Model):
                 val = entry.entry_value.strip().lower()
                 if val:
                     domains.add(val)
-        return list(domains)
+        return sorted(domains)
 
     @staticmethod
     def extract_domain(email: str) -> str:
@@ -206,10 +251,15 @@ class ScheduledReport(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     last_run = db.Column(db.DateTime, nullable=True)
     next_run = db.Column(db.DateTime, nullable=True)
+    # Scopes the report to one client's watched domains. NULL means "whatever
+    # the creator may see", which is how schedules behaved before per-company
+    # reporting existed.
+    company_id = db.Column(db.String(36), db.ForeignKey('company.id'), nullable=True)
     created_by = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=utcnow)
 
     creator = db.relationship('User', foreign_keys=[created_by])
+    company = db.relationship('Company', foreign_keys=[company_id])
 
     def __repr__(self):
         return f"ScheduledReport('{self.name}', '{self.frequency}')"

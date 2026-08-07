@@ -25,6 +25,11 @@ class BaseConfig:
     RANSOMWARE_FEED_INDEX = os.environ.get('RANSOMWARE_FEED_INDEX', 'ransomware-feed')
     ELASTICSEARCH_VERIFY_CERTS = os.environ.get('ELASTICSEARCH_VERIFY_CERTS', 'false').lower() == 'true'
 
+    # Canonical public URL used to build links in outbound email. Set this in
+    # production: without it, links fall back to request.url_root, which is
+    # derived from the (client-influenceable) Host header.
+    APP_BASE_URL = os.environ.get('APP_BASE_URL', '')
+
     # Email (SMTP)
     MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 587))

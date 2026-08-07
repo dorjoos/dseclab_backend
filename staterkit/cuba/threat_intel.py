@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from datetime import datetime, timezone
@@ -38,8 +38,15 @@ threat_intel = Blueprint('threat_intel', __name__)
 
 
 def _get_domain_filters():
-    user_domain = get_user_company_domain()
-    if not user_domain:
+    """Scope for the current user: None is unrestricted, a list restricts.
+
+    Only an admin may get None. Everyone else gets their company's domains,
+    and an empty list is a real answer meaning "no access" — _build_query
+    turns it into a match-nothing clause rather than dropping the filter.
+    """
+    if not current_user.is_authenticated:
+        return []
+    if current_user.is_admin_user:
         return None
     return get_user_watchlist_domains()
 
@@ -107,8 +114,39 @@ def _attach_metadata(items):
             item.notes = meta.notes
 
 
-def _notify_new_breach(credential_id, company_domain, company_name, email):
-    """Notify all users in a company about a new breach."""
+def _send_breach_emails(users, company_name, creds, company_domain=None,
+                        third_party_domains=None):
+    """Best-effort email of matched breaches to users. Never raises."""
+    try:
+        from .services.email_service import build_breach_email, send_email, is_email_configured
+        if not is_email_configured():
+            logger.info("Email not configured; skipping breach email for %s", company_name)
+            return 0
+        from flask import has_request_context
+        # Prefer the configured base URL. request.url_root is derived from the
+        # Host header, which ProxyFix trusts — a poisoned host would put an
+        # attacker-controlled "View credential" link inside a breach alert,
+        # which is exactly the mail a recipient is primed to click.
+        base_url = current_app.config.get('APP_BASE_URL') or (
+            request.url_root if has_request_context() else None)
+        subject, body, text = build_breach_email(
+            company_name, creds, base_url=base_url,
+            company_domain=company_domain,
+            third_party_domains=third_party_domains)
+        sent = 0
+        for user in users:
+            # One message per recipient — never a shared To/CC, which would
+            # disclose the client roster to everyone on it.
+            if user.email and send_email(user.email, subject, body, text=text):
+                sent += 1
+        return sent
+    except Exception as e:
+        logger.error("Breach email send failed: %s", e)
+        return 0
+
+
+def _notify_new_breach(credential_id, company_domain, company_name, email, file_name=None):
+    """Notify all users in a company about a new breach (in-app + email)."""
     try:
         if not company_domain:
             users = User.query.filter(
@@ -144,6 +182,24 @@ def _notify_new_breach(credential_id, company_domain, company_name, email):
     except Exception as e:
         logger.error("Error creating notifications: %s", e)
         db.session.rollback()
+        return
+
+    # Email delivery is best-effort and must not affect the in-app flow above.
+    cred = es_service.get_by_id(credential_id)
+    if cred is None:
+        from types import SimpleNamespace
+        cred = SimpleNamespace(
+            es_id=credential_id, username=email, domain=company_domain,
+            file_name=file_name, source=None, type=None, created_at=None,
+        )
+    cred.matched_domain = company_domain
+    # Label how it matched so the email can bucket it as staff vs customer.
+    if not getattr(cred, 'match_path', None):
+        _, cred.match_path = es_service.compute_match_detail(
+            cred, [company_domain] if company_domain else [])
+    if file_name and not getattr(cred, 'file_name', None):
+        cred.file_name = file_name
+    _send_breach_emails(users, company_name, [cred], company_domain=company_domain)
 
 
 @threat_intel.route('/threat-intelligence/breached-creds')
@@ -179,6 +235,9 @@ def breached_creds_list():
         page=page,
         per_page=per_page
     )
+    if pagination.error:
+        flash('Search backend (Elasticsearch) is unavailable — results may be incomplete. '
+              'Please check that Elasticsearch is running.', 'danger')
     _attach_metadata(pagination.items)
 
     stats_data = es_service.get_stats(domain_filters=domain_filters)
@@ -310,6 +369,7 @@ def breached_creds_api():
         per_page=per_page
     )
     _attach_metadata(pagination.items)
+    es_service.attach_matched_domain(pagination.items, domain_filters or [])
 
     rows = []
     for i, cred in enumerate(pagination.items):
@@ -318,6 +378,7 @@ def breached_creds_api():
             'es_id': cred.es_id,
             'username': cred.username or '',
             'domain': cred.domain or '',
+            'matched_domain': cred.matched_domain or '',
             'password': '********' if cred.password else '',  # Always masked in list API
             'source': cred.source or '',
             'type': cred.type or '',
@@ -332,6 +393,7 @@ def breached_creds_api():
         'total': pagination.total,
         'has_prev': pagination.has_prev,
         'has_next': pagination.has_next,
+        'error': pagination.error,
     })
 
 
@@ -764,10 +826,20 @@ def reports():
     if current_user.is_admin_user:
         history = ReportHistory.query.order_by(ReportHistory.created_at.desc()).limit(20).all()
 
+    # Companies a schedule may target: admins pick any client, everyone else is
+    # limited to their own so a schedule can't be pointed at another company.
+    from .models import Company
+    if current_user.is_admin_user:
+        companies = Company.query.order_by(Company.name).all()
+    elif current_user.company:
+        companies = [current_user.company]
+    else:
+        companies = []
+
     breadcrumb = {"parent": "Threat Intelligence", "child": "Reports"}
     return render_template('threat_intel/reports.html',
                           schedules=schedules, alerts=alerts, history=history,
-                          breadcrumb=breadcrumb)
+                          companies=companies, breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/threat-intelligence/reports/schedule/add', methods=['POST'])
@@ -783,15 +855,57 @@ def add_schedule():
         flash('Report name is required.', 'warning')
         return redirect(url_for('threat_intel.reports'))
 
+    from .services.report_scheduler import parse_schedule_time, compute_next_run
+    from .models import Company
+    from datetime import datetime as _dt
+
+    # Never trust the posted company: a non-admin may only target their own.
+    company_id = (request.form.get('company_id') or '').strip() or None
+    if company_id:
+        company = Company.query.get(company_id)
+        if company is None or (not current_user.is_admin_user
+                               and current_user.company_id != company.id):
+            flash('Invalid company selection.', 'danger')
+            return redirect(url_for('threat_intel.reports'))
+
     cron_hint = sanitize_input(request.form.get('cron_hint', ''))
+    # The form's day/time is the first run. Without one, start a full period
+    # out rather than firing the moment the row is created.
+    next_run = parse_schedule_time(cron_hint) or compute_next_run(frequency, _dt.utcnow())
+
     schedule = ScheduledReport(
         name=name, frequency=frequency, format=fmt,
-        email_to=email_to or None, filters=json.dumps({'cron_hint': cron_hint}) if cron_hint else None,
+        email_to=email_to or None,
+        filters=json.dumps({'cron_hint': cron_hint}) if cron_hint else None,
+        next_run=next_run, company_id=company_id,
         created_by=current_user.id, is_active=True
     )
+
+    # Recipients are bound to the target company's own domains, so a client's
+    # breach data cannot be scheduled out to an unrelated address. Rejected
+    # here rather than silently dropped at send time, so the mistake is visible.
+    if email_to:
+        from .services.report_scheduler import validate_recipients
+        schedule.creator = current_user
+        schedule.company = Company.query.get(company_id) if company_id else None
+        allowed, rejected = validate_recipients(schedule, email_to)
+        if rejected:
+            flash('Cannot send to ' + '; '.join(f'{a} ({why})' for a, why in rejected),
+                  'danger')
+            return redirect(url_for('threat_intel.reports'))
+        schedule.email_to = ','.join(allowed)
+
     db.session.add(schedule)
     db.session.commit()
-    flash(f'Scheduled report "{name}" created.', 'success')
+    log_audit('scheduled_report_create', 'scheduled_report', schedule.id,
+              f'{schedule.name} → {schedule.email_to or "no recipients"} '
+              f'({"company " + schedule.company.name if schedule.company else "creator scope"})')
+    if next_run:
+        flash(f'Scheduled report "{name}" created — first run '
+              f'{next_run.strftime("%Y-%m-%d %H:%M")} UTC.', 'success')
+    else:
+        flash(f'Scheduled report "{name}" created, but "{frequency}" is not a '
+              f'known frequency so it has no run time.', 'warning')
     return redirect(url_for('threat_intel.reports'))
 
 
