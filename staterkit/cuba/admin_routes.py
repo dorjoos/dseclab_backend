@@ -561,9 +561,6 @@ def edit_company(company_id):
     return render_template('admin/company_form.html', company=company, breadcrumb=breadcrumb)
 
 
-@admin_bp.route('/admin/companies/<company_id>/watchlist/add', methods=['POST'])
-@login_required
-@admin_required
 def _wants_json():
     """True when the caller is fetch/XHR rather than a plain form post.
 
@@ -585,6 +582,9 @@ def _watchlist_reply(company_id, payload, status=200, message=None, category='su
     return redirect(url_for('admin.edit_company', company_id=company_id))
 
 
+@admin_bp.route('/admin/companies/<company_id>/watchlist/add', methods=['POST'])
+@login_required
+@admin_required
 def add_watchlist_entry(company_id):
     """Add a single watchlist entry (auto-save)"""
     company = Company.query.get_or_404(company_id)
