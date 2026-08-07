@@ -68,10 +68,20 @@
           <div class="rp-form-field">
             <label>Company</label>
             <select name="company_id">
+              {# Only an admin can span companies. For everyone else "all" is
+                 just their own company, and leaving it blank silently rejects
+                 every approved recipient — so don't offer it. #}
+              {% if current_user.is_admin_user %}
               <option value="">All I can see</option>
+              {% endif %}
               {% for c in companies %}
-                <option value="{{ c.id }}">{{ c.name }}</option>
+                <option value="{{ c.id }}"
+                  {% if not current_user.is_admin_user and companies|length == 1 %}selected{% endif %}>
+                  {{ c.name }}</option>
               {% endfor %}
+              {% if not companies and not current_user.is_admin_user %}
+              <option value="" disabled selected>No company assigned</option>
+              {% endif %}
             </select>
           </div>
           <div class="rp-form-field">
