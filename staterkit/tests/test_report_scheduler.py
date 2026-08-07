@@ -27,9 +27,11 @@ def schedule(db, admin_user):
 # --- time handling ---
 
 @pytest.mark.parametrize("raw,expected", [
-    ("2026-08-07T13:59", datetime(2026, 8, 7, 13, 59)),
-    ("2026-08-07T13:59:30", datetime(2026, 8, 7, 13, 59, 30)),
-    ("2026-08-07 13:59", datetime(2026, 8, 7, 13, 59)),
+    # Parsed times snap to a slot boundary; 13:59 belongs to 14:00.
+    ("2026-08-07T13:59", datetime(2026, 8, 7, 14, 0)),
+    ("2026-08-07T13:59:30", datetime(2026, 8, 7, 14, 0)),
+    ("2026-08-07 13:59", datetime(2026, 8, 7, 14, 0)),
+    ("2026-08-07T13:00", datetime(2026, 8, 7, 13, 0)),
     ("", None),
     (None, None),
     ("not a date", None),
@@ -404,3 +406,34 @@ def test_run_due_survives_a_failing_schedule(app, db, schedule, monkeypatch):
 
         monkeypatch.setattr(mod.breached_creds_service, "search", boom)
         assert rs.run_due(app) == 0  # did not raise
+
+
+# --- slot alignment ---
+
+@pytest.mark.parametrize("raw,expected", [
+    ("2026-08-07T20:09", datetime(2026, 8, 7, 20, 0)),   # down to :00
+    ("2026-08-07T20:20", datetime(2026, 8, 7, 20, 30)),  # up to :30
+    ("2026-08-07T20:30", datetime(2026, 8, 7, 20, 30)),  # already a slot
+    ("2026-08-07T20:59", datetime(2026, 8, 7, 21, 0)),   # rolls the hour
+])
+def test_parsed_times_snap_to_a_slot(raw, expected):
+    """Second-level precision buys nothing and costs a wake-up per minute."""
+    assert rs.parse_schedule_time(raw) == expected
+
+
+def test_next_run_stays_on_its_slot():
+    assert rs.compute_next_run("weekly", datetime(2026, 8, 7, 20, 9)) == \
+        datetime(2026, 8, 14, 20, 0)
+
+
+def test_claim_advances_from_the_slot_not_from_now(app, schedule):
+    """Advancing from the moment we happen to run would drift the time later
+    on every execution."""
+    with app.app_context():
+        slot = datetime.utcnow().replace(second=0, microsecond=0) - timedelta(days=1)
+        slot = rs.round_to_slot(slot)
+        row = schedule(frequency="daily", next_run=slot)
+        assert rs.claim_schedule(row) is True
+        assert row.next_run > datetime.utcnow()      # never leaves it in the past
+        assert row.next_run.minute in (0, 30)        # still on a slot
+        assert row.next_run.second == 0
