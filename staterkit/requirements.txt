@@ -21,3 +21,9 @@ python-dotenv>=1.0.0
 pytest>=8.0
 pytest-flask>=1.3
 APScheduler>=3.10
+
+# Serving. Required, not optional: dseclab.service execs venv/bin/gunicorn and
+# gunicorn.conf.py sets worker_class = "eventlet". Installing only the rest of
+# this file yields a venv whose service cannot start (systemd 203/EXEC).
+gunicorn>=21.0
+eventlet>=0.35
