@@ -192,8 +192,8 @@ class BreachedCredsService(ESIndexService):
         return {"bool": {"should": should, "minimum_should_match": 1}}
 
     @staticmethod
-    def compute_matched_domain(doc, domains):
-        """Return the watched domain this credential matched, else None.
+    def compute_match_detail(doc, domains):
+        """Return (matched_domain, match_path), or (None, None) if nothing matched.
 
         Mirrors build_domain_filter's suffix-aware logic in Python so callers
         can label each result. A domain matches when the credential's domain,
@@ -202,7 +202,7 @@ class BreachedCredsService(ESIndexService):
         'ibank.mn' vs 'nibank.mn' must not match.
         """
         if not domains:
-            return None
+            return None, None
 
         def _host_matches(value, domain):
             return bool(value) and (value == domain or value.endswith("." + domain))
@@ -227,16 +227,28 @@ class BreachedCredsService(ESIndexService):
             domain = domain.lower().strip().lstrip(".").rstrip(".")
             if not domain or len(domain) < 4:
                 continue
-            if (_host_matches(domain_val, domain)
-                    or _host_matches(email_host, domain)
-                    or _host_matches(url_host, domain)):
-                return domain
-        return None
+            # Username first: an account *at* the watched domain is a stronger
+            # statement than one merely harvested from its site.
+            if _host_matches(email_host, domain):
+                return domain, "username"
+            if _host_matches(domain_val, domain) or _host_matches(url_host, domain):
+                return domain, "site"
+        return None, None
+
+    @staticmethod
+    def compute_matched_domain(doc, domains):
+        """Return the watched domain this credential matched, else None."""
+        return BreachedCredsService.compute_match_detail(doc, domains)[0]
 
     def attach_matched_domain(self, items, domains):
-        """Set .matched_domain on each item against the given watched domains."""
+        """Set .matched_domain and .match_path on each item.
+
+        match_path is what separates an organisation's own staff from its
+        customers: 'username' means the account lives at the watched domain,
+        'site' means the credential was captured against it.
+        """
         for item in items:
-            item.matched_domain = self.compute_matched_domain(item, domains)
+            item.matched_domain, item.match_path = self.compute_match_detail(item, domains)
         return items
 
     def _build_query(self, query_text=None, filters=None, domain_filters=None):
@@ -280,7 +292,11 @@ class BreachedCredsService(ESIndexService):
             date_filter = filters.get("date_filter")
             if date_filter:
                 now = datetime.utcnow()
-                if date_filter == "today":
+                if date_filter == "24h":
+                    # Rolling 24 hours, which is what the notification reports on;
+                    # "today" resets at midnight and would report a different set.
+                    gte = now - timedelta(hours=24)
+                elif date_filter == "today":
                     gte = now.replace(hour=0, minute=0, second=0, microsecond=0)
                 elif date_filter == "week":
                     gte = now - timedelta(days=7)

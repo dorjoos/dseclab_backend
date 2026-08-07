@@ -361,7 +361,10 @@ def notify_company_breaches(company_id):
               'No emails were sent.', 'warning')
         return redirect(url_for('admin.company_breached_creds', company_id=company_id))
 
-    sent = _send_breach_emails(users, company.name, creds)
+    sent = _send_breach_emails(
+        users, company.name, creds,
+        company_domain=company.domain,
+        third_party_domains=company.get_third_party_domains())
     # In-app notification for each recipient as well.
     for user in users:
         db.session.add(Notification(
