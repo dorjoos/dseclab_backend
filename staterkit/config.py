@@ -25,6 +25,10 @@ class BaseConfig:
     RANSOMWARE_FEED_INDEX = os.environ.get('RANSOMWARE_FEED_INDEX', 'ransomware-feed')
     ELASTICSEARCH_VERIFY_CERTS = os.environ.get('ELASTICSEARCH_VERIFY_CERTS', 'false').lower() == 'true'
 
+    # Wall-clock timezone the UI presents and schedules are expressed in.
+    # Instants are stored UTC; this only decides how they read to a human.
+    APP_TIMEZONE = os.environ.get('APP_TIMEZONE', 'Asia/Ulaanbaatar')
+
     # Canonical public URL used to build links in outbound email. Set this in
     # production: without it, links fall back to request.url_root, which is
     # derived from the (client-influenceable) Host header.

@@ -855,7 +855,7 @@ def add_schedule():
         flash('Report name is required.', 'warning')
         return redirect(url_for('threat_intel.reports'))
 
-    from .services.report_scheduler import parse_schedule_time, compute_next_run
+    from .services.report_scheduler import compute_next_run
     from .models import Company
     from datetime import datetime as _dt
 
@@ -868,15 +868,25 @@ def add_schedule():
             flash('Invalid company selection.', 'danger')
             return redirect(url_for('threat_intel.reports'))
 
-    cron_hint = sanitize_input(request.form.get('cron_hint', ''))
-    # The form's day/time is the first run. Without one, start a full period
-    # out rather than firing the moment the row is created.
-    next_run = parse_schedule_time(cron_hint) or compute_next_run(frequency, _dt.utcnow())
+    # Local wall-clock time of day plus which days it applies to. run_days is
+    # ISO weekdays for weekly ("1,5"), a day of the month for monthly ("15"),
+    # and unused for daily.
+    run_time = (request.form.get('run_time') or '').strip()
+    if frequency == 'weekly':
+        run_days = ','.join(d for d in request.form.getlist('run_days')
+                            if d.isdigit() and 1 <= int(d) <= 7)
+    elif frequency == 'monthly':
+        day = (request.form.get('run_day_of_month') or '').strip()
+        run_days = day if day.isdigit() and 1 <= int(day) <= 31 else ''
+    else:
+        run_days = ''
+
+    next_run = compute_next_run(frequency, _dt.utcnow(), run_time, run_days)
 
     schedule = ScheduledReport(
         name=name, frequency=frequency, format=fmt,
         email_to=email_to or None,
-        filters=json.dumps({'cron_hint': cron_hint}) if cron_hint else None,
+        run_time=run_time or None, run_days=run_days or None,
         next_run=next_run, company_id=company_id,
         created_by=current_user.id, is_active=True
     )
@@ -901,8 +911,10 @@ def add_schedule():
               f'{schedule.name} → {schedule.email_to or "no recipients"} '
               f'({"company " + schedule.company.name if schedule.company else "creator scope"})')
     if next_run:
+        from .services.report_scheduler import to_local
+        local = to_local(next_run)
         flash(f'Scheduled report "{name}" created — first run '
-              f'{next_run.strftime("%Y-%m-%d %H:%M")} UTC.', 'success')
+              f'{local.strftime("%Y-%m-%d %H:%M")} ({local.tzname()}).', 'success')
     else:
         flash(f'Scheduled report "{name}" created, but "{frequency}" is not a '
               f'known frequency so it has no run time.', 'warning')

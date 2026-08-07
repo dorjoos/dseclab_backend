@@ -94,6 +94,19 @@ def create_app(config_name=None):
     def inject_default_breadcrumb():
         return dict(breadcrumb=None)
 
+    @app.template_filter('localtime')
+    def localtime_filter(value, fmt='%b %d %H:%M'):
+        """Render a naive-UTC instant in the app's wall-clock zone.
+
+        Instants are stored UTC; operators think in local time, so every
+        schedule time shown to a human goes through here.
+        """
+        if not value:
+            return ''
+        from .services.report_scheduler import to_local
+        local = to_local(value)
+        return f"{local.strftime(fmt)} {local.tzname()}"
+
     @app.template_filter('format_number')
     def format_number_filter(value):
         try:
