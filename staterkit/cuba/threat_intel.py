@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, Response, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_
 from datetime import datetime, timezone
@@ -115,11 +115,18 @@ def _send_breach_emails(users, company_name, creds):
             logger.info("Email not configured; skipping breach email for %s", company_name)
             return 0
         from flask import has_request_context
-        base_url = request.url_root if has_request_context() else None
-        subject, body = build_breach_email(company_name, creds, base_url=base_url)
+        # Prefer the configured base URL. request.url_root is derived from the
+        # Host header, which ProxyFix trusts — a poisoned host would put an
+        # attacker-controlled "View credential" link inside a breach alert,
+        # which is exactly the mail a recipient is primed to click.
+        base_url = current_app.config.get('APP_BASE_URL') or (
+            request.url_root if has_request_context() else None)
+        subject, body, text = build_breach_email(company_name, creds, base_url=base_url)
         sent = 0
         for user in users:
-            if user.email and send_email(user.email, subject, body):
+            # One message per recipient — never a shared To/CC, which would
+            # disclose the client roster to everyone on it.
+            if user.email and send_email(user.email, subject, body, text=text):
                 sent += 1
         return sent
     except Exception as e:
