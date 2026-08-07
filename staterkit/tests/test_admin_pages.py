@@ -113,3 +113,37 @@ def test_admin_reports_form_still_offers_all(client, admin_user, company_acme):
     resp = client.get('/threat-intelligence/reports')
     assert resp.status_code == 200
     assert 'All I can see' in resp.data.decode()
+
+
+def test_weekly_schedule_requires_a_day(client, admin_user, company_acme):
+    """Falling back to today's weekday would run on a day nobody picked."""
+    from cuba.models import ScheduledReport
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    client.post('/threat-intelligence/reports/schedule/add',
+                data={'csrf_token': token, 'name': 'W', 'frequency': 'weekly',
+                      'format': 'pdf', 'run_time': '09:00',
+                      'company_id': company_acme.id})
+    assert ScheduledReport.query.count() == 0
+
+
+def test_weekly_schedule_stores_the_chosen_days(client, admin_user, company_acme):
+    from cuba.models import ScheduledReport
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    client.post('/threat-intelligence/reports/schedule/add',
+                data={'csrf_token': token, 'name': 'W', 'frequency': 'weekly',
+                      'format': 'pdf', 'run_time': '09:00',
+                      'run_days': ['1', '5'], 'company_id': company_acme.id})
+    row = ScheduledReport.query.one()
+    assert row.run_days == '1,5'
+    assert row.run_time == '09:00'
+    assert row.next_run is not None
+
+
+def test_day_pills_render_as_toggles_not_bare_checkboxes(client, admin_user,
+                                                         company_acme):
+    login(client, admin_user.email)
+    body = client.get('/threat-intelligence/reports').data.decode()
+    assert 'class="rp-days"' in body
+    assert body.count('class="rp-day"') == 7

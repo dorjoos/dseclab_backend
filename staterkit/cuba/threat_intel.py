@@ -875,6 +875,11 @@ def add_schedule():
     if frequency == 'weekly':
         run_days = ','.join(d for d in request.form.getlist('run_days')
                             if d.isdigit() and 1 <= int(d) <= 7)
+        if not run_days:
+            # Silently falling back to "whatever day it is now" would make the
+            # schedule run on a day nobody chose.
+            flash('Pick at least one day of the week.', 'warning')
+            return redirect(url_for('threat_intel.reports'))
     elif frequency == 'monthly':
         day = (request.form.get('run_day_of_month') or '').strip()
         run_days = day if day.isdigit() and 1 <= int(day) <= 31 else ''

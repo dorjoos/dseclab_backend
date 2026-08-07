@@ -102,18 +102,20 @@
           </div>
           <div class="rp-form-field" data-when="weekly" style="display:none;">
             <label>Days</label>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;padding-top:6px;">
+            <div class="rp-days">
               {% for num, label in [(1,'Mon'),(2,'Tue'),(3,'Wed'),(4,'Thu'),(5,'Fri'),(6,'Sat'),(7,'Sun')] %}
-              <label style="display:flex;align-items:center;gap:3px;font-size:12px;font-weight:500;">
+              <label class="rp-day" title="{{ label }}">
                 <input type="checkbox" name="run_days" value="{{ num }}"
-                       {% if num == 1 %}checked{% endif %}> {{ label }}
+                       {% if num == 1 %}checked{% endif %}>
+                <span>{{ label }}</span>
               </label>
               {% endfor %}
             </div>
           </div>
           <div class="rp-form-field" data-when="monthly" style="display:none;">
             <label>Day of month</label>
-            <input type="number" name="run_day_of_month" min="1" max="31" value="1">
+            <input type="number" name="run_day_of_month" min="1" max="31" value="1"
+                   style="width:90px;">
           </div>
           <div class="rp-form-field">
             <label>Time</label>
