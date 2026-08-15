@@ -1,0 +1,334 @@
+{# Shared by the All and Employees tabs. `employees_only` is the only
+   difference: it rides along in the search body and on every export link, so
+   the Employees tab filters and exports the same set it shows. #}
+(function() {
+  var EMPLOYEES_ONLY = {{ 'true' if employees_only else 'false' }};
+  var state = { page: 1, date_filter: 'all', search: '', type: '', source: '', domain: '',
+                employees_only: EMPLOYEES_ONLY };
+  var selectedIds = new Set();
+  var debounceTimer;
+  var tbody = document.getElementById('table-body');
+  var totalEl = document.getElementById('total-count');
+  var pagBar = document.getElementById('pag-bar');
+  var pagInfo = document.getElementById('pag-info');
+  var pagNav = document.getElementById('pag-nav');
+  var emptyEl = document.getElementById('empty-state');
+  var clearBtn = document.getElementById('clear-btn');
+
+  function load() {
+    syncExportLinks();
+    tbody.textContent = '';
+    for (var s = 0; s < 8; s++) {
+      var sr = document.createElement('tr');
+      var widths = ['30px','28%','15%','10%','18%','8%','8%','50px'];
+      for (var c = 0; c < 9; c++) {
+        var std = document.createElement('td');
+        std.style.padding = '12px 14px';
+        var sk = document.createElement('div');
+        sk.className = 'skeleton skeleton-cell';
+        sk.style.width = (c === 0 ? '20px' : c === 7 ? '30px' : Math.floor(Math.random()*40+40) + '%');
+        sk.style.height = '14px';
+        std.appendChild(sk);
+        sr.appendChild(std);
+      }
+      tbody.appendChild(sr);
+    }
+    emptyEl.style.display = 'none';
+    pagBar.style.display = 'none';
+
+    fetch('/api/breached-creds/search', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
+      body: JSON.stringify(state)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      totalEl.textContent = Number(data.total).toLocaleString() + ' items';
+      tbody.textContent = '';
+
+      var emptyMsg = emptyEl.querySelector('p');
+      if (data.error) {
+        if (emptyMsg) emptyMsg.textContent = 'Search backend (Elasticsearch) is unavailable.';
+        emptyEl.style.display = 'block';
+        return;
+      }
+      if (emptyMsg) emptyMsg.textContent = 'No results found';
+
+      if (!data.rows || data.rows.length === 0) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      data.rows.forEach(function(row) {
+        var tr = document.createElement('tr');
+        if (row.is_marked) tr.style.borderLeft = '3px solid var(--warning)';
+
+        // Checkbox
+        var tdCb = document.createElement('td');
+        tdCb.className = 'av-th-checkbox';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'av-checkbox';
+        cb.setAttribute('data-id', row.es_id);
+        if (selectedIds.has(row.es_id)) cb.checked = true;
+        cb.addEventListener('change', function() {
+          if (this.checked) selectedIds.add(row.es_id); else selectedIds.delete(row.es_id);
+          updateSelBar();
+        });
+        tdCb.appendChild(cb);
+        tr.appendChild(tdCb);
+
+        // Username
+        var td1 = document.createElement('td');
+        td1.style.fontWeight = '500';
+        td1.textContent = row.username || '\u2014';
+        tr.appendChild(td1);
+
+        // Domain
+        var td2 = document.createElement('td');
+        if (row.domain) {
+          var sp = document.createElement('span');
+          sp.className = 'av-domain';
+          sp.textContent = row.domain;
+          td2.appendChild(sp);
+        } else {
+          td2.textContent = '\u2014';
+          td2.className = 'm';
+        }
+        tr.appendChild(td2);
+
+        // Matched domain
+        var tdm = document.createElement('td');
+        if (row.matched_domain) {
+          var mtag = document.createElement('span');
+          mtag.className = 'av-tag av-tag-blue';
+          mtag.textContent = row.matched_domain;
+          tdm.appendChild(mtag);
+        } else {
+          tdm.textContent = '—';
+          tdm.className = 'm';
+        }
+        tr.appendChild(tdm);
+
+        // Password
+        var td3 = document.createElement('td');
+        td3.className = 'm';
+        td3.textContent = row.password ? '\u2022\u2022\u2022\u2022\u2022' : '\u2014';
+        tr.appendChild(td3);
+
+        // Source
+        var td4 = document.createElement('td');
+        td4.className = 'm';
+        td4.style.maxWidth = '160px';
+        td4.textContent = row.source || '\u2014';
+        tr.appendChild(td4);
+
+        // Type
+        var td5 = document.createElement('td');
+        td5.className = 'c';
+        if (row.type) {
+          var tag = document.createElement('span');
+          tag.className = 'av-tag av-tag-blue';
+          tag.textContent = row.type;
+          td5.appendChild(tag);
+        } else {
+          td5.textContent = '\u2014';
+        }
+        tr.appendChild(td5);
+
+        // Date
+        var td6 = document.createElement('td');
+        td6.className = 'm r';
+        td6.style.fontVariantNumeric = 'tabular-nums';
+        td6.textContent = row.date || '\u2014';
+        tr.appendChild(td6);
+
+        // View
+        var td7 = document.createElement('td');
+        var link = document.createElement('a');
+        link.href = '/threat-intelligence/breached-creds/' + row.es_id;
+        link.textContent = 'View';
+        link.className = 'av-btn av-btn--sm';
+        td7.appendChild(link);
+        tr.appendChild(td7);
+
+        tbody.appendChild(tr);
+      });
+
+      // Pagination
+      if (data.pages > 1) {
+        pagBar.style.display = 'flex';
+        pagInfo.textContent = data.page + ' of ' + data.pages;
+        pagNav.textContent = '';
+
+        function mkPage(label, pg, cls) {
+          var a = document.createElement('a');
+          a.textContent = label;
+          if (cls) a.className = cls;
+          if (!cls || cls !== 'dis') {
+            a.addEventListener('click', function(e) { e.preventDefault(); state.page = pg; load(); });
+          }
+          pagNav.appendChild(a);
+        }
+
+        mkPage('\u2039', data.page - 1, data.has_prev ? '' : 'dis');
+
+        var start = Math.max(1, data.page - 2);
+        var end = Math.min(data.pages, data.page + 2);
+        if (start > 1) { mkPage('1', 1, ''); if (start > 2) { var s = document.createElement('span'); s.className='dis'; s.textContent='\u2026'; pagNav.appendChild(s); } }
+        for (var i = start; i <= end; i++) {
+          mkPage(String(i), i, i === data.page ? 'act' : '');
+        }
+        if (end < data.pages) { if (end < data.pages - 1) { var s2 = document.createElement('span'); s2.className='dis'; s2.textContent='\u2026'; pagNav.appendChild(s2); } mkPage(String(data.pages), data.pages, ''); }
+
+        mkPage('\u203A', data.page + 1, data.has_next ? '' : 'dis');
+      } else {
+        pagBar.style.display = 'none';
+      }
+    })
+    .catch(function(err) {
+      console.error('Load error:', err);
+      tbody.textContent = '';
+      var tr = document.createElement('tr');
+      var td = document.createElement('td');
+      td.colSpan = 9;
+      td.className = 'av-loading';
+      td.style.color = 'var(--danger)';
+      td.textContent = 'Error loading data';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+    });
+  }
+
+  function updateClear() {
+    clearBtn.style.display = (state.type || state.source || state.domain || state.search) ? 'inline' : 'none';
+  }
+
+  // Keep the "export everything matching" links in step with the filters on
+  // screen, so the file matches the table instead of the whole index.
+  function syncExportLinks() {
+    document.querySelectorAll('#export-menu a[data-fmt]').forEach(function(a) {
+      var qs = ['format=' + encodeURIComponent(a.dataset.fmt)];
+      if (EMPLOYEES_ONLY) qs.push('employees_only=1');
+      if (state.type) qs.push('type=' + encodeURIComponent(state.type));
+      if (state.source) qs.push('source=' + encodeURIComponent(state.source));
+      if (state.domain) qs.push('domain=' + encodeURIComponent(state.domain));
+      if (state.date_filter && state.date_filter !== 'all') {
+        qs.push('date_filter=' + encodeURIComponent(state.date_filter));
+      }
+      a.href = '/threat-intelligence/breached-creds/export?' + qs.join('&');
+    });
+  }
+
+  // Date segmented control
+  document.querySelectorAll('#date-seg a').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      document.querySelectorAll('#date-seg a').forEach(function(x) { x.classList.remove('active'); });
+      this.classList.add('active');
+      state.date_filter = this.getAttribute('data-val');
+      state.page = 1;
+      load();
+    });
+  });
+
+  // Search with debounce
+  document.getElementById('search-input').addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    var val = this.value;
+    debounceTimer = setTimeout(function() {
+      state.search = val;
+      state.page = 1;
+      updateClear();
+      load();
+    }, 400);
+  });
+
+  // Type filter
+  document.getElementById('filter-type').addEventListener('change', function() {
+    state.type = this.value;
+    state.page = 1;
+    updateClear();
+    load();
+  });
+
+  // Source filter (on Enter)
+  document.getElementById('filter-source').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); state.source = this.value; state.page = 1; updateClear(); load(); }
+  });
+
+  // Domain filter (on Enter)
+  document.getElementById('filter-domain').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); state.domain = this.value; state.page = 1; updateClear(); load(); }
+  });
+
+  // Clear
+  clearBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    state.search = ''; state.type = ''; state.source = ''; state.domain = '';
+    state.page = 1;
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-type').value = '';
+    document.getElementById('filter-source').value = '';
+    document.getElementById('filter-domain').value = '';
+    updateClear();
+    load();
+  });
+
+  // Close export dropdown on outside click
+  document.addEventListener('click', function(e) {
+    var menu = document.getElementById('export-menu');
+    var wrap = document.getElementById('export-wrap');
+    if (menu && wrap && !wrap.contains(e.target)) menu.classList.remove('show');
+  });
+
+  // Selection bar
+  function updateSelBar() {
+    var bar = document.getElementById('sel-bar');
+    var cnt = document.getElementById('sel-count');
+    var selectAll = document.getElementById('select-all');
+    if (selectedIds.size > 0) {
+      bar.classList.add('active');
+      cnt.textContent = selectedIds.size;
+    } else {
+      bar.classList.remove('active');
+    }
+    // Update select-all checkbox state
+    var cbs = tbody.querySelectorAll('input[type="checkbox"]');
+    if (cbs.length > 0 && selectAll) {
+      var allChecked = true;
+      cbs.forEach(function(c) { if (!c.checked) allChecked = false; });
+      selectAll.checked = allChecked && cbs.length > 0;
+    }
+  }
+
+  // Select all
+  document.getElementById('select-all').addEventListener('change', function() {
+    var checked = this.checked;
+    tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+      cb.checked = checked;
+      var id = cb.getAttribute('data-id');
+      if (checked) selectedIds.add(id); else selectedIds.delete(id);
+    });
+    updateSelBar();
+  });
+
+  // Export selected
+  window.exportSelected = function(fmt) {
+    if (selectedIds.size === 0) return;
+    var ids = Array.from(selectedIds).join(',');
+    window.location.href = '/threat-intelligence/breached-creds/export?format=' + fmt + '&ids=' + encodeURIComponent(ids);
+  };
+
+  // Clear selection
+  window.clearSelection = function() {
+    selectedIds.clear();
+    tbody.querySelectorAll('input[type="checkbox"]').forEach(function(cb) { cb.checked = false; });
+    document.getElementById('select-all').checked = false;
+    updateSelBar();
+  };
+
+  // Initial load
+  load();
+})();

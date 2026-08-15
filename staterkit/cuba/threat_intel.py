@@ -51,6 +51,26 @@ def _get_domain_filters():
     return get_user_watchlist_domains()
 
 
+def _get_employee_emails():
+    """Staff addresses in the current user's scope, for the Employees tab.
+
+    Always a list, never None: unlike _get_domain_filters there is no
+    "unrestricted" employee view. An admin sees every company's staff, a member
+    sees their own company's, and an empty list means nobody is on file — which
+    the query turns into a match-nothing clause, not an unfiltered list.
+    """
+    from .models import Company
+    if not current_user.is_authenticated:
+        return []
+    if current_user.is_admin_user:
+        emails = set()
+        for company in Company.query.all():
+            emails.update(company.get_employee_emails())
+        return sorted(emails)
+    company = current_user.company
+    return company.get_employee_emails() if company else []
+
+
 def _host_belongs_to(host: str, domain: str) -> bool:
     """True when `host` equals `domain` or is a subdomain of it.
 
@@ -263,6 +283,22 @@ def breached_creds_list():
                           breadcrumb=breadcrumb)
 
 
+@threat_intel.route('/threat-intelligence/breached-creds/employees')
+@login_required
+def breached_creds_employees():
+    """Breaches limited to the watched staff addresses in the user's scope.
+
+    The table itself is filled by the same /api/breached-creds/search endpoint
+    the All tab uses, with employees_only set — so scoping, masking and
+    pagination stay in one place rather than being reimplemented here.
+    """
+    employees = _get_employee_emails()
+    breadcrumb = {"parent": "Threat Intelligence", "child": "Employee Credentials"}
+    return render_template('threat_intel/breached_creds_employees.html',
+                           employee_count=len(employees),
+                           breadcrumb=breadcrumb)
+
+
 @threat_intel.route('/api/timeline', methods=['POST'])
 @login_required
 def timeline_api():
@@ -360,6 +396,10 @@ def breached_creds_api():
         filters['domain'] = domain_filter_param
     if date_filter and date_filter != 'all':
         filters['date_filter'] = date_filter
+    if data.get('employees_only'):
+        # Narrow to the watched staff addresses in the caller's own scope. The
+        # domain filter still applies underneath, so this can only subtract.
+        filters['employees'] = _get_employee_emails()
 
     pagination = es_service.search(
         query_text=search_query or None,
@@ -413,35 +453,53 @@ def breached_creds_view(doc_id):
     # re-runs _check_cred_access and writes an audit row per reveal.
     if cred.password:
         cred.password = '********'
+    # The raw dump line is the same secret in a different shape — it usually
+    # carries the plaintext inline — so it goes behind the same gate rather
+    # than being rendered into the page.
+    has_raw = bool(cred.value)
+    if cred.value:
+        cred.value = '********'
     breadcrumb = {"parent": "Threat Intelligence", "child": "Credential Details"}
     return render_template('threat_intel/breached_creds_view.html',
-                          breached_cred=cred, breadcrumb=breadcrumb)
+                          breached_cred=cred, has_raw=has_raw,
+                          breadcrumb=breadcrumb)
 
 
 @threat_intel.route('/threat-intelligence/breached-creds/<doc_id>/reveal-password', methods=['POST'])
 @login_required
 @limiter.limit("30/minute")
 def breached_creds_reveal_password(doc_id):
-    """Return the plaintext password for a breached cred the user is authorized to see.
+    """Return a masked-on-page field for a cred the user is authorized to see.
 
-    Gated by the same tenancy check as the detail view. Every successful and
-    denied call is recorded in the audit log so reveals are accountable.
+    Two fields go through here: 'password' (the plaintext) and 'raw' (the
+    original dump line, which normally quotes that same plaintext inline).
+    Both are gated by the same tenancy check as the detail view, and every
+    successful and denied call is recorded in the audit log so reveals are
+    accountable. The field is named in the audit row, so revealing a raw line
+    is never filed as a password reveal.
+
+    Defaults to 'password' when unspecified, keeping older callers working.
     """
+    field = (request.form.get('field') or 'password').strip()
+    if field not in ('password', 'raw'):
+        return jsonify({"error": "unknown_field"}), 400
+
     cred = es_service.get_by_id(doc_id)
     if not cred:
         return jsonify({"error": "not_found"}), 404
     if not _check_cred_access(cred):
-        log_audit("reveal_password_denied", "breached_cred", doc_id,
+        log_audit(f"reveal_{field}_denied", "breached_cred", doc_id,
                   f"User {current_user.username} denied reveal for cred {doc_id}",
                   status="failed")
         db.session.commit()
         return jsonify({"error": "access_denied"}), 403
-    log_audit("reveal_password", "breached_cred", doc_id,
-              f"User {current_user.username} revealed password for cred {doc_id} "
+    log_audit(f"reveal_{field}", "breached_cred", doc_id,
+              f"User {current_user.username} revealed {field} for cred {doc_id} "
               f"(domain={cred.domain or 'unknown'})")
-    log_user_activity("reveal_password", current_user.id, status="success")
+    log_user_activity(f"reveal_{field}", current_user.id, status="success")
     db.session.commit()
-    return jsonify({"password": cred.password or ""})
+    value = cred.password if field == 'password' else cred.value
+    return jsonify({field: value or ""})
 
 
 @threat_intel.route('/threat-intelligence/breached-creds/add', methods=['GET', 'POST'])
@@ -638,6 +696,10 @@ def breached_creds_export():
             filters['domain'] = domain_filter_param
         if date_filter and date_filter != 'all':
             filters['date_filter'] = date_filter
+        if request.args.get('employees_only') in ('1', 'true', 'yes'):
+            # Mirrors the Employees tab, so its Export button downloads the
+            # list on screen rather than every credential in scope.
+            filters['employees'] = _get_employee_emails()
 
         creds = es_service.export(filters=filters if filters else None, domain_filters=domain_filters)
 
@@ -842,87 +904,167 @@ def reports():
                           companies=companies, breadcrumb=breadcrumb)
 
 
-@threat_intel.route('/threat-intelligence/reports/schedule/add', methods=['POST'])
-@login_required
-def add_schedule():
-    from .models import ScheduledReport
-    name = sanitize_input(request.form.get('name', ''))
-    frequency = request.form.get('frequency', 'weekly')
-    fmt = request.form.get('format', 'pdf')
-    email_to = sanitize_input(request.form.get('email_to', ''))
+def _parse_schedule_form(form):
+    """Validate the schedule fields shared by the create and edit forms.
 
-    if not name:
-        flash('Report name is required.', 'warning')
-        return redirect(url_for('threat_intel.reports'))
-
-    from .services.report_scheduler import compute_next_run
+    Returns (values, error): `values` is a dict ready to apply to a
+    ScheduledReport, `error` a (message, category) pair when the form can't be
+    accepted. Both routes go through here so their rules cannot drift apart —
+    the recipient binding below is the only thing that guards a client's breach
+    data, and it must hold on edit exactly as it does on create.
+    """
     from .models import Company
+    from .services.report_scheduler import compute_next_run
     from datetime import datetime as _dt
 
+    name = sanitize_input(form.get('name', ''))
+    if not name:
+        return None, ('Report name is required.', 'warning')
+
+    frequency = form.get('frequency', 'weekly')
+
     # Never trust the posted company: a non-admin may only target their own.
-    company_id = (request.form.get('company_id') or '').strip() or None
+    company_id = (form.get('company_id') or '').strip() or None
     if company_id:
         company = Company.query.get(company_id)
         if company is None or (not current_user.is_admin_user
                                and current_user.company_id != company.id):
-            flash('Invalid company selection.', 'danger')
-            return redirect(url_for('threat_intel.reports'))
+            return None, ('Invalid company selection.', 'danger')
 
     # Local wall-clock time of day plus which days it applies to. run_days is
     # ISO weekdays for weekly ("1,5"), a day of the month for monthly ("15"),
     # and unused for daily.
-    run_time = (request.form.get('run_time') or '').strip()
+    run_time = (form.get('run_time') or '').strip()
     if frequency == 'weekly':
-        run_days = ','.join(d for d in request.form.getlist('run_days')
+        run_days = ','.join(d for d in form.getlist('run_days')
                             if d.isdigit() and 1 <= int(d) <= 7)
         if not run_days:
             # Silently falling back to "whatever day it is now" would make the
             # schedule run on a day nobody chose.
-            flash('Pick at least one day of the week.', 'warning')
-            return redirect(url_for('threat_intel.reports'))
+            return None, ('Pick at least one day of the week.', 'warning')
     elif frequency == 'monthly':
-        day = (request.form.get('run_day_of_month') or '').strip()
+        day = (form.get('run_day_of_month') or '').strip()
         run_days = day if day.isdigit() and 1 <= int(day) <= 31 else ''
     else:
         run_days = ''
 
-    next_run = compute_next_run(frequency, _dt.utcnow(), run_time, run_days)
+    return {
+        'name': name,
+        'frequency': frequency,
+        'format': form.get('format', 'pdf'),
+        'email_to': sanitize_input(form.get('email_to', '')),
+        'company_id': company_id,
+        'run_time': run_time,
+        'run_days': run_days,
+        'next_run': compute_next_run(frequency, _dt.utcnow(), run_time, run_days),
+    }, None
+
+
+def _bind_recipients(schedule, email_to):
+    """Set schedule.email_to from a submitted address list, or return an error.
+
+    Recipients are bound to the target company's own domains, so a client's
+    breach data cannot be scheduled out to an unrelated address. Rejected here
+    rather than silently dropped at send time, so the mistake is visible.
+    """
+    if not email_to:
+        schedule.email_to = None
+        return None
+    from .services.report_scheduler import validate_recipients
+    allowed, rejected = validate_recipients(schedule, email_to)
+    if rejected:
+        return 'Cannot send to ' + '; '.join(f'{a} ({why})' for a, why in rejected)
+    schedule.email_to = ','.join(allowed)
+    return None
+
+
+def _schedule_saved_message(verb, run_label, values):
+    """Flash text shared by create and edit."""
+    name, frequency, next_run = values['name'], values['frequency'], values['next_run']
+    if next_run:
+        from .services.report_scheduler import to_local
+        local = to_local(next_run)
+        return (f'Scheduled report "{name}" {verb} — {run_label} '
+                f'{local.strftime("%Y-%m-%d %H:%M")} ({local.tzname()}).', 'success')
+    return (f'Scheduled report "{name}" {verb}, but "{frequency}" is not a '
+            f'known frequency so it has no run time.', 'warning')
+
+
+@threat_intel.route('/threat-intelligence/reports/schedule/add', methods=['POST'])
+@login_required
+def add_schedule():
+    from .models import ScheduledReport, Company
+
+    values, error = _parse_schedule_form(request.form)
+    if error:
+        flash(*error)
+        return redirect(url_for('threat_intel.reports'))
 
     schedule = ScheduledReport(
-        name=name, frequency=frequency, format=fmt,
-        email_to=email_to or None,
-        run_time=run_time or None, run_days=run_days or None,
-        next_run=next_run, company_id=company_id,
+        name=values['name'], frequency=values['frequency'], format=values['format'],
+        run_time=values['run_time'] or None, run_days=values['run_days'] or None,
+        next_run=values['next_run'], company_id=values['company_id'],
         created_by=current_user.id, is_active=True
     )
+    # validate_recipients reads .creator and .company, which aren't populated
+    # from the id columns until a flush — set them by hand first.
+    schedule.creator = current_user
+    schedule.company = (Company.query.get(values['company_id'])
+                        if values['company_id'] else None)
 
-    # Recipients are bound to the target company's own domains, so a client's
-    # breach data cannot be scheduled out to an unrelated address. Rejected
-    # here rather than silently dropped at send time, so the mistake is visible.
-    if email_to:
-        from .services.report_scheduler import validate_recipients
-        schedule.creator = current_user
-        schedule.company = Company.query.get(company_id) if company_id else None
-        allowed, rejected = validate_recipients(schedule, email_to)
-        if rejected:
-            flash('Cannot send to ' + '; '.join(f'{a} ({why})' for a, why in rejected),
-                  'danger')
-            return redirect(url_for('threat_intel.reports'))
-        schedule.email_to = ','.join(allowed)
+    recipient_error = _bind_recipients(schedule, values['email_to'])
+    if recipient_error:
+        db.session.rollback()
+        flash(recipient_error, 'danger')
+        return redirect(url_for('threat_intel.reports'))
 
     db.session.add(schedule)
     db.session.commit()
     log_audit('scheduled_report_create', 'scheduled_report', schedule.id,
               f'{schedule.name} → {schedule.email_to or "no recipients"} '
               f'({"company " + schedule.company.name if schedule.company else "creator scope"})')
-    if next_run:
-        from .services.report_scheduler import to_local
-        local = to_local(next_run)
-        flash(f'Scheduled report "{name}" created — first run '
-              f'{local.strftime("%Y-%m-%d %H:%M")} ({local.tzname()}).', 'success')
-    else:
-        flash(f'Scheduled report "{name}" created, but "{frequency}" is not a '
-              f'known frequency so it has no run time.', 'warning')
+    flash(*_schedule_saved_message('created', 'first run', values))
+    return redirect(url_for('threat_intel.reports'))
+
+
+@threat_intel.route('/threat-intelligence/reports/schedule/<sid>/edit', methods=['POST'])
+@login_required
+def edit_schedule(sid):
+    from .models import ScheduledReport, Company
+    schedule = ScheduledReport.query.get_or_404(sid)
+    if schedule.created_by != current_user.id and not current_user.is_admin_user:
+        flash('Access denied.', 'danger')
+        return redirect(url_for('threat_intel.reports'))
+
+    values, error = _parse_schedule_form(request.form)
+    if error:
+        flash(*error)
+        return redirect(url_for('threat_intel.reports'))
+
+    schedule.name = values['name']
+    schedule.frequency = values['frequency']
+    schedule.format = values['format']
+    schedule.run_time = values['run_time'] or None
+    schedule.run_days = values['run_days'] or None
+    schedule.company_id = values['company_id']
+    schedule.company = (Company.query.get(values['company_id'])
+                        if values['company_id'] else None)
+    # Recomputed from the new cadence. last_run stays as it was: editing a
+    # schedule doesn't undo the runs it already had. is_active isn't here
+    # either — Pause/Enable owns that.
+    schedule.next_run = values['next_run']
+
+    recipient_error = _bind_recipients(schedule, values['email_to'])
+    if recipient_error:
+        db.session.rollback()
+        flash(recipient_error, 'danger')
+        return redirect(url_for('threat_intel.reports'))
+
+    db.session.commit()
+    log_audit('scheduled_report_update', 'scheduled_report', schedule.id,
+              f'{schedule.name} → {schedule.email_to or "no recipients"} '
+              f'({"company " + schedule.company.name if schedule.company else "creator scope"})')
+    flash(*_schedule_saved_message('updated', 'next run', values))
     return redirect(url_for('threat_intel.reports'))
 
 

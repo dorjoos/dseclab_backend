@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/pages/breached-creds.css') }}">
+{% endblock %}
+
+{# Only credentials whose username is one of the company's watched staff
+   addresses — the 'email' watchlist entries. Same panel and script as the All
+   tab, with employees_only flipped on. #}
+{% set employees_only = true %}
+
+{% block content %}
+{% if not employee_count %}
+<div class="container-fluid p-0">
+  <div class="av-notice">
+    No employee addresses are on file yet, so this tab has nothing to match.
+    Add them under Admin &rsaquo; Edit Company &rsaquo; Watchlist Entries as
+    <strong>Email</strong> entries.
+  </div>
+</div>
+{% endif %}
+{% include 'threat_intel/_breached_creds_panel.html' %}
+{% endblock %}
+
+{% block scriptcontent %}
+<script>
+{% include 'threat_intel/_breached_creds_script.html' %}
+</script>
+{% endblock %}

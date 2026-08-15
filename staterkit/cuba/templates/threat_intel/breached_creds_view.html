@@ -113,6 +113,22 @@
             <div class="av-detail-label">ES ID</div>
             <div class="av-detail-value--esid">{{ breached_cred.es_id or '—' }}</div>
           </div>
+          <div class="av-detail-cell av-detail-cell--wide">
+            <div class="av-detail-label">Raw Text</div>
+            {# The original dump line. It normally quotes the plaintext
+               password inline, so it hides behind the same audited reveal. #}
+            {% if has_raw %}
+            <div class="password-mask password-mask--raw"
+                 data-cred-id="{{ breached_cred.es_id }}"
+                 data-reveal-field="raw">
+              <span class="masked-password">Click to reveal</span>
+              <span class="revealed-password" data-placeholder="********">********</span>
+              <span class="password-reveal-error" style="display:none;color:#c00;font-size:0.85em;"></span>
+            </div>
+            {% else %}
+            <div class="av-detail-value av-detail-value--muted">—</div>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>

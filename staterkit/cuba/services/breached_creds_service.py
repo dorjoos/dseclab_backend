@@ -191,6 +191,39 @@ class BreachedCredsService(ESIndexService):
             return None
         return {"bool": {"should": should, "minimum_should_match": 1}}
 
+    # A bool/should clause per employee, so the list can't grow past ES's
+    # max_clause_count (1024 in ES7, 4096 in ES8) and turn the tab into an
+    # error. Well above any real payroll; truncation is logged, never silent.
+    MAX_EMPLOYEE_CLAUSES = 1000
+
+    def build_employee_filter(self, emails):
+        """Match credentials whose username is one of these exact addresses.
+
+        Exact, not suffix-based: an employee filter answers "was this person
+        breached", so b.otgon@khanbank.mn must not pull in every other address
+        at the domain — the unfiltered list already does that.
+
+        An empty list yields a match-nothing clause. The caller asked to see
+        one specific set of people; a company with nobody on file has no
+        employee breaches, which is not the same as having no filter.
+        """
+        wanted = sorted({e.strip().lower() for e in (emails or []) if e and e.strip()})
+        if not wanted:
+            return {"bool": {"must_not": {"match_all": {}}}}
+
+        if len(wanted) > self.MAX_EMPLOYEE_CLAUSES:
+            logger.warning(
+                "employee filter truncated to %d of %d addresses; the rest are "
+                "not searched", self.MAX_EMPLOYEE_CLAUSES, len(wanted))
+            wanted = wanted[:self.MAX_EMPLOYEE_CLAUSES]
+
+        return {"bool": {"minimum_should_match": 1, "should": [
+            # case_insensitive because dumps are inconsistent about casing,
+            # while the stored watchlist entry is normalised to lowercase.
+            {"term": {"username.keyword": {"value": e, "case_insensitive": True}}}
+            for e in wanted
+        ]}}
+
     @staticmethod
     def compute_match_detail(doc, domains):
         """Return (matched_domain, match_path), or (None, None) if nothing matched.
@@ -288,6 +321,12 @@ class BreachedCredsService(ESIndexService):
                     {"wildcard": {"username.keyword": {"value": f"*@*{dv}*", "case_insensitive": True}}},
                     {"wildcard": {"url": {"value": f"*{dv}*", "case_insensitive": True}}},
                 ], "minimum_should_match": 1}})
+
+            if filters.get("employees") is not None:
+                # An explicit list, and an EMPTY one means "this company has no
+                # employees on file" — which must match nothing, not everything.
+                # Same trap as domain_filters below.
+                filter_clauses.append(self.build_employee_filter(filters["employees"]))
 
             date_filter = filters.get("date_filter")
             if date_filter:

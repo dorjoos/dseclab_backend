@@ -194,6 +194,81 @@ def test_member_still_sees_own_subdomain_creds(client, db, member_ibank, fake_cr
     assert reveal.get_json()["password"] == "subdomain-secret"
 
 
+# --- raw dump line: same secret, same gate ---
+
+RAW_LINE = f"https://acme.com/login:user@acme.com:{REAL_PASSWORD}"
+RAW_CRED_ID = "acme-raw-1"
+RAW_SRC = dict(CRED_SRC, value=RAW_LINE)
+
+
+def test_detail_page_never_contains_the_raw_line(client, member_acme, fake_cred):
+    """The raw line quotes the plaintext, so rendering it would route around
+    the reveal gate the password already sits behind."""
+    fake_cred({RAW_CRED_ID: RAW_SRC})
+    login(client, member_acme.email)
+    resp = client.get(f"/threat-intelligence/breached-creds/{RAW_CRED_ID}")
+    assert resp.status_code == 200
+    assert RAW_LINE.encode() not in resp.data
+    assert REAL_PASSWORD.encode() not in resp.data
+    assert b'data-reveal-field="raw"' in resp.data
+
+
+def test_reveal_raw_returns_the_line_and_audits_it_as_raw(client, db, member_acme,
+                                                          fake_cred):
+    fake_cred({RAW_CRED_ID: RAW_SRC})
+    login(client, member_acme.email)
+    token = _csrf_token(client)
+    resp = client.post(f"/threat-intelligence/breached-creds/{RAW_CRED_ID}/reveal-password",
+                       headers={"X-CSRFToken": token}, data={"field": "raw"})
+    assert resp.status_code == 200
+    assert resp.get_json()["raw"] == RAW_LINE
+    # Filed as its own action, not as a password reveal.
+    assert len(AuditLog.query.filter_by(action_type="reveal_raw").all()) == 1
+    assert AuditLog.query.filter_by(action_type="reveal_password").all() == []
+    assert len(UserActivity.query.filter_by(activity_type="reveal_raw").all()) == 1
+
+
+def test_reveal_raw_cross_company_denied(client, db, member_other, fake_cred):
+    fake_cred({RAW_CRED_ID: RAW_SRC})  # cred belongs to acme.com
+    login(client, member_other.email)  # user is at other.com
+    token = _csrf_token(client)
+    resp = client.post(f"/threat-intelligence/breached-creds/{RAW_CRED_ID}/reveal-password",
+                       headers={"X-CSRFToken": token}, data={"field": "raw"})
+    assert resp.status_code == 403
+    assert RAW_LINE.encode() not in resp.data
+    assert len(AuditLog.query.filter_by(action_type="reveal_raw_denied").all()) == 1
+
+
+def test_reveal_rejects_an_unknown_field(client, member_acme, fake_cred):
+    """Guards against the field name becoming a way to read arbitrary attrs."""
+    fake_cred({RAW_CRED_ID: RAW_SRC})
+    login(client, member_acme.email)
+    token = _csrf_token(client)
+    resp = client.post(f"/threat-intelligence/breached-creds/{RAW_CRED_ID}/reveal-password",
+                       headers={"X-CSRFToken": token}, data={"field": "username"})
+    assert resp.status_code == 400
+
+
+def test_reveal_without_a_field_still_means_password(client, member_acme, fake_cred):
+    """Older callers post no field at all."""
+    fake_cred({RAW_CRED_ID: RAW_SRC})
+    login(client, member_acme.email)
+    token = _csrf_token(client)
+    resp = client.post(f"/threat-intelligence/breached-creds/{RAW_CRED_ID}/reveal-password",
+                       headers={"X-CSRFToken": token})
+    assert resp.status_code == 200
+    assert resp.get_json()["password"] == REAL_PASSWORD
+
+
+def test_raw_cell_shows_a_dash_when_there_is_no_raw_line(client, member_acme, fake_cred):
+    fake_cred({CRED_ID: CRED_SRC})  # no 'value' key
+    login(client, member_acme.email)
+    resp = client.get(f"/threat-intelligence/breached-creds/{CRED_ID}")
+    assert resp.status_code == 200
+    assert b'Raw Text' in resp.data
+    assert b'data-reveal-field="raw"' not in resp.data
+
+
 def test_reveal_rate_limit_blocks_31st_call(client, member_acme, fake_cred):
     """The endpoint is decorated @limiter.limit('30/minute'); the 31st call returns 429."""
     from cuba import limiter

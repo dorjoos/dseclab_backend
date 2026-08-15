@@ -49,7 +49,12 @@
             <span class="av-tag cf-wl-entry-tag {% if entry.entry_type == 'domain' %}av-tag-blue{% elif entry.entry_type == 'url' %}av-tag-purple{% elif entry.entry_type == 'email' %}av-tag-teal{% elif entry.entry_type == 'ip_address' %}av-tag-orange{% else %}av-tag-pink{% endif %}">{{ entry.entry_type }}</span>
             <span class="cf-wl-entry-val">{{ entry.entry_value }}</span>
           </div>
-          <button type="button" class="cf-wl-remove-btn" title="Remove" onclick="deleteWatchlistEntry({{ company.id }}, {{ entry.id }}, this)">&times;</button>
+          {# Ids are UUID strings, so they travel as data attributes rather than
+             bare inline-onclick arguments, which parse as arithmetic. #}
+          <button type="button" class="cf-wl-remove-btn" title="Remove"
+                  data-wl-delete
+                  data-company-id="{{ company.id }}"
+                  data-entry-id="{{ entry.id }}">&times;</button>
         </div>
         {% endfor %}
         {% else %}
@@ -207,24 +212,65 @@
 
 {% if company %}
 <script>
+function toast(message, type) {
+  if (typeof showToast === 'function') showToast(message, type);
+}
+
+// Scoped to the entry's own card: Watchlist Entries and Report Recipients are
+// built from the same cf-wl-* classes, so a document-wide lookup would find
+// whichever card happens to come first.
+function refreshWatchlistCount(card) {
+  if (!card) return;
+  var count = card.querySelectorAll('.cf-wl-entry').length;
+  var label = card.querySelector('.cf-wl-count');
+  if (label) label.textContent = count + ' items';
+  if (!count && !card.querySelector('.cf-wl-empty')) {
+    var empty = document.createElement('div');
+    empty.className = 'cf-wl-empty';
+    empty.textContent = 'No watchlist entries';
+    card.insertBefore(empty, card.querySelector('.cf-wl-add-form'));
+  }
+}
+
 function deleteWatchlistEntry(companyId, entryId, btn) {
+  btn.disabled = true;
   fetch('/admin/companies/' + companyId + '/watchlist/' + entryId + '/delete', {
     method: 'POST',
     credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN }
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data.success) {
-      var row = btn.closest('.cf-wl-entry');
-      if (row) { row.style.transition='opacity 0.2s'; row.style.opacity='0'; setTimeout(function(){row.remove();},200); }
-      if (typeof showToast === 'function') showToast('Watchlist entry removed', 'success');
+    // Without this the route answers a redirect to the form page and r.json()
+    // chokes on HTML — see _wants_json() in admin_routes.py.
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'X-CSRFToken': window.CSRF_TOKEN
     }
   })
+  .then(function(r) { return r.json().catch(function() { return {}; }); })
+  .then(function(data) {
+    if (!data.success) {
+      btn.disabled = false;
+      toast(data.error || 'Failed to remove entry', 'danger');
+      return;
+    }
+    var row = btn.closest('.cf-wl-entry');
+    var card = btn.closest('.cf-wl-card');
+    if (row) {
+      row.style.transition = 'opacity 0.2s';
+      row.style.opacity = '0';
+      setTimeout(function() { row.remove(); refreshWatchlistCount(card); }, 200);
+    }
+    toast('Watchlist entry removed', 'success');
+  })
   .catch(function() {
-    if (typeof showToast === 'function') showToast('Failed to remove entry', 'danger');
+    btn.disabled = false;
+    toast('Failed to remove entry', 'danger');
   });
 }
+
+document.querySelectorAll('[data-wl-delete]').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    deleteWatchlistEntry(btn.dataset.companyId, btn.dataset.entryId, btn);
+  });
+});
 </script>
 {% endif %}
 

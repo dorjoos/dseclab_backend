@@ -269,6 +269,15 @@ def validate_recipients(schedule, addresses=None):
         low = address.lower()
         if not _EMAIL_RE.match(address):
             rejected.append((address, "not a valid email address"))
+        elif low == creator_email and creator_email:
+            # The creator may always mail themselves, company or not. This
+            # leaks nothing: resolve_domains already clamps the report to the
+            # creator's own visible scope, and run_due_schedules disables a
+            # schedule whose creator goes missing or inactive — so every row in
+            # the attachment is one they can already read in the UI. Checked
+            # ahead of the domain rule because the form pre-fills this address,
+            # and an admin's own domain is rarely the client's.
+            allowed.append(address)
         elif low in allowlist:
             # Admin-approved exception to the domain rule.
             allowed.append(address)
@@ -279,9 +288,6 @@ def validate_recipients(schedule, addresses=None):
                 rejected.append(
                     (address, "not on " + ", ".join(domains)
                      + ", and not on the company's approved recipient list"))
-        elif low == creator_email and creator_email:
-            # No company to anchor to: the creator may still mail themselves.
-            allowed.append(address)
         else:
             rejected.append(
                 (address, "no Company is selected for this schedule — pick one "

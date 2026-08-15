@@ -121,13 +121,16 @@
         });
       });
 
-      // Password reveal: click to fetch plaintext via audited endpoint.
-      // Server never sends plaintext on page load; we fetch only on demand.
+      // Reveal-on-click for fields the server masks: the password, and the raw
+      // dump line that usually quotes it. Both come from the same audited
+      // endpoint; data-reveal-field says which. Nothing sensitive is in the
+      // page on load — we fetch only on demand.
       document.querySelectorAll('.password-mask').forEach(function(mask) {
         var m = mask.querySelector('.masked-password');
         var r = mask.querySelector('.revealed-password');
         var err = mask.querySelector('.password-reveal-error');
         var credId = mask.getAttribute('data-cred-id');
+        var field = mask.getAttribute('data-reveal-field') || 'password';
         if (!m || !r || !credId) return;
 
         m.style.display = 'inline';
@@ -155,9 +158,12 @@
           if (isRevealed) { reMask(); return; }
 
           if (err) { err.style.display = 'none'; err.textContent = ''; }
+          var body = new FormData();
+          body.append('field', field);
           fetch('/threat-intelligence/breached-creds/' + encodeURIComponent(credId) + '/reveal-password', {
             method: 'POST',
             credentials: 'same-origin',
+            body: body,
             headers: {
               'X-CSRFToken': window.CSRF_TOKEN || '',
               'Accept': 'application/json'
@@ -167,11 +173,11 @@
             if (resp.status === 403) { showError('Access denied.'); return null; }
             if (resp.status === 404) { showError('Credential no longer exists.'); return null; }
             if (resp.status === 429) { showError('Too many reveal attempts. Try again in a minute.'); return null; }
-            if (!resp.ok) { showError('Could not reveal password. Try again.'); return null; }
+            if (!resp.ok) { showError('Could not reveal. Try again.'); return null; }
             return resp.json();
           }).then(function(data) {
-            if (!data || typeof data.password !== 'string') return;
-            r.textContent = data.password;
+            if (!data || typeof data[field] !== 'string') return;
+            r.textContent = data[field];
             r.style.display = 'inline';
             m.style.display = 'none';
           }).catch(function() {

@@ -72,6 +72,48 @@ def test_watchlist_add_still_answers_json_for_xhr(client, admin_user, company_ac
     assert resp.get_json()['success'] is True
 
 
+def test_watchlist_delete_answers_json_for_xhr(client, db, admin_user, company_acme):
+    """The delete button reads r.json(); a redirect here is what broke it."""
+    from cuba.models import WatchlistEntry
+    entry = WatchlistEntry(company_id=company_acme.id, entry_type='domain',
+                           entry_value='doomed.acme.com')
+    db.session.add(entry)
+    db.session.commit()
+    entry_id = entry.id
+
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    resp = client.post(
+        f'/admin/companies/{company_acme.id}/watchlist/{entry_id}/delete',
+        headers={'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': token})
+    assert resp.status_code == 200
+    assert resp.get_json()['success'] is True
+    assert WatchlistEntry.query.get(entry_id) is None
+
+
+def test_watchlist_delete_button_is_wired_up(client, db, admin_user, company_acme):
+    """Both halves of the bug that made Remove a no-op.
+
+    The ids are UUID strings: interpolated bare into an inline onclick they
+    parse as arithmetic over undefined names, so the handler never ran. And the
+    fetch omitted X-Requested-With, so _wants_json() answered a redirect and
+    r.json() threw on HTML.
+    """
+    from cuba.models import WatchlistEntry
+    db.session.add(WatchlistEntry(company_id=company_acme.id, entry_type='domain',
+                                  entry_value='wired.acme.com'))
+    db.session.commit()
+
+    login(client, admin_user.email)
+    body = client.get(f'/admin/companies/{company_acme.id}/edit').data.decode()
+    # Ids reach JS as data attributes, never as bare onclick arguments.
+    assert f'deleteWatchlistEntry({company_acme.id}' not in body
+    assert f'data-company-id="{company_acme.id}"' in body
+    assert 'data-wl-delete' in body
+    # ...and the request identifies itself as XHR so it gets JSON back.
+    assert 'X-Requested-With' in body
+
+
 def test_report_recipient_must_be_an_address_not_a_domain(client, admin_user,
                                                           company_acme):
     """A domain here would undo the binding the allowlist is an exception to."""
@@ -115,6 +157,16 @@ def test_admin_reports_form_still_offers_all(client, admin_user, company_acme):
     assert 'All I can see' in resp.data.decode()
 
 
+def test_reports_form_prefills_email_to_with_the_signed_in_user(client, member_acme):
+    import re
+    login(client, member_acme.email)
+    resp = client.get('/threat-intelligence/reports')
+    assert resp.status_code == 200
+    field = re.search(r'<input[^>]*name="email_to"[^>]*>', resp.data.decode())
+    assert field, 'the email_to input is gone'
+    assert f'value="{member_acme.email}"' in field.group(0)
+
+
 def test_weekly_schedule_requires_a_day(client, admin_user, company_acme):
     """Falling back to today's weekday would run on a day nobody picked."""
     from cuba.models import ScheduledReport
@@ -139,6 +191,131 @@ def test_weekly_schedule_stores_the_chosen_days(client, admin_user, company_acme
     assert row.run_days == '1,5'
     assert row.run_time == '09:00'
     assert row.next_run is not None
+
+
+# --- editing an existing schedule ---
+
+def _csrf_reports(client):
+    """A token from the reports page, which any logged-in user may open."""
+    import re
+    resp = client.get('/threat-intelligence/reports')
+    m = re.search(rb'name="csrf_token"[^>]*value="([^"]+)"', resp.data)
+    assert m, f'no csrf token on the reports page (status={resp.status_code})'
+    return m.group(1).decode()
+
+
+def _make_schedule(client, company, token, **overrides):
+    """Create one through the real route, so it starts in a valid state."""
+    from cuba.models import ScheduledReport
+    data = {'csrf_token': token, 'name': 'Original', 'frequency': 'daily',
+            'format': 'pdf', 'run_time': '09:00', 'company_id': company.id}
+    data.update(overrides)
+    client.post('/threat-intelligence/reports/schedule/add', data=data)
+    return ScheduledReport.query.one()
+
+
+def test_edit_updates_the_schedule(client, admin_user, company_acme):
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    sched = _make_schedule(client, company_acme, token)
+    last_run_before = sched.last_run
+
+    resp = client.post(f'/threat-intelligence/reports/schedule/{sched.id}/edit',
+                       data={'csrf_token': token, 'name': 'Renamed',
+                             'frequency': 'weekly', 'format': 'csv',
+                             'run_time': '17:30', 'run_days': ['2', '4'],
+                             'company_id': company_acme.id})
+    assert resp.status_code == 302
+
+    from cuba.models import ScheduledReport
+    row = ScheduledReport.query.one()
+    assert row.name == 'Renamed'
+    assert row.frequency == 'weekly'
+    assert row.format == 'csv'
+    assert row.run_time == '17:30'
+    assert row.run_days == '2,4'
+    assert row.next_run is not None
+    # Editing the cadence doesn't undo the runs it already had.
+    assert row.last_run == last_run_before
+
+
+def test_edit_leaves_the_active_flag_alone(client, admin_user, company_acme):
+    """Pause/Enable owns is_active; a stray posted field must not flip it."""
+    from cuba.models import ScheduledReport
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    sched = _make_schedule(client, company_acme, token)
+    client.post(f'/threat-intelligence/reports/schedule/{sched.id}/toggle',
+                data={'csrf_token': token})
+    assert ScheduledReport.query.one().is_active is False
+
+    client.post(f'/threat-intelligence/reports/schedule/{sched.id}/edit',
+                data={'csrf_token': token, 'name': 'Renamed', 'frequency': 'daily',
+                      'format': 'pdf', 'run_time': '08:00',
+                      'company_id': company_acme.id, 'is_active': 'true'})
+    assert ScheduledReport.query.one().is_active is False
+
+
+def test_edit_enforces_the_weekly_day_rule(client, admin_user, company_acme):
+    """The create form's validation must hold on edit too."""
+    from cuba.models import ScheduledReport
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    sched = _make_schedule(client, company_acme, token)
+
+    client.post(f'/threat-intelligence/reports/schedule/{sched.id}/edit',
+                data={'csrf_token': token, 'name': 'Original',
+                      'frequency': 'weekly', 'format': 'pdf',
+                      'run_time': '09:00', 'company_id': company_acme.id})
+    row = ScheduledReport.query.one()
+    assert row.frequency == 'daily', 'a dayless weekly edit was accepted'
+
+
+def test_edit_enforces_the_recipient_domain_rule(client, admin_user, company_acme):
+    """Edit must not become a way to redirect a client's report elsewhere."""
+    from cuba.models import ScheduledReport
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    sched = _make_schedule(client, company_acme, token)
+
+    client.post(f'/threat-intelligence/reports/schedule/{sched.id}/edit',
+                data={'csrf_token': token, 'name': 'Renamed', 'frequency': 'daily',
+                      'format': 'csv', 'run_time': '09:00',
+                      'company_id': company_acme.id,
+                      'email_to': 'attacker@golomtbank.com'})
+    row = ScheduledReport.query.one()
+    assert row.email_to != 'attacker@golomtbank.com'
+    # A rejected recipient rolls the whole edit back, so the row can't be left
+    # half-updated with the rest of the posted changes applied.
+    assert row.name == 'Original'
+    assert row.format == 'pdf'
+
+
+def test_edit_rejects_another_users_schedule(client, admin_user, member_other,
+                                             company_acme):
+    from cuba.models import ScheduledReport
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    sched = _make_schedule(client, company_acme, token)
+
+    client.get('/logout')
+    login(client, member_other.email)
+    resp = client.post(f'/threat-intelligence/reports/schedule/{sched.id}/edit',
+                       data={'csrf_token': _csrf_reports(client), 'name': 'Hijacked',
+                             'frequency': 'daily', 'format': 'pdf',
+                             'run_time': '09:00'})
+    assert resp.status_code == 302
+    assert ScheduledReport.query.one().name == 'Original'
+
+
+def test_edit_panel_renders_for_each_schedule(client, admin_user, company_acme):
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    sched = _make_schedule(client, company_acme, token)
+    body = client.get('/threat-intelligence/reports').data.decode()
+    assert f'id="edit-{sched.id}"' in body
+    assert f'data-edit-toggle="edit-{sched.id}"' in body
+    assert f'/schedule/{sched.id}/edit' in body
 
 
 def test_day_pills_render_as_toggles_not_bare_checkboxes(client, admin_user,
