@@ -121,9 +121,17 @@
         {% if recent_pagination and recent_pagination.pages > 1 %}
         {% set p = recent_pagination.page %}
         {% set pages = recent_pagination.pages %}
+        {# The active filters, carried across every page link. urlencode is not
+           optional: a search for "ACME #1" or "A&B" would otherwise cut the
+           query string short and silently drop the page number. #}
+        {%- set qs %}
+          {%- if rf.group %}&rg={{ rf.group|urlencode }}{% endif -%}
+          {%- if rf.country %}&rc={{ rf.country|urlencode }}{% endif -%}
+          {%- if rf.q %}&rq={{ rf.q|urlencode }}{% endif -%}
+        {% endset -%}
         <div class="rw-tl-pagination">
           {% if recent_pagination.has_prev %}
-            <a href="?rp={{ p - 1 }}{% if rf.group %}&rg={{ rf.group }}{% endif %}{% if rf.country %}&rc={{ rf.country }}{% endif %}{% if rf.q %}&rq={{ rf.q }}{% endif %}#recent-attacks" class="rw-tl-page-btn">‹ Prev</a>
+            <a href="?rp={{ p - 1 }}{{ qs }}#recent-attacks" class="rw-tl-page-btn">‹ Prev</a>
           {% else %}
             <span class="rw-tl-page-btn rw-tl-page-btn--disabled">‹ Prev</span>
           {% endif %}
@@ -142,13 +150,13 @@
             {% if n == p %}
               <span class="rw-tl-page-btn rw-tl-page-btn--active">{{ n }}</span>
             {% else %}
-              <a href="?rp={{ n }}{% if rf.group %}&rg={{ rf.group }}{% endif %}{% if rf.country %}&rc={{ rf.country }}{% endif %}{% if rf.q %}&rq={{ rf.q }}{% endif %}#recent-attacks" class="rw-tl-page-btn">{{ n }}</a>
+              <a href="?rp={{ n }}{{ qs }}#recent-attacks" class="rw-tl-page-btn">{{ n }}</a>
             {% endif %}
             {% set ns.prev = n %}
           {% endfor %}
 
           {% if recent_pagination.has_next %}
-            <a href="?rp={{ p + 1 }}{% if rf.group %}&rg={{ rf.group }}{% endif %}{% if rf.country %}&rc={{ rf.country }}{% endif %}{% if rf.q %}&rq={{ rf.q }}{% endif %}#recent-attacks" class="rw-tl-page-btn">Next ›</a>
+            <a href="?rp={{ p + 1 }}{{ qs }}#recent-attacks" class="rw-tl-page-btn">Next ›</a>
           {% else %}
             <span class="rw-tl-page-btn rw-tl-page-btn--disabled">Next ›</span>
           {% endif %}
@@ -222,7 +230,11 @@
   <!-- Sector breakdown -->
   <div class="card rw-section-card">
     <div class="rw-card-title-lg">Top Affected Countries</div>
-    {% set max_sector = stats.sectors.values()|max if stats.sectors else 1 %}
+    {# `or 1` guards the bar width below: the degraded-ES fallback for stats is
+       {'Unknown': 0}, which is truthy but maxes to 0 and divided the page by
+       zero — a 500 on exactly the outage the route's _safe() wrapper exists to
+       ride out. #}
+    {% set max_sector = (stats.sectors.values()|max if stats.sectors else 1) or 1 %}
     {% set bar_grads = ['linear-gradient(90deg,#dc2626,#f43f5e)','linear-gradient(90deg,#4f46e5,#7c3aed)','linear-gradient(90deg,#d97706,#f59e0b)','linear-gradient(90deg,#059669,#0891b2)','linear-gradient(90deg,#ec4899,#f472b6)','linear-gradient(90deg,#0891b2,#22d3ee)','linear-gradient(90deg,#7c3aed,#a855f7)','linear-gradient(90deg,#475569,#94a3b8)','linear-gradient(90deg,#84cc16,#a3e635)','linear-gradient(90deg,#f97316,#fb923c)'] %}
     {% for sector, count in stats.sectors.items() %}
     <div class="rw-sector-bar">
