@@ -61,7 +61,10 @@
         <div class="cf-wl-empty">No watchlist entries</div>
         {% endif %}
 
-        <form method="POST" action="{{ url_for('admin.add_watchlist_entry', company_id=company.id) }}" class="cf-wl-add-form">
+        {# Posted with fetch, like the delete button. The endpoint answers JSON
+           unconditionally; there is no Accept-header sniffing to get wrong. #}
+        <form method="POST" action="{{ url_for('admin.add_watchlist_entry', company_id=company.id) }}"
+              class="cf-wl-add-form" data-wl-add data-company-id="{{ company.id }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="cf-wl-add-row">
             <select name="entry_type" class="form-select cf-wl-add-select">
@@ -232,19 +235,20 @@ function refreshWatchlistCount(card) {
   }
 }
 
-function deleteWatchlistEntry(companyId, entryId, btn) {
-  btn.disabled = true;
-  fetch('/admin/companies/' + companyId + '/watchlist/' + entryId + '/delete', {
+// Both watchlist endpoints answer JSON unconditionally, so there is no Accept
+// header to negotiate and no redirect for r.json() to choke on.
+function watchlistPost(url, body) {
+  return fetch(url, {
     method: 'POST',
     credentials: 'same-origin',
-    // Without this the route answers a redirect to the form page and r.json()
-    // chokes on HTML — see _wants_json() in admin_routes.py.
-    headers: {
-      'X-Requested-With': 'XMLHttpRequest',
-      'X-CSRFToken': window.CSRF_TOKEN
-    }
-  })
-  .then(function(r) { return r.json().catch(function() { return {}; }); })
+    body: body,
+    headers: { 'X-CSRFToken': window.CSRF_TOKEN, 'Accept': 'application/json' }
+  }).then(function(r) { return r.json().catch(function() { return {}; }); });
+}
+
+function deleteWatchlistEntry(companyId, entryId, btn) {
+  btn.disabled = true;
+  watchlistPost('/admin/companies/' + companyId + '/watchlist/' + entryId + '/delete')
   .then(function(data) {
     if (!data.success) {
       btn.disabled = false;
@@ -269,6 +273,72 @@ function deleteWatchlistEntry(companyId, entryId, btn) {
 document.querySelectorAll('[data-wl-delete]').forEach(function(btn) {
   btn.addEventListener('click', function() {
     deleteWatchlistEntry(btn.dataset.companyId, btn.dataset.entryId, btn);
+  });
+});
+
+var WL_TAG_COLORS = {
+  domain: 'av-tag-blue', url: 'av-tag-purple', email: 'av-tag-teal',
+  ip_address: 'av-tag-orange'
+};
+
+// Built with createElement, not innerHTML: entry values are operator input and
+// go straight back onto the page.
+function appendWatchlistRow(card, entry, companyId) {
+  var row = document.createElement('div');
+  row.className = 'cf-wl-entry cf-wl-entry--bordered';
+
+  var left = document.createElement('div');
+  left.className = 'cf-wl-entry-left';
+  var tag = document.createElement('span');
+  tag.className = 'av-tag cf-wl-entry-tag ' + (WL_TAG_COLORS[entry.entry_type] || 'av-tag-pink');
+  tag.textContent = entry.entry_type;
+  var val = document.createElement('span');
+  val.className = 'cf-wl-entry-val';
+  val.textContent = entry.entry_value;
+  left.appendChild(tag);
+  left.appendChild(val);
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'cf-wl-remove-btn';
+  btn.title = 'Remove';
+  btn.textContent = '×';
+  btn.addEventListener('click', function() {
+    deleteWatchlistEntry(companyId, entry.entry_id, btn);
+  });
+
+  row.appendChild(left);
+  row.appendChild(btn);
+
+  var empty = card.querySelector('.cf-wl-empty');
+  if (empty) empty.remove();
+  card.insertBefore(row, card.querySelector('.cf-wl-add-form'));
+  refreshWatchlistCount(card);
+}
+
+document.querySelectorAll('[data-wl-add]').forEach(function(form) {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var card = form.closest('.cf-wl-card');
+    var submit = form.querySelector('button[type="submit"]');
+    var input = form.querySelector('input[name="entry_value"]');
+    if (submit) submit.disabled = true;
+
+    watchlistPost(form.action, new FormData(form))
+      .then(function(data) {
+        if (submit) submit.disabled = false;
+        if (!data.success) {
+          toast(data.error || 'Could not add the entry', 'danger');
+          return;
+        }
+        appendWatchlistRow(card, data, form.dataset.companyId);
+        if (input) { input.value = ''; input.focus(); }
+        toast(data.message || 'Watchlist entry added', 'success');
+      })
+      .catch(function() {
+        if (submit) submit.disabled = false;
+        toast('Could not add the entry', 'danger');
+      });
   });
 });
 </script>

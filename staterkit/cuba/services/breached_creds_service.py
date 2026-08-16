@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class ESPagination:
     """Mimics Flask-SQLAlchemy pagination so templates work unchanged."""
 
-    def __init__(self, items, page, per_page, total, error=False):
+    def __init__(self, items, page, per_page, total, error=False, max_pages=None):
         self.items = items
         self.page = page
         self.per_page = per_page
@@ -23,6 +23,14 @@ class ESPagination:
         # instead of silently showing an empty table.
         self.error = error
         self.pages = max(1, math.ceil(total / per_page)) if per_page else 1
+        # Don't offer pages the backend cannot serve. A 900k-hit search has
+        # 45,000 nominal pages but ES will only page through the first 10,000
+        # results, so links past that would come back as a fake outage.
+        if max_pages:
+            self.pages = min(self.pages, max_pages)
+            self.truncated = math.ceil(total / per_page) > self.pages if per_page else False
+        else:
+            self.truncated = False
         self.has_prev = page > 1
         self.has_next = page < self.pages
         self.prev_num = page - 1 if self.has_prev else None
@@ -191,17 +199,40 @@ class BreachedCredsService(ESIndexService):
             return None
         return {"bool": {"should": should, "minimum_should_match": 1}}
 
-    # A bool/should clause per employee, so the list can't grow past ES's
-    # max_clause_count (1024 in ES7, 4096 in ES8) and turn the tab into an
-    # error. Well above any real payroll; truncation is logged, never silent.
-    MAX_EMPLOYEE_CLAUSES = 1000
+    # Each employee costs two bool/should clauses (see build_employee_filter),
+    # so the list can't grow past ES's max_clause_count — 4096 on the ES 8
+    # client this app pins — and turn the tab into an error. Well above any
+    # real payroll; truncation is logged, never silent.
+    MAX_EMPLOYEES = 1000
+
+    # ES refuses from+size beyond index.max_result_window (10,000 by default).
+    # search() clamps to this rather than letting the rejection surface as a
+    # backend-down error.
+    MAX_RESULT_WINDOW = 10000
 
     def build_employee_filter(self, emails):
-        """Match credentials whose username is one of these exact addresses.
+        """Match credentials belonging to these exact people.
 
-        Exact, not suffix-based: an employee filter answers "was this person
-        breached", so b.otgon@khanbank.mn must not pull in every other address
-        at the domain — the unfiltered list already does that.
+        Two shapes are matched, because feeds disagree on how they store an
+        address:
+
+        1. `username` is the whole address — b.otgon@khanbank.mn.
+        2. `username` is only the local part and the host sits in `domain` —
+           b.otgon + khanbank.mn. Both halves are required, so this stays as
+           precise as the first: it cannot reach a different person at the
+           same domain.
+
+        Every clause is an exact term. Nothing here is a suffix or substring
+        match: an employee filter answers "was *this person* breached", so
+        b.otgon@khanbank.mn must not pull in every other address at the
+        domain — the unfiltered tab already does that. It also rules out
+        `on@acme.com` quietly matching inside `otgon@acme.com`.
+
+        Not matched: the raw dump line. It usually contains the same address
+        the pipeline already extracted into `username`, so scanning it would
+        be mostly redundant, and doing so precisely needs an anchored regexp
+        per employee — too slow at this clause count to pay for the narrow
+        case of a feed that failed to parse its own row.
 
         An empty list yields a match-nothing clause. The caller asked to see
         one specific set of people; a company with nobody on file has no
@@ -211,18 +242,28 @@ class BreachedCredsService(ESIndexService):
         if not wanted:
             return {"bool": {"must_not": {"match_all": {}}}}
 
-        if len(wanted) > self.MAX_EMPLOYEE_CLAUSES:
+        if len(wanted) > self.MAX_EMPLOYEES:
             logger.warning(
                 "employee filter truncated to %d of %d addresses; the rest are "
-                "not searched", self.MAX_EMPLOYEE_CLAUSES, len(wanted))
-            wanted = wanted[:self.MAX_EMPLOYEE_CLAUSES]
+                "not searched", self.MAX_EMPLOYEES, len(wanted))
+            wanted = wanted[:self.MAX_EMPLOYEES]
 
-        return {"bool": {"minimum_should_match": 1, "should": [
-            # case_insensitive because dumps are inconsistent about casing,
-            # while the stored watchlist entry is normalised to lowercase.
-            {"term": {"username.keyword": {"value": e, "case_insensitive": True}}}
-            for e in wanted
-        ]}}
+        # case_insensitive throughout: dumps are inconsistent about casing,
+        # while the stored watchlist entry is normalised to lowercase.
+        def _term(field, value):
+            return {"term": {field: {"value": value, "case_insensitive": True}}}
+
+        should = []
+        for address in wanted:
+            should.append(_term("username.keyword", address))
+            local, _, host = address.partition("@")
+            if local and host:
+                should.append({"bool": {"filter": [
+                    _term("username.keyword", local),
+                    _term("domain.keyword", host),
+                ]}})
+
+        return {"bool": {"minimum_should_match": 1, "should": should}}
 
     @staticmethod
     def compute_match_detail(doc, domains):
@@ -374,7 +415,20 @@ class BreachedCredsService(ESIndexService):
 
     def search(self, query_text=None, filters=None, domain_filters=None,
                page=1, per_page=20, sort="timestamp:desc"):
-        """Search and paginate. Returns ESPagination."""
+        """Search and paginate. Returns ESPagination.
+
+        Pages past the index's result window are clamped to the last reachable
+        page rather than being sent to ES, which would reject them and surface
+        as `error=True` — telling the user the search backend is down when it
+        is fine. Reaching further needs search_after, not a bigger offset.
+        """
+        page = max(1, int(page or 1))
+        per_page = max(1, int(per_page or 20))
+        last_reachable = max(1, self.MAX_RESULT_WINDOW // per_page)
+        if page > last_reachable:
+            logger.info("page %d is past the %d-result window; clamped to %d",
+                        page, self.MAX_RESULT_WINDOW, last_reachable)
+            page = last_reachable
         try:
             query = self._build_query(query_text, filters, domain_filters)
             from_offset = (page - 1) * per_page
@@ -398,7 +452,8 @@ class BreachedCredsService(ESIndexService):
                 BreachedCredDoc(hit["_id"], hit["_source"])
                 for hit in resp["hits"]["hits"]
             ]
-            return ESPagination(items, page, per_page, total)
+            return ESPagination(items, page, per_page, total,
+                                max_pages=last_reachable)
         except Exception:
             logger.exception("ES search failed")
             return ESPagination([], page, per_page, 0, error=True)

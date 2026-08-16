@@ -50,16 +50,47 @@ def test_empty_employee_list_matches_nothing_not_everything(app):
         assert _clause(None) == {'bool': {'must_not': {'match_all': {}}}}
 
 
-def test_employee_clause_matches_exact_addresses(app):
+def test_employee_clause_matches_the_whole_address(app):
     """Exact, not suffix: one employee must not pull in the whole domain."""
     with app.app_context():
-        clause = _clause(['B.Otgon@acme.com'])
-        terms = clause['bool']['should']
-        assert terms == [
-            {'term': {'username.keyword': {'value': 'b.otgon@acme.com',
-                                           'case_insensitive': True}}}
-        ]
-        assert clause['bool']['minimum_should_match'] == 1
+        should = _clause(['B.Otgon@acme.com'])['bool']['should']
+        assert {'term': {'username.keyword': {'value': 'b.otgon@acme.com',
+                                              'case_insensitive': True}}} in should
+
+
+def test_employee_clause_matches_a_split_address(app):
+    """Feeds that store the local part in username and the host in domain.
+
+    Both halves are required, so this cannot reach a different person at the
+    same domain."""
+    with app.app_context():
+        should = _clause(['b.otgon@acme.com'])['bool']['should']
+        assert {'bool': {'filter': [
+            {'term': {'username.keyword': {'value': 'b.otgon',
+                                           'case_insensitive': True}}},
+            {'term': {'domain.keyword': {'value': 'acme.com',
+                                         'case_insensitive': True}}},
+        ]}} in should
+        assert _clause(['b.otgon@acme.com'])['bool']['minimum_should_match'] == 1
+
+
+def test_employee_clause_uses_no_wildcards(app):
+    """A substring match would let on@acme.com hit otgon@acme.com."""
+    import json
+    with app.app_context():
+        blob = json.dumps(_clause(['on@acme.com', 'b.otgon@acme.com']))
+        assert 'wildcard' not in blob
+        assert 'regexp' not in blob
+        assert '*' not in blob
+
+
+def test_malformed_entries_get_no_split_clause(app):
+    """A watchlist 'email' entry that isn't an address must not produce a
+    half-clause that matches on domain alone."""
+    with app.app_context():
+        should = _clause(['not-an-address'])['bool']['should']
+        assert should == [{'term': {'username.keyword': {
+            'value': 'not-an-address', 'case_insensitive': True}}}]
 
 
 def test_employee_clause_is_capped_and_says_so(app, caplog):
@@ -67,10 +98,11 @@ def test_employee_clause_is_capped_and_says_so(app, caplog):
     import logging
     from cuba.services.breached_creds_service import es_service
     with app.app_context():
-        many = [f'user{i}@acme.com' for i in range(es_service.MAX_EMPLOYEE_CLAUSES + 5)]
+        many = [f'user{i}@acme.com' for i in range(es_service.MAX_EMPLOYEES + 5)]
         with caplog.at_level(logging.WARNING):
             clause = _clause(many)
-        assert len(clause['bool']['should']) == es_service.MAX_EMPLOYEE_CLAUSES
+        # Two clauses per employee: whole-address, and the split form.
+        assert len(clause['bool']['should']) == es_service.MAX_EMPLOYEES * 2
         assert 'truncated' in caplog.text
 
 

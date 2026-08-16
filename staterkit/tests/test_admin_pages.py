@@ -50,18 +50,26 @@ def test_company_edit_lists_approved_recipients(client, db, admin_user, company_
     assert 'ciso@consultancy.example' in resp.data.decode()
 
 
-def test_watchlist_add_redirects_for_a_form_post(client, admin_user, company_acme):
-    """A browser form post must come back to the page, not a page of JSON."""
+def test_watchlist_add_always_answers_json(client, admin_user, company_acme):
+    """No Accept-header negotiation. Sniffing it is what silently broke the
+    delete button: fetch sends '*/*', the sniff called that a browser, and the
+    caller's r.json() choked on a redirect to HTML."""
     login(client, admin_user.email)
     token = _csrf(client, company_acme.id)
     resp = client.post(f'/admin/companies/{company_acme.id}/watchlist/add',
                        data={'csrf_token': token, 'entry_type': 'domain',
                              'entry_value': 'sub.acme.com'})
-    assert resp.status_code == 302
-    assert f'/admin/companies/{company_acme.id}/edit' in resp.headers['Location']
+    assert resp.status_code == 200
+    assert resp.is_json
+    body = resp.get_json()
+    assert body['success'] is True
+    assert body['entry_value'] == 'sub.acme.com'
+    # The page renders this as a toast, in place of the old flash+redirect.
+    assert 'sub.acme.com' in body['message']
 
 
-def test_watchlist_add_still_answers_json_for_xhr(client, admin_user, company_acme):
+def test_watchlist_add_answers_json_for_xhr_too(client, admin_user, company_acme):
+    """Same answer whether or not the caller announces itself as XHR."""
     login(client, admin_user.email)
     token = _csrf(client, company_acme.id)
     resp = client.post(f'/admin/companies/{company_acme.id}/watchlist/add',
@@ -70,6 +78,23 @@ def test_watchlist_add_still_answers_json_for_xhr(client, admin_user, company_ac
                              'entry_value': 'other.acme.com'})
     assert resp.status_code == 200
     assert resp.get_json()['success'] is True
+
+
+def test_watchlist_add_reports_a_duplicate_as_json(client, db, admin_user,
+                                                   company_acme):
+    """Failures answer JSON too — the old redirect path swallowed them."""
+    from cuba.models import WatchlistEntry
+    db.session.add(WatchlistEntry(company_id=company_acme.id, entry_type='domain',
+                                  entry_value='dupe.acme.com'))
+    db.session.commit()
+    login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    resp = client.post(f'/admin/companies/{company_acme.id}/watchlist/add',
+                       data={'csrf_token': token, 'entry_type': 'domain',
+                             'entry_value': 'dupe.acme.com'})
+    assert resp.status_code == 400
+    assert resp.is_json
+    assert resp.get_json()['success'] is False
 
 
 def test_watchlist_delete_answers_json_for_xhr(client, db, admin_user, company_acme):
@@ -88,16 +113,16 @@ def test_watchlist_delete_answers_json_for_xhr(client, db, admin_user, company_a
         headers={'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': token})
     assert resp.status_code == 200
     assert resp.get_json()['success'] is True
-    assert WatchlistEntry.query.get(entry_id) is None
+    assert db.session.get(WatchlistEntry, entry_id) is None
 
 
 def test_watchlist_delete_button_is_wired_up(client, db, admin_user, company_acme):
-    """Both halves of the bug that made Remove a no-op.
+    """The bug that made Remove a no-op: the ids are UUID strings, and
+    interpolated bare into an inline onclick they parse as arithmetic over
+    undefined names, so the handler never ran.
 
-    The ids are UUID strings: interpolated bare into an inline onclick they
-    parse as arithmetic over undefined names, so the handler never ran. And the
-    fetch omitted X-Requested-With, so _wants_json() answered a redirect and
-    r.json() threw on HTML.
+    (The other half — the endpoint redirecting instead of answering JSON — is
+    now impossible by construction; see test_watchlist_add_always_answers_json.)
     """
     from cuba.models import WatchlistEntry
     db.session.add(WatchlistEntry(company_id=company_acme.id, entry_type='domain',
@@ -110,8 +135,8 @@ def test_watchlist_delete_button_is_wired_up(client, db, admin_user, company_acm
     assert f'deleteWatchlistEntry({company_acme.id}' not in body
     assert f'data-company-id="{company_acme.id}"' in body
     assert 'data-wl-delete' in body
-    # ...and the request identifies itself as XHR so it gets JSON back.
-    assert 'X-Requested-With' in body
+    # The add form is posted with fetch as well, so both paths agree.
+    assert 'data-wl-add' in body
 
 
 def test_report_recipient_must_be_an_address_not_a_domain(client, admin_user,
@@ -320,10 +345,15 @@ def test_edit_panel_renders_for_each_schedule(client, admin_user, company_acme):
 
 def test_day_pills_render_as_toggles_not_bare_checkboxes(client, admin_user,
                                                          company_acme):
+    """Scoped to the create form on purpose: every inline edit panel renders
+    the same seven pills, so a page-wide count is really a schedule count."""
     login(client, admin_user.email)
+    token = _csrf(client, company_acme.id)
+    _make_schedule(client, company_acme, token)
     body = client.get('/threat-intelligence/reports').data.decode()
     assert 'class="rp-days"' in body
-    assert body.count('class="rp-day"') == 7
+    create_form = body.split('id="edit-')[0]
+    assert create_form.count('class="rp-day"') == 7
 
 
 def test_frequency_defaults_to_daily(client, admin_user):
