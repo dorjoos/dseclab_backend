@@ -1,5 +1,8 @@
 """Analysis dashboard, executive summary, and the timeline API behind them."""
+from __future__ import annotations
+
 from flask import render_template, request
+from flask.typing import ResponseReturnValue
 from flask_login import login_required
 
 from ..services.breached_creds_analysis import build_analysis_stats
@@ -10,7 +13,7 @@ from ._shared import _get_domain_filters
 
 @threat_intel.route('/api/timeline', methods=['POST'])
 @login_required
-def timeline_api():
+def timeline_api() -> ResponseReturnValue:
     """Get breach timeline data
     ---
     tags:
@@ -47,7 +50,7 @@ def timeline_api():
 
 @threat_intel.route('/threat-intelligence/analysis')
 @login_required
-def analysis():
+def analysis() -> ResponseReturnValue:
     stats = build_analysis_stats()
     breadcrumb = {"parent": "Threat Intelligence", "child": "Analysis",
                   "description": "Comprehensive threat intelligence analysis and statistics"}
@@ -63,7 +66,7 @@ def analysis():
 
 @threat_intel.route('/threat-intelligence/summary')
 @login_required
-def breach_summary():
+def breach_summary() -> ResponseReturnValue:
     """AI-generated executive breach summary."""
     from ..services.ai_summary import generate_executive_summary
 

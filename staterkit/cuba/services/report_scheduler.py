@@ -80,8 +80,8 @@ def _to_utc_naive(local_aware):
 def _parse_run_time(run_time):
     """'09:00' -> (9, 0). Defaults to 09:00 when absent or unparseable."""
     try:
-        hour, minute = str(run_time).split(":")[:2]
-        hour, minute = int(hour), int(minute)
+        raw_hour, raw_minute = str(run_time).split(":")[:2]
+        hour, minute = int(raw_hour), int(raw_minute)
         if 0 <= hour <= 23 and 0 <= minute <= 59:
             return hour, minute
     except (ValueError, AttributeError, TypeError):
@@ -376,6 +376,7 @@ def collect_creds(schedule):
     Without one it falls back to whatever its creator may see. Returns
     (creds, domains, third_party_domains).
     """
+    from ..security import UNRESTRICTED
     from .breached_creds_service import breached_creds_service as es
 
     company = getattr(schedule, "company", None)
@@ -396,7 +397,11 @@ def collect_creds(schedule):
         return [], [], []
 
     window = "24h" if (schedule.frequency or "").lower() == "daily" else "week"
-    page = es.search(domain_filters=domains or None,
+    # `domains is None` here means the creator is an admin and the schedule
+    # names no company, i.e. genuinely every tenant. Anything else
+    # restricts; the empty case already returned above.
+    scope = UNRESTRICTED if domains is None else frozenset(domains)
+    page = es.search(domain_filters=scope,
                      filters={"date_filter": window},
                      page=1, per_page=200)
     if page.error:

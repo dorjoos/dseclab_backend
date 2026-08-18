@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, ParamSpec, TypeAlias, TypeVar
+from typing import Any, Final, ParamSpec, TypeAlias, TypeVar
 
 from flask import flash, redirect, url_for
 from flask_login import current_user
@@ -14,18 +14,48 @@ logger = logging.getLogger(__name__)
 _P = ParamSpec("_P")
 _R = TypeVar("_R")
 
-#: The set of watched domains an ES query is restricted to.
+class Unrestricted:
+    """Sentinel meaning "no domain filter". Only an admin may ever hold one.
+
+    A sentinel rather than ``None`` on purpose. When unrestricted was spelled
+    ``None`` it was indistinguishable from the many other things None means
+    here — "no company", "not logged in", "argument omitted" — and the
+    dashboard and analysis view both crossed those wires, handing a
+    company-less member every tenant's credentials.
+
+    Spelling it as its own type makes that a type error rather than a bug
+    someone has to notice in review::
+
+        # error: Incompatible type "frozenset[str] | None";
+        #        expected "Unrestricted | frozenset[str]"
+        scope = watched_domains() if user_domain else None
+
+    Truthy, so the ``scope or something`` idiom keeps the unrestricted case
+    instead of collapsing it the way ``None or []`` did.
+    """
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "UNRESTRICTED"
+
+
+#: The single unrestricted scope. Compare with ``isinstance(x, Unrestricted)``
+#: rather than ``is UNRESTRICTED`` so a future subclass still works.
+UNRESTRICTED: Final = Unrestricted()
+
+#: What an ES query is scoped to.
 #:
-#: The distinction this alias exists to make visible:
-#:   ``None``  — unrestricted. Only an admin may ever hold this.
-#:   ``[]``    — restricted to nothing. A real answer, not "no filter".
-#:   ``[...]`` — restricted to these domains.
+#:   ``UNRESTRICTED``   — every tenant. Admins only.
+#:   ``frozenset()``    — nothing. A real answer, not "no filter".
+#:   ``frozenset({..})``— these domains.
 #:
-#: Conflating the first two is not hypothetical: the dashboard and the analysis
-#: view both did, and served a company-less member every tenant's credentials.
-#: Annotate anything that carries a scope with this rather than ``list[str]``,
-#: so the optionality is impossible to drop by accident.
-DomainScope: TypeAlias = "list[str] | None"
+#: frozenset rather than list because a scope is a set membership question and
+#: nothing downstream depends on order; immutability also stops a caller
+#: widening someone else's scope by mutating a shared list.
+# Not a string alias: it is used at runtime in `DomainScope | None`
+# annotations, and a str has no __or__.
+DomainScope: TypeAlias = Unrestricted | frozenset[str]
 
 
 def admin_required(f: Callable[_P, _R]) -> Callable[_P, Any]:
@@ -81,9 +111,10 @@ def get_user_company_domain() -> str | None:
 def get_user_watchlist_domains() -> list[str]:
     """Domains the current user may see, as a concrete list.
 
-    Never None: an empty list means "nothing", and callers must not collapse
-    it into an absent filter. Admins get [] here because "everything" is not
-    expressible as a list — see get_scope_domains.
+    Never None: an empty list means "nothing". Admins get [] here because
+    "everything" is not expressible as a list — that is precisely what
+    get_scope_domains and the Unrestricted sentinel exist for, and why this
+    function must not be used to decide a scope on its own.
     """
     if not current_user.is_authenticated or current_user.is_admin_user:
         return []
@@ -94,11 +125,11 @@ def get_user_watchlist_domains() -> list[str]:
 
 
 def get_scope_domains() -> DomainScope:
-    """The ES domain scope for the current user. None is unrestricted.
+    """The ES domain scope for the current user.
 
-    The one place that decides this, because the distinction is easy to lose:
-    ``None`` means "see everything" and only an admin may have it, while ``[]``
-    means "see nothing" and _build_query turns it into a match-nothing clause.
+    The one place that decides this. An empty frozenset means "see nothing"
+    and _build_query turns it into a match-nothing clause; UNRESTRICTED means
+    "see everything" and only an admin gets it.
 
     get_user_company_domain() must not be used to make this decision. It
     returns None both for an admin and for a non-admin with no company, and
@@ -106,7 +137,7 @@ def get_scope_domains() -> DomainScope:
     scope — a company-less member saw every tenant's credentials.
     """
     if not current_user.is_authenticated:
-        return []
+        return frozenset()
     if current_user.is_admin_user:
-        return None
-    return get_user_watchlist_domains()
+        return UNRESTRICTED
+    return frozenset(get_user_watchlist_domains())

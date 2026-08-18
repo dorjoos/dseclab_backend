@@ -313,7 +313,8 @@ def company_breached_creds(company_id):
         selected_watchlist = ''
         active_domains = domains
 
-    pagination = es_service.search(domain_filters=active_domains, page=page, per_page=per_page)
+    pagination = es_service.search(domain_filters=frozenset(active_domains),
+                                   page=page, per_page=per_page)
     if pagination.error:
         flash('Search backend (Elasticsearch) is unavailable — check that Elasticsearch '
               'is running. Showing no results.', 'danger')

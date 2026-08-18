@@ -10,7 +10,7 @@ from sqlalchemy import or_
 
 from .. import db
 from ..models import BreachedCredMeta, Company, Notification, User
-from ..security import DomainScope, get_scope_domains, get_user_watchlist_domains
+from ..security import DomainScope, Unrestricted, get_scope_domains, get_user_watchlist_domains
 from ..services.breached_creds_service import breached_creds_service as es_service
 
 if TYPE_CHECKING:
@@ -110,12 +110,11 @@ def _cred_matches_domain(cred: BreachedCredDoc, domain: str) -> bool:
 
 def _check_cred_access(cred: BreachedCredDoc) -> bool:
     """Check if current user can access this credential. Returns True if allowed."""
-    if current_user.is_admin_user:
+    scope = _get_domain_filters()
+    if isinstance(scope, Unrestricted):
         return True
-    domain_filters = _get_domain_filters()
-    if not domain_filters:
-        return False
-    return any(_cred_matches_domain(cred, d) for d in domain_filters)
+    # An empty scope is "nothing", never "everything".
+    return any(_cred_matches_domain(cred, d) for d in scope)
 
 
 def _attach_metadata(items: Sequence[BreachedCredDoc]) -> None:
@@ -135,7 +134,7 @@ def _attach_metadata(items: Sequence[BreachedCredDoc]) -> None:
             item.notes = meta.notes
 
 
-def _send_breach_emails(users: Iterable[User], company_name: str,
+def _send_breach_emails(users: Iterable[User], company_name: str | None,
                         creds: Sequence[BreachedCredDoc],
                         company_domain: str | None = None,
                         third_party_domains: Sequence[str] | None = None) -> int:
@@ -169,7 +168,7 @@ def _send_breach_emails(users: Iterable[User], company_name: str,
 
 
 def _notify_new_breach(credential_id: str, company_domain: str | None,
-                       company_name: str, email: str | None,
+                       company_name: str | None, email: str | None,
                        file_name: str | None = None) -> None:
     """Notify all users in a company about a new breach (in-app + email)."""
     try:

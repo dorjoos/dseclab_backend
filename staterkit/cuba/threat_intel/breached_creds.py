@@ -3,6 +3,7 @@ import csv
 import io
 import json
 from datetime import datetime, timezone
+from typing import Any
 
 from flask import Response, abort, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
@@ -55,7 +56,7 @@ def breached_creds_list():
 
     domain_filters = _get_domain_filters()
 
-    filters = {}
+    filters: dict[str, Any] = {}
     if type_filter:
         filters['type'] = type_filter
     if source_filter:
@@ -157,7 +158,7 @@ def breached_creds_api():
     page = data.get('page', 1)
     per_page = data.get('per_page', 20)
     per_page = min(max(int(per_page), 1), 50)
-    search_query = sanitize_input(data.get('search', ''))
+    search_query: str | None = sanitize_input(data.get('search', ''))
     if search_query and len(search_query.strip()) < 3:
         search_query = None  # Too short, ignore
     type_filter = sanitize_input(data.get('type', ''))
@@ -167,7 +168,7 @@ def breached_creds_api():
 
     domain_filters = _get_domain_filters()
 
-    filters = {}
+    filters: dict[str, Any] = {}
     if type_filter:
         filters['type'] = type_filter
     if source_filter:
@@ -464,7 +465,7 @@ def breached_creds_export():
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     else:
         # Export all matching filters
-        filters = {}
+        filters: dict[str, Any] = {}
         type_filter = sanitize_input(request.args.get('type', ''))
         source_filter = sanitize_input(request.args.get('source', ''))
         domain_filter_param = sanitize_input(request.args.get('domain', ''))
@@ -536,11 +537,11 @@ def breached_creds_export():
             f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
             styles['Normal']))
         elements.append(Spacer(1, 12))
-        data = [['Username', 'Domain', 'Type', 'Source', 'Date']]
+        pdf_rows: list[list[str]] = [['Username', 'Domain', 'Type', 'Source', 'Date']]
         for c in creds[:100]:
-            data.append([(c.username or '')[:30], (c.domain or '')[:30], c.type or '',
+            pdf_rows.append([(c.username or '')[:30], (c.domain or '')[:30], c.type or '',
                          (c.source or '')[:30], c.timestamp.strftime('%Y-%m-%d') if c.timestamp else ''])
-        table = Table(data)
+        table = Table(pdf_rows)
         table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a56db')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
@@ -558,13 +559,13 @@ def breached_creds_export():
         return Response(output.getvalue(), mimetype='application/pdf',
                        headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.pdf'})
 
-    output = io.StringIO()
-    writer = csv.writer(output)
+    csv_output = io.StringIO()
+    writer = csv.writer(csv_output)
     writer.writerow(['ID', 'Username', 'Domain', 'Password', 'Source', 'Type', 'URL', 'Timestamp'])
     for c in creds:
         writer.writerow([c.es_id, c.username or '', c.domain or '', '********',
                         c.source or '', c.type or '', c.url or '',
                         c.timestamp.strftime('%Y-%m-%d %H:%M:%S') if c.timestamp else ''])
     output.seek(0)
-    return Response(output.getvalue(), mimetype='text/csv',
+    return Response(csv_output.getvalue(), mimetype='text/csv',
                    headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.csv'})

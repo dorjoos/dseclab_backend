@@ -9,7 +9,11 @@ import pytest
 from flask_login import login_user
 
 from cuba.models import User
-from cuba.security import get_user_company_domain, get_user_watchlist_domains
+from cuba.security import (
+    UNRESTRICTED,
+    get_user_company_domain,
+    get_user_watchlist_domains,
+)
 from cuba.services.breached_creds_service import breached_creds_service as es
 
 
@@ -61,8 +65,21 @@ def test_empty_scope_matches_nothing_not_everything():
     assert {"bool": {"must_not": {"match_all": {}}}} in clauses
 
 
-def test_none_scope_is_unrestricted():
-    assert es._build_query(domain_filters=None) == {"match_all": {}}
+def test_unrestricted_scope_adds_no_clause():
+    assert es._build_query(domain_filters=UNRESTRICTED) == {"match_all": {}}
+
+
+def test_none_scope_now_fails_closed():
+    """None used to mean unrestricted here. It no longer does.
+
+    None meant "unrestricted" in the query builder while meaning "no company"
+    and "not logged in" everywhere else, and crossing those wires leaked one
+    tenant's data to another. Unrestricted is its own type now, and anything
+    else — including a forgotten argument that arrives as None — lands on the
+    match-nothing clause. The worst a missing scope can do is show too little.
+    """
+    query = es._build_query(domain_filters=None)
+    assert query["bool"]["filter"] == [{"bool": {"must_not": {"match_all": {}}}}]
 
 
 def test_populated_scope_still_filters():
@@ -72,16 +89,35 @@ def test_populated_scope_still_filters():
     assert clauses  # a real domain clause was added
 
 
-def test_route_helper_gives_admins_none_and_others_a_list(app, admin_user, member_acme,
-                                                          freemail_member):
+def test_route_helper_separates_unrestricted_from_denied(app, admin_user,
+                                                         member_acme,
+                                                         freemail_member):
+    """The three outcomes must stay three distinct values, not two."""
     from cuba.threat_intel import _get_domain_filters
 
     with app.test_request_context():
         login_user(admin_user)
-        assert _get_domain_filters() is None          # unrestricted
+        assert _get_domain_filters() is UNRESTRICTED        # everything
     with app.test_request_context():
         login_user(member_acme)
-        assert "acme.com" in _get_domain_filters()    # scoped
+        assert "acme.com" in _get_domain_filters()          # scoped
     with app.test_request_context():
         login_user(freemail_member)
-        assert _get_domain_filters() == []            # denied, not unrestricted
+        assert _get_domain_filters() == frozenset()         # nothing
+
+
+def test_denied_and_unrestricted_are_not_interchangeable(app, admin_user,
+                                                         freemail_member):
+    """The bug in one line: these two were both None, so code that meant to
+    test for one silently accepted the other."""
+    from cuba.threat_intel import _get_domain_filters
+
+    with app.test_request_context():
+        login_user(admin_user)
+        unrestricted = _get_domain_filters()
+    with app.test_request_context():
+        login_user(freemail_member)
+        denied = _get_domain_filters()
+
+    assert unrestricted != denied
+    assert not isinstance(denied, type(unrestricted))

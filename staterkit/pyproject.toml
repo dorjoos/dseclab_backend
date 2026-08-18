@@ -83,6 +83,8 @@ module = [
     "cuba.api_utils",
     "cuba.routes",
     "cuba.search_routes",
+    "cuba.services.breached_creds_analysis",
+    "cuba.threat_intel.analysis",
     "cuba.threat_intel._shared",
 ]
 disallow_untyped_defs = true
@@ -90,6 +92,23 @@ disallow_incomplete_defs = true
 check_untyped_defs = true
 warn_return_any = true
 strict_equality = true
+
+[[tool.mypy.overrides]]
+# Second ratchet tier: bodies are checked, annotations are not yet required.
+# These modules are too large to annotate in one pass, but body checking is
+# what catches a scope being built or passed wrongly, which is the failure
+# this codebase actually has a history of.
+module = [
+    "cuba.admin_routes",
+    "cuba.services.report_scheduler",
+    "cuba.threat_intel.breached_creds",
+    "cuba.threat_intel.reports",
+]
+check_untyped_defs = true
+# Same Flask-SQLAlchemy limitation as cuba.models: a nullable relationship is
+# typed RelationshipProperty rather than Mapped[X | None], so assigning None
+# to one looks like an error. Unblocked by the same Mapped[] migration.
+disable_error_code = ["assignment"]
 
 [[tool.mypy.overrides]]
 # Flask-SQLAlchemy builds db.Model dynamically, so mypy cannot resolve it as a

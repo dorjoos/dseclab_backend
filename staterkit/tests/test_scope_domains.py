@@ -16,7 +16,7 @@ security.get_scope_domains() is now the single place that decides this.
 import pytest
 from flask_login import login_user
 
-from cuba.security import get_scope_domains
+from cuba.security import UNRESTRICTED, get_scope_domains
 from tests.conftest import _make_user, login
 
 
@@ -32,25 +32,26 @@ def orphan(db):
 def test_admin_is_unrestricted(app, admin_user):
     with app.test_request_context():
         login_user(admin_user)
-        assert get_scope_domains() is None
+        assert get_scope_domains() is UNRESTRICTED
 
 
 def test_member_is_scoped_to_their_company(app, member_acme, company_acme):
     with app.test_request_context():
         login_user(member_acme)
-        assert get_scope_domains() == ['acme.com']
+        assert get_scope_domains() == frozenset({'acme.com'})
 
 
 def test_company_less_member_sees_nothing_not_everything(app, orphan):
     """[] is a real answer. None here would mean unrestricted."""
     with app.test_request_context():
         login_user(orphan)
-        assert get_scope_domains() == [], 'a company-less member got a scope'
+        assert get_scope_domains() == frozenset(), \
+            'a company-less member got a scope'
 
 
 def test_anonymous_sees_nothing(app):
     with app.test_request_context():
-        assert get_scope_domains() == []
+        assert get_scope_domains() == frozenset()
 
 
 # --- the surfaces that got it wrong ---
@@ -71,7 +72,7 @@ def test_dashboard_scopes_a_company_less_member(client, orphan, monkeypatch):
     seen = _capture(monkeypatch, routes)
     login(client, orphan.email)
     assert client.get('/dashboard').status_code == 200
-    assert seen['domain_filters'] == [], (
+    assert seen['domain_filters'] == frozenset(), (
         f'dashboard was unrestricted: {seen["domain_filters"]!r}')
 
 
@@ -80,7 +81,7 @@ def test_analysis_scopes_a_company_less_member(client, orphan, monkeypatch):
     seen = _capture(monkeypatch, bca)
     login(client, orphan.email)
     assert client.get('/threat-intelligence/analysis').status_code == 200
-    assert seen['domain_filters'] == [], (
+    assert seen['domain_filters'] == frozenset(), (
         f'analysis was unrestricted: {seen["domain_filters"]!r}')
 
 
@@ -90,7 +91,7 @@ def test_dashboard_still_unrestricted_for_an_admin(client, admin_user, monkeypat
     seen = _capture(monkeypatch, routes)
     login(client, admin_user.email)
     client.get('/dashboard')
-    assert seen['domain_filters'] is None
+    assert seen['domain_filters'] is UNRESTRICTED
 
 
 def test_dashboard_still_scoped_for_a_normal_member(client, member_acme,
@@ -99,7 +100,7 @@ def test_dashboard_still_scoped_for_a_normal_member(client, member_acme,
     seen = _capture(monkeypatch, routes)
     login(client, member_acme.email)
     client.get('/dashboard')
-    assert seen['domain_filters'] == ['acme.com']
+    assert seen['domain_filters'] == frozenset({'acme.com'})
 
 
 def test_one_place_decides_the_scope():
