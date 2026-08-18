@@ -190,6 +190,50 @@ def match_ransomware(since_hours, dry_run):
 # but never generates them, so a new model column reaches no server. Autogen
 # on a live database is worse: it diffs models against the schema and will
 # emit DROPs for any drift. Listing changes explicitly keeps deploys additive
+@dseclab.command('audit-scope')
+def audit_scope():
+    """List accounts whose tenancy scope is undefined.
+
+    A non-admin with no company has no scope. Until the get_scope_domains()
+    fix, the dashboard and the analysis view handed exactly those accounts an
+    *unrestricted* view — every tenant's totals, trends and ten most recent
+    credentials — because the helper they branched on returns None both for an
+    admin and for a company-less member.
+
+    The code path is fixed. This reports whether any account was in a position
+    to have used it, which the fix cannot tell you retrospectively.
+
+    Read-only. Exits non-zero when it finds something, so a cron or a deploy
+    check can act on it.
+    """
+    orphans = (User.query
+               .filter(User.company_id.is_(None), User.role != 'admin')
+               .order_by(User.email)
+               .all())
+
+    if not orphans:
+        click.echo('No company-less non-admin accounts. Nothing was exposed '
+                   'through the scope bug.')
+        return
+
+    click.echo(f'{len(orphans)} account(s) with no company and a non-admin role:')
+    click.echo('')
+    click.echo(f'  {"EMAIL":<38} {"USERNAME":<20} {"ROLE":<8} ACTIVE  LAST LOGIN')
+    for user in orphans:
+        last = getattr(user, 'last_login', None)
+        click.echo(
+            f'  {(user.email or ""):<38} {(user.username or ""):<20} '
+            f'{(user.role or ""):<8} '
+            f'{"yes" if getattr(user, "is_active", False) else "no":<7} '
+            f'{last.strftime("%Y-%m-%d %H:%M") if last else "never"}')
+    click.echo('')
+    click.echo('Each of these could reach every tenant\'s dashboard and analysis '
+               'data before the fix.')
+    click.echo('Assign a company, deactivate the account, or confirm it is a '
+               'service account that never signs in.')
+    raise SystemExit(1)
+
+
 # and re-runnable.
 _ADDITIVE_COLUMNS = [
     ('scheduled_report', 'company_id', 'VARCHAR(36) REFERENCES company(id)'),
