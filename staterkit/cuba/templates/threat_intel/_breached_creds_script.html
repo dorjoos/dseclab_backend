@@ -20,8 +20,7 @@
     tbody.textContent = '';
     for (var s = 0; s < 8; s++) {
       var sr = document.createElement('tr');
-      var widths = ['30px','28%','15%','10%','18%','8%','8%','50px'];
-      for (var c = 0; c < 9; c++) {
+      for (var c = 0; c < 8; c++) {
         var std = document.createElement('td');
         std.style.padding = '12px 14px';
         var sk = document.createElement('div');
@@ -85,31 +84,22 @@
         td1.textContent = row.username || '\u2014';
         tr.appendChild(td1);
 
-        // Domain
+        // Domain. One column, not two: `domain` and `matched_domain` name the
+        // same thing, and a row carries whichever the feed happened to supply
+        // — matched_domain is derived when the hit came through the username
+        // or the URL rather than a domain field of its own.
         var td2 = document.createElement('td');
-        if (row.domain) {
+        var domain = row.domain || row.matched_domain;
+        if (domain) {
           var sp = document.createElement('span');
           sp.className = 'av-domain';
-          sp.textContent = row.domain;
+          sp.textContent = domain;
           td2.appendChild(sp);
         } else {
           td2.textContent = '\u2014';
           td2.className = 'm';
         }
         tr.appendChild(td2);
-
-        // Matched domain
-        var tdm = document.createElement('td');
-        if (row.matched_domain) {
-          var mtag = document.createElement('span');
-          mtag.className = 'av-tag av-tag-blue';
-          mtag.textContent = row.matched_domain;
-          tdm.appendChild(mtag);
-        } else {
-          tdm.textContent = '—';
-          tdm.className = 'm';
-        }
-        tr.appendChild(tdm);
 
         // Password
         var td3 = document.createElement('td');
@@ -192,7 +182,7 @@
       tbody.textContent = '';
       var tr = document.createElement('tr');
       var td = document.createElement('td');
-      td.colSpan = 9;
+      td.colSpan = 8;
       td.className = 'av-loading';
       td.style.color = 'var(--danger)';
       td.textContent = 'Error loading data';

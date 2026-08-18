@@ -28,7 +28,14 @@ from ..api_utils import sanitize_input
 from ..audit_helpers import log_audit, log_user_activity
 from ..services.breached_creds_service import breached_creds_service as es_service
 from ._blueprint import threat_intel
-from ._shared import _attach_metadata, _check_cred_access, _get_domain_filters, _get_employee_emails, _notify_new_breach
+from ._shared import (
+    _attach_metadata,
+    _check_cred_access,
+    _get_domain_filters,
+    _get_employee_emails,
+    _get_match_domains,
+    _notify_new_breach,
+)
 
 @threat_intel.route('/threat-intelligence/breached-creds')
 @login_required
@@ -180,7 +187,9 @@ def breached_creds_api():
         per_page=per_page
     )
     _attach_metadata(pagination.items)
-    es_service.attach_matched_domain(pagination.items, domain_filters or [])
+    # Not `domain_filters or []`: that is None for an admin, and matching
+    # against nothing labelled every row with a dash.
+    es_service.attach_matched_domain(pagination.items, _get_match_domains())
 
     rows = []
     for i, cred in enumerate(pagination.items):
