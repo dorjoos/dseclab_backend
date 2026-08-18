@@ -1,11 +1,15 @@
 """Breached credentials service backed by the 'main' ES index."""
+from __future__ import annotations
+
 import contextlib
 import logging
 import math
 from datetime import datetime, timedelta
+from typing import Any
 
 from elasticsearch import Elasticsearch
 
+from ..security import DomainScope, Unrestricted
 from .es_base import ESIndexService
 
 logger = logging.getLogger(__name__)
@@ -326,7 +330,8 @@ class BreachedCredsService(ESIndexService):
             item.matched_domain, item.match_path = self.compute_match_detail(item, domains)
         return items
 
-    def _build_query(self, query_text=None, filters=None, domain_filters=None):
+    def _build_query(self, query_text=None, filters=None,
+                     domain_filters: DomainScope | None = None):
         """Build an ES bool query from search text, filters, and domain filters."""
         must = []
         filter_clauses = []
@@ -388,14 +393,20 @@ class BreachedCredsService(ESIndexService):
                 if gte:
                     filter_clauses.append({"range": {"timestamp": {"gte": gte.isoformat()}}})
 
-        # Domain-based access control.
+        # Domain-based access control. The only place a scope is interpreted.
         #
-        # None means unrestricted, and only an admin may pass it. A list means
-        # restrict to those domains — and an EMPTY list means the caller may
-        # see nothing, not everything. Treating [] as "no filter" would turn a
-        # user with no assigned scope into a user with total access, so the
-        # empty case gets an explicit match-nothing clause.
-        if domain_filters is not None:
+        # UNRESTRICTED adds no clause, and only an admin ever holds one. Any
+        # other scope restricts — including an EMPTY one, which means the
+        # caller may see nothing. Treating empty as "no filter" would turn a
+        # user with no assigned scope into a user with total access, so it gets
+        # an explicit match-nothing clause rather than falling through.
+        #
+        # `None` now falls through to the restricting branch and lands on the
+        # match-nothing clause. It used to mean unrestricted here while meaning
+        # "no company" and "not logged in" elsewhere; crossing those wires
+        # leaked one tenant's data to another. Failing closed means the worst a
+        # forgotten scope can do is show too little.
+        if not isinstance(domain_filters, Unrestricted):
             domain_q = self.build_domain_filter(domain_filters)
             filter_clauses.append(
                 domain_q if domain_q else {"bool": {"must_not": {"match_all": {}}}})
@@ -403,7 +414,7 @@ class BreachedCredsService(ESIndexService):
         if not must and not filter_clauses:
             return {"match_all": {}}
 
-        query = {"bool": {}}
+        query: dict[str, Any] = {"bool": {}}
         if must:
             query["bool"]["must"] = must
         if filter_clauses:
@@ -414,7 +425,8 @@ class BreachedCredsService(ESIndexService):
     # Search / read
     # ------------------------------------------------------------------
 
-    def search(self, query_text=None, filters=None, domain_filters=None,
+    def search(self, query_text=None, filters=None, *,
+               domain_filters: DomainScope,
                page=1, per_page=20, sort="timestamp:desc"):
         """Search and paginate. Returns ESPagination.
 
@@ -468,7 +480,7 @@ class BreachedCredsService(ESIndexService):
             logger.exception("ES get_by_id failed for %s", doc_id)
             return None
 
-    def get_stats(self, domain_filters=None):
+    def get_stats(self, *, domain_filters: DomainScope):
         """Return aggregate stats: total, by_type, by_source, by_domain."""
         try:
             query = self._build_query(domain_filters=domain_filters)
@@ -507,7 +519,7 @@ class BreachedCredsService(ESIndexService):
             logger.exception("ES get_stats failed")
             return {"total": 0, "by_type": {}, "by_source": {}, "by_domain": {}}
 
-    def get_daily_trends(self, days=7, domain_filters=None):
+    def get_daily_trends(self, days=7, *, domain_filters: DomainScope):
         """Return (labels, data) for a daily date_histogram."""
         try:
             query = self._build_query(domain_filters=domain_filters)
@@ -549,7 +561,7 @@ class BreachedCredsService(ESIndexService):
             logger.exception("ES get_daily_trends failed")
             return [], []
 
-    def get_weekly_trends(self, weeks=12, domain_filters=None):
+    def get_weekly_trends(self, weeks=12, *, domain_filters: DomainScope):
         """Return (labels, data) for a weekly date_histogram."""
         try:
             query = self._build_query(domain_filters=domain_filters)
@@ -582,7 +594,7 @@ class BreachedCredsService(ESIndexService):
             logger.exception("ES get_weekly_trends failed")
             return [], []
 
-    def get_monthly_trends(self, months=12, domain_filters=None):
+    def get_monthly_trends(self, months=12, *, domain_filters: DomainScope):
         """Return (labels, data) for a monthly date_histogram."""
         try:
             query = self._build_query(domain_filters=domain_filters)
@@ -623,7 +635,7 @@ class BreachedCredsService(ESIndexService):
             logger.exception("ES get_monthly_trends failed")
             return [], []
 
-    def get_recent(self, limit=10, domain_filters=None):
+    def get_recent(self, limit=10, *, domain_filters: DomainScope):
         """Return the most recent documents."""
         try:
             query = self._build_query(domain_filters=domain_filters)
@@ -641,7 +653,8 @@ class BreachedCredsService(ESIndexService):
             logger.exception("ES get_recent failed")
             return []
 
-    def export(self, filters=None, domain_filters=None, max_records=10000):
+    def export(self, filters=None, *, domain_filters: DomainScope,
+               max_records=10000):
         """Scroll through results for export. Returns list of BreachedCredDoc."""
         try:
             query = self._build_query(filters=filters, domain_filters=domain_filters)
