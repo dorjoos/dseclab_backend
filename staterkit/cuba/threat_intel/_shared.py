@@ -25,6 +25,38 @@ def _get_domain_filters():
     return get_user_watchlist_domains()
 
 
+def _get_match_domains():
+    """Domains to label rows against in the Matched column.
+
+    Distinct from _get_domain_filters, which answers "what may this user see"
+    and returns None for an admin meaning unrestricted. That None collapsed to
+    [] at the call site, and matching against no domains labels nothing — so
+    every row showed a dash for admins, on the column whose whole job is
+    saying which watched domain a credential hit.
+
+    An admin sees every company's rows, so they get every company's watched
+    domains. Everyone else gets their own, which is also exactly what they are
+    filtered to.
+    """
+    from ..models import Company, WatchlistEntry
+    if not current_user.is_authenticated:
+        return []
+    if not current_user.is_admin_user:
+        return get_user_watchlist_domains()
+
+    # One query per table rather than walking Company.watchlist_entries per
+    # company, which is an N+1 over the client roster.
+    domains = {c.domain.strip().lower()
+               for c in Company.query.with_entities(Company.domain).all()
+               if c.domain and c.domain.strip()}
+    rows = WatchlistEntry.query.filter(
+        WatchlistEntry.entry_type.in_(('domain', Company.THIRD_PARTY_ENTRY_TYPE))
+    ).with_entities(WatchlistEntry.entry_value).all()
+    domains.update(r.entry_value.strip().lower() for r in rows
+                   if r.entry_value and r.entry_value.strip())
+    return sorted(domains)
+
+
 def _get_employee_emails():
     """Staff addresses in the current user's scope, for the Employees tab.
 

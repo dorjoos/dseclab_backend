@@ -90,14 +90,22 @@
 
 .av-table-scroll { overflow-x:auto; }
 
+/* table-layout is fixed, so these are honoured literally rather than being
+   squeezed to fit: if they overrun the container the last column is pushed
+   out of view instead of shrinking. Adding "Matched" did exactly that — it
+   reused av-th-domain's 14% and took the total to 97% + 82px, so the actions
+   column and its View button fell off the right edge.
+   Keep the percentages summing to ~90%, leaving room for the two px columns. */
 .av-table .av-th-checkbox { width:32px;padding-left:14px; }
-.av-table .av-th-username { width:26%; }
-.av-table .av-th-domain { width:14%; }
-.av-table .av-th-password { width:10%; }
-.av-table .av-th-source { width:17%; }
-.av-table .av-th-type { width:8%; }
+.av-table .av-th-username { width:24%; }
+.av-table .av-th-domain { width:13%; }
+.av-table .av-th-matched { width:13%; }
+.av-table .av-th-password { width:9%; }
+.av-table .av-th-source { width:16%; }
+.av-table .av-th-type { width:7%; }
 .av-table .av-th-date { width:8%; }
-.av-table .av-th-actions { width:50px; }
+/* Wide enough for the View button; at 50px the cell ellipsised it to "V...". */
+.av-table .av-th-actions { width:76px; }
 
 .av-domain { color:var(--primary);font-weight:500; }
 .av-pass { color:var(--text-muted);letter-spacing:1px;cursor:default; }
