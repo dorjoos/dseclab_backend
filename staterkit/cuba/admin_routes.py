@@ -561,25 +561,19 @@ def edit_company(company_id):
     return render_template('admin/company_form.html', company=company, breadcrumb=breadcrumb)
 
 
-def _wants_json():
-    """True when the caller is fetch/XHR rather than a plain form post.
+def _watchlist_reply(payload, status=200, message=None, category='success'):
+    """Watchlist add/delete always answer JSON.
 
-    The company form submits this endpoint as an ordinary <form>, so a bare
-    jsonify() navigates the browser to a page of raw JSON. Answer in whichever
-    form the caller actually asked for.
+    They used to sniff the Accept header and redirect for anything that looked
+    like a browser, which is exactly how the delete button broke: fetch sends
+    `Accept: */*`, the sniff read that as "browser", and the caller's r.json()
+    choked on a redirect to HTML. One content type and no guessing — the
+    company page drives both endpoints with fetch and renders `message` as a
+    toast.
     """
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return True
-    accept = request.accept_mimetypes
-    return accept['application/json'] > accept['text/html']
-
-
-def _watchlist_reply(company_id, payload, status=200, message=None, category='success'):
-    if _wants_json():
-        return jsonify(payload), status
     if message:
-        flash(message, category)
-    return redirect(url_for('admin.edit_company', company_id=company_id))
+        payload = dict(payload, message=message, category=category)
+    return jsonify(payload), status
 
 
 @admin_bp.route('/admin/companies/<company_id>/watchlist/add', methods=['POST'])
@@ -595,12 +589,12 @@ def add_watchlist_entry(company_id):
 
     # Validate entry type
     if entry_type not in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
-        return _watchlist_reply(company_id, {'success': False, 'error': 'Invalid entry type'},
+        return _watchlist_reply({'success': False, 'error': 'Invalid entry type'},
                                 400, 'Invalid entry type.', 'warning')
 
     # Validate entry value
     if not entry_value:
-        return _watchlist_reply(company_id, {'success': False, 'error': 'Entry value is required'},
+        return _watchlist_reply({'success': False, 'error': 'Entry value is required'},
                                 400, 'Entry value is required.', 'warning')
 
     # Check for duplicates
@@ -611,7 +605,7 @@ def add_watchlist_entry(company_id):
     ).first()
 
     if existing:
-        return _watchlist_reply(company_id, {'success': False, 'error': 'This entry already exists'},
+        return _watchlist_reply({'success': False, 'error': 'This entry already exists'},
                                 400, f'{entry_value} is already on the watchlist.', 'info')
     
     # Create new entry
@@ -625,7 +619,7 @@ def add_watchlist_entry(company_id):
     try:
         db.session.add(entry)
         db.session.commit()
-        return _watchlist_reply(company_id, {
+        return _watchlist_reply({
             'success': True,
             'entry_id': entry.id,
             'entry_type': entry.entry_type,
@@ -635,8 +629,7 @@ def add_watchlist_entry(company_id):
     except Exception as e:
         db.session.rollback()
         logger.error("Error: %s", e)
-        return _watchlist_reply(company_id,
-                                {'success': False, 'error': 'An error occurred. Please try again.'},
+        return _watchlist_reply({'success': False, 'error': 'An error occurred. Please try again.'},
                                 500, 'Could not add the entry. Please try again.', 'danger')
 
 
@@ -652,13 +645,12 @@ def delete_watchlist_entry(company_id, entry_id):
         value = entry.entry_value
         db.session.delete(entry)
         db.session.commit()
-        return _watchlist_reply(company_id, {'success': True},
+        return _watchlist_reply({'success': True},
                                 message=f'Removed {value} from the watchlist.', category='info')
     except Exception as e:
         db.session.rollback()
         logger.error("Error: %s", e)
-        return _watchlist_reply(company_id,
-                                {'success': False, 'error': 'An error occurred. Please try again.'},
+        return _watchlist_reply({'success': False, 'error': 'An error occurred. Please try again.'},
                                 500, 'Could not remove the entry. Please try again.', 'danger')
 
 

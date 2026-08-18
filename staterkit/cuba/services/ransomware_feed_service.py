@@ -249,11 +249,13 @@ class RansomwareFeedService(ESIndexService):
         out = []
         for h in hits:
             doc = RansomwareDoc(h['_id'], h.get('_source', {}))
-            group = doc.group or 'unknown'
+            # Not `group`: that name holds the caller's filter, which is
+            # echoed back in `filters` below and drives the pagination links.
+            doc_group = doc.group or 'unknown'
             description_full = doc.description or ''
             out.append({
-                'group': group,
-                'group_color': _color_for(group),
+                'group': doc_group,
+                'group_color': _color_for(doc_group),
                 'victim': doc.victim or '—',
                 'victim_website': doc.victim_website or '',
                 'country': doc.country or '',

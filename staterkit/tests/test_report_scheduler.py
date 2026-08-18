@@ -242,6 +242,30 @@ def test_without_a_company_only_the_creator_may_be_mailed(app, admin_user):
         assert [a for a, _ in rejected] == ["dorjsambuu@golomtbank.com"]
 
 
+def test_creator_may_mail_themselves_even_off_the_company_domain(app, company_acme,
+                                                                 admin_user):
+    """The reports form pre-fills the signed-in address, and an admin's own
+    domain is rarely the client's. Safe: the attachment is already clamped to
+    what the creator can see in the UI."""
+    with app.app_context():
+        assert not admin_user.email.endswith("@acme.com")
+        row = _sched_for(company_acme, admin_user, admin_user.email)
+        allowed, rejected = rs.validate_recipients(row)
+        assert allowed == [admin_user.email]
+        assert rejected == []
+
+
+def test_creator_self_send_does_not_widen_the_domain_rule(app, company_acme,
+                                                          admin_user):
+    """Only the creator's own address gets the exemption — nobody else's."""
+    with app.app_context():
+        row = _sched_for(company_acme, admin_user,
+                         f"{admin_user.email},attacker@golomtbank.com")
+        allowed, rejected = rs.validate_recipients(row)
+        assert allowed == [admin_user.email]
+        assert [a for a, _ in rejected] == ["attacker@golomtbank.com"]
+
+
 def test_malformed_addresses_are_refused(app, company_acme, admin_user):
     with app.app_context():
         row = _sched_for(company_acme, admin_user, "not-an-email,a b@acme.com")

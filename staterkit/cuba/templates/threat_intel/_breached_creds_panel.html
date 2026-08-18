@@ -1,0 +1,106 @@
+<div class="container-fluid p-0">
+  <!-- Scope tabs: all credentials in scope, or only watched staff addresses -->
+  <div class="av-tabs">
+    <a href="{{ url_for('threat_intel.breached_creds_list') }}"
+       class="av-tab {% if not employees_only %}av-tab--active{% endif %}">All Credentials</a>
+    <a href="{{ url_for('threat_intel.breached_creds_employees') }}"
+       class="av-tab {% if employees_only %}av-tab--active{% endif %}">
+      Employees{% if employees_only and employee_count %} <span class="av-tab-count">{{ employee_count }}</span>{% endif %}
+    </a>
+  </div>
+
+  <div class="card av-card-overflow">
+
+    <!-- Toolbar -->
+    <div class="av-toolbar av-toolbar--bordered">
+      <div class="av-toolbar-left">
+        <div class="av-segmented" id="date-seg">
+          <a data-val="all" class="active">All</a>
+          <a data-val="today">Today</a>
+          <a data-val="week">Week</a>
+          <a data-val="month">Month</a>
+        </div>
+        <span class="av-count" id="total-count">Loading...</span>
+      </div>
+      <div class="av-toolbar-right">
+        <div class="av-search">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="search-input" placeholder="Search...">
+        </div>
+        <div class="av-export-wrap" id="export-wrap">
+          <a href="#" class="av-btn" onclick="document.getElementById('export-menu').classList.toggle('show');event.preventDefault();">Export &#9662;</a>
+          {# hrefs are rewritten by syncExportLinks() on every load so the file
+             matches the filters on screen; these are the no-JS fallbacks. #}
+          <div id="export-menu" class="av-export-menu">
+            {% for fmt, label in [('csv','CSV'), ('xlsx','Excel'), ('json','JSON'), ('pdf','PDF')] %}
+            <a data-fmt="{{ fmt }}"
+               href="{% if employees_only %}{{ url_for('threat_intel.breached_creds_export', format=fmt, employees_only=1) }}{% else %}{{ url_for('threat_intel.breached_creds_export', format=fmt) }}{% endif %}">{{ label }}</a>
+            {% endfor %}
+          </div>
+        </div>
+        <a href="{{ url_for('threat_intel.analysis') }}" class="av-btn">Analysis</a>
+        {% if current_user.can_edit() %}
+        <a href="{{ url_for('threat_intel.breached_creds_add') }}" class="av-btn av-btn-filled">+ Add</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="av-filters av-filters--padded">
+      <select class="av-filter-select" id="filter-type">
+        <option value="">All types</option>
+        {% for t in ['combolist','stealer','malware','pastebin','breach','phishing','darkweb','url'] %}
+        <option value="{{ t }}">{{ t|title }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" class="av-filter-input" id="filter-source" placeholder="Source">
+      <input type="text" class="av-filter-input" id="filter-domain" placeholder="Domain">
+      <a href="#" class="av-btn av-btn--muted" id="clear-btn" style="display:none;">Clear</a>
+    </div>
+
+    <!-- Selection bar (hidden until items selected) -->
+    <div id="sel-bar" class="av-sel-bar">
+      <span class="av-sel-label"><span id="sel-count">0</span> selected</span>
+      <div class="av-sel-actions">
+        <a href="#" class="av-btn av-btn--sm" onclick="exportSelected('csv');return false;">Export CSV</a>
+        <a href="#" class="av-btn av-btn--sm" onclick="exportSelected('xlsx');return false;">Export Excel</a>
+        <a href="#" class="av-btn av-btn--sm" onclick="exportSelected('json');return false;">Export JSON</a>
+        <a href="#" class="av-btn av-btn--sm av-btn--muted" onclick="clearSelection();return false;">Clear</a>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="av-table-scroll">
+      <table class="av-table">
+        <thead>
+          <tr>
+            <th class="av-th-checkbox"><input type="checkbox" id="select-all" class="av-checkbox"></th>
+            <th class="av-th-username">Username</th>
+            <th class="av-th-domain">Domain</th>
+            <th class="av-th-domain">Matched</th>
+            <th class="av-th-password">Password</th>
+            <th class="av-th-source">Source</th>
+            <th class="av-th-type c">Type</th>
+            <th class="av-th-date r">Date</th>
+            <th class="av-th-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="9" class="av-loading">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="av-pag" id="pag-bar" style="display:none;">
+      <span id="pag-info"></span>
+      <div class="av-pag-nav" id="pag-nav"></div>
+    </div>
+
+    <!-- Empty -->
+    <div class="av-empty" id="empty-state" style="display:none;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p>No results found</p>
+    </div>
+  </div>
+</div>

@@ -50,6 +50,21 @@ class Company(db.Model):
             if entry.entry_type == self.THIRD_PARTY_ENTRY_TYPE and entry.entry_value
         ]
 
+    def get_employee_emails(self):
+        """Staff addresses to watch, from the 'email' watchlist entries.
+
+        Distinct from get_report_recipient_allowlist: an employee is someone
+        whose credentials we hunt for, a recipient is someone we mail findings
+        to. The two lists overlap in practice but must not be conflated — a
+        CISO is a recipient, the whole payroll is not.
+        """
+        return sorted({
+            entry.entry_value.strip().lower()
+            for entry in self.watchlist_entries
+            if entry.entry_type == 'email' and entry.entry_value
+            and entry.entry_value.strip()
+        })
+
     def get_report_recipient_allowlist(self):
         """Exact addresses an admin approved for this company's reports."""
         return [r.email.strip().lower() for r in self.report_recipients if r.email]

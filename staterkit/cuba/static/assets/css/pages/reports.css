@@ -302,6 +302,32 @@
 }
 .rpt-btn-delete:hover { border-color: #dc2626; color: #dc2626; }
 
+.rpt-btn-edit,
+.rpt-btn-cancel {
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.rpt-btn-edit:hover,
+.rpt-btn-cancel:hover { border-color: var(--primary); color: var(--primary); }
+
+/* Inline edit panel: sits directly under the row it edits, tucked in slightly
+   so it reads as belonging to that row rather than as another list item. */
+.rpt-edit-panel {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: -4px 0 10px 24px;
+}
+.rpt-edit-panel[hidden] { display: none; }
+
 /* --- History item specifics --- */
 .rpt-fmt-badge {
   font-size: 13px;
