@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class ESIndexService:
     def __init__(self, index_name: str):
         self._index = index_name
-        self._es = None
+        self._es: Elasticsearch | None = None
 
     @property
     def index(self) -> str:
@@ -49,7 +49,10 @@ class ESIndexService:
 
     def _search(self, body: dict) -> dict:
         try:
-            return self.es.search(index=self._index, body=body)
+            # .body unwraps ObjectApiResponse to the plain dict every caller
+            # here indexes into; returning the wrapper leaks an elasticsearch
+            # type into code that only wants the parsed response.
+            return dict(self.es.search(index=self._index, body=body).body)
         except Exception:
             logger.exception('ES _search failed on %s', self._index)
             return {'hits': {'hits': [], 'total': {'value': 0}}}

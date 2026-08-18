@@ -21,7 +21,8 @@ class Company(db.Model):
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 
     users = db.relationship('User', backref='company', lazy=True)
-    watchlist_entries = db.relationship('WatchlistEntry', backref='company', lazy=True, cascade='all, delete-orphan')
+    watchlist_entries = db.relationship('WatchlistEntry', backref='company',
+                                        lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"Company('{self.name}', '{self.domain}')"

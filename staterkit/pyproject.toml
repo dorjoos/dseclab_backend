@@ -96,4 +96,11 @@ strict_equality = true
 # base class without the (unmaintained) plugin. The models are still checked
 # for everything else; only the base-class lookup is silenced.
 module = ["cuba.models"]
-disable_error_code = ["name-defined"]
+# name-defined: Flask-SQLAlchemy builds db.Model dynamically, so mypy cannot
+#   resolve it as a base class without the (unmaintained) plugin.
+# attr-defined: db.relationship() is typed as returning RelationshipProperty
+#   rather than Mapped[list[...]], so iterating a collection looks like an
+#   error. The real fix is migrating this layer to Mapped[] / mapped_column(),
+#   which is a rewrite of every model rather than an annotation — deferred
+#   deliberately, not overlooked. Everything else in models is still checked.
+disable_error_code = ["name-defined", "attr-defined"]
