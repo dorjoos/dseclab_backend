@@ -129,7 +129,27 @@ def test_every_column_has_its_own_width_class():
     panel = open('cuba/templates/threat_intel/_breached_creds_panel.html').read()
     classes = re.findall(r'<th class="(av-th-[a-z]+)', panel)
     assert len(classes) == len(set(classes)), f'duplicate width class: {classes}'
-    assert 'av-th-matched' in classes
+
+
+def test_domain_and_matched_are_one_column():
+    """They name the same thing, so the table shows one Domain column and the
+    row falls back to matched_domain when the feed carried no domain field."""
+    panel = open('cuba/templates/threat_intel/_breached_creds_panel.html').read()
+    script = open('cuba/templates/threat_intel/_breached_creds_script.html').read()
+    assert '>Matched<' not in panel, 'the Matched column is back'
+    assert panel.count('>Domain<') == 1
+    assert 'row.domain || row.matched_domain' in script, 'the fallback is gone'
+
+
+def test_column_count_matches_the_header():
+    """colSpan and the skeleton loader are counted by hand; dropping a column
+    without updating them leaves the empty and error rows mis-spanned."""
+    panel = open('cuba/templates/threat_intel/_breached_creds_panel.html').read()
+    script = open('cuba/templates/threat_intel/_breached_creds_script.html').read()
+    headers = len(re.findall(r'<th class="av-th-', panel))
+    assert f'colspan="{headers}"' in panel, f'loading row is not colspan={headers}'
+    assert f'td.colSpan = {headers};' in script, f'error row is not colSpan={headers}'
+    assert f'c < {headers};' in script, f'skeleton draws the wrong cell count'
 
 
 def test_actions_column_can_hold_the_view_button():
