@@ -1,2 +1,7 @@
 .vercel
 .env*.local
+
+# macOS Finder metadata. .DS_Store was tracked at the repo root, so every
+# machine that opened the folder produced a diff.
+.DS_Store
+**/.DS_Store
