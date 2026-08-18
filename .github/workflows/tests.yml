@@ -44,3 +44,36 @@ jobs:
         # `python -m` puts the working directory on sys.path, so `import cuba`
         # resolves without depending on pytest's rootdir inference.
         run: python -m pytest -q
+
+  lint:
+    # Separate job, not another matrix leg: ruff and mypy are Python-version
+    # agnostic here and running them twice only doubles the wait for the same
+    # answer. Not `needs: pytest` either — a lint failure and a test failure
+    # are independent signals and you want both on the first push.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: staterkit
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: staterkit/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: ruff
+        run: ruff check --output-format=github .
+
+      - name: mypy
+        # Lenient by default, strict per-module. The override list in
+        # pyproject.toml is a ratchet: type a module, add it, and it can never
+        # silently regress.
+        run: mypy
