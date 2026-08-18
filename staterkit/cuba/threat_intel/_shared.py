@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 from .. import db
 from ..models import BreachedCredMeta, Company, Notification, User
-from ..security import get_user_watchlist_domains
+from ..security import get_scope_domains, get_user_watchlist_domains
 from ..services.breached_creds_service import breached_creds_service as es_service
 
 logger = logging.getLogger(__name__)
@@ -14,15 +14,10 @@ logger = logging.getLogger(__name__)
 def _get_domain_filters():
     """Scope for the current user: None is unrestricted, a list restricts.
 
-    Only an admin may get None. Everyone else gets their company's domains,
-    and an empty list is a real answer meaning "no access" — _build_query
-    turns it into a match-nothing clause rather than dropping the filter.
+    Thin alias for security.get_scope_domains, kept because this name is used
+    throughout the threat-intel views and by tests.
     """
-    if not current_user.is_authenticated:
-        return []
-    if current_user.is_admin_user:
-        return None
-    return get_user_watchlist_domains()
+    return get_scope_domains()
 
 
 def _get_match_domains():

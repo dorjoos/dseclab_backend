@@ -97,7 +97,16 @@
    the actions column and its View button fell off the right edge. Matched has
    since been folded into Domain, since the two name the same thing.
    Keep the percentages summing to ~90%, leaving room for the two px columns. */
-.av-table .av-th-checkbox { width:32px;padding-left:14px; }
+/* 32px minus the 14px of padding on each side left ~4px of content box, so the
+   checkbox overflowed and tbody td's text-overflow drew an ellipsis beside
+   every one of them. Widen, drop the right padding, and clip: the cell holds
+   an input, not text, so an ellipsis there is never meaningful. */
+.av-table .av-th-checkbox {
+  width:44px;
+  padding-left:14px;
+  padding-right:0;
+  text-overflow:clip;
+}
 .av-table .av-th-username { width:28%; }
 .av-table .av-th-domain { width:17%; }
 .av-table .av-th-password { width:9%; }

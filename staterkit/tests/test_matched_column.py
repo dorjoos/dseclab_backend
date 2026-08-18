@@ -159,6 +159,29 @@ def test_actions_column_can_hold_the_view_button():
     assert unit == 'px' and value >= 70, f'actions column is {value}{unit}'
 
 
+def test_checkbox_cell_does_not_ellipsise():
+    """tbody td sets text-overflow:ellipsis. At 32px wide with 14px of padding
+    each side the checkbox had ~4px of content box, overflowed, and the browser
+    drew a "…" next to every row's checkbox."""
+    css = open('cuba/static/assets/css/pages/breached-creds.css').read()
+    block = re.search(r'\.av-table \.av-th-checkbox\s*\{([^}]*)\}', css)
+    assert block, 'the checkbox column lost its rule'
+    rule = block.group(1)
+
+    width = float(re.search(r'width:\s*([0-9.]+)px', rule).group(1))
+    pad_left = float(re.search(r'padding-left:\s*([0-9.]+)px', rule).group(1))
+    pad_right_m = re.search(r'padding-right:\s*([0-9.]+)px', rule)
+    # tbody td's shorthand supplies 14px when the column does not override it.
+    pad_right = float(pad_right_m.group(1)) if pad_right_m else 14.0
+
+    content = width - pad_left - pad_right
+    assert content >= 16, (
+        f'only {content}px of content box for a ~16px checkbox — it will '
+        'overflow and render an ellipsis')
+    assert 'text-overflow:clip' in rule.replace(' ', ''), (
+        'the cell holds an input, not text; ellipsis must be turned off')
+
+
 def _token(client):
     r = client.get('/threat-intelligence/breached-creds')
     m = re.search(rb'window\.CSRF_TOKEN\s*=\s*"([^"]+)"', r.data)
