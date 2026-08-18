@@ -2,10 +2,11 @@
 from flask import render_template, request
 from flask_login import login_required
 
-from ..services.breached_creds_service import breached_creds_service as es_service
 from ..services.breached_creds_analysis import build_analysis_stats
+from ..services.breached_creds_service import breached_creds_service as es_service
 from ._blueprint import threat_intel
 from ._shared import _get_domain_filters
+
 
 @threat_intel.route('/api/timeline', methods=['POST'])
 @login_required

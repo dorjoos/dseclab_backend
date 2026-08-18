@@ -7,7 +7,6 @@ endpoint is a BuildError at render time, not an import error.
 """
 import pytest
 
-
 # Every endpoint the split had to preserve. A rename here is a broken template.
 EXPECTED_ENDPOINTS = {
     'threat_intel.add_alert',
@@ -65,7 +64,6 @@ def test_package_still_exposes_module_level_names(name):
 
 def test_one_blueprint_not_several():
     """Several blueprints would have renamed every endpoint."""
-    from cuba.threat_intel import threat_intel
-    from cuba.threat_intel import analysis, breached_creds, ransomware, reports
+    from cuba.threat_intel import analysis, breached_creds, ransomware, reports, threat_intel
     for module in (analysis, breached_creds, ransomware, reports):
         assert module.threat_intel is threat_intel

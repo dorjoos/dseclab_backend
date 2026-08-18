@@ -9,7 +9,6 @@ import pytest
 
 from tests.conftest import login
 
-
 # Endpoints referenced by admin templates. A missing one is a 500 at render
 # time, so assert registration directly rather than waiting for a page to break.
 REQUIRED_ENDPOINTS = [

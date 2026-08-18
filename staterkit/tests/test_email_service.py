@@ -7,12 +7,12 @@ import pytest
 from cuba.services import email_service
 from cuba.services.email_service import (
     MN,
-    build_breach_email,
-    classify_creds,
-    is_email_configured,
     _clean_header,
     _cred_url,
     _recipients,
+    build_breach_email,
+    classify_creds,
+    is_email_configured,
     send_email,
 )
 

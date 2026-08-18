@@ -1,5 +1,6 @@
 """Ransomware monitoring dashboard, backed by the `ransomware-feed` ES index."""
 import logging
+
 from flask import render_template, request
 from flask_login import login_required
 

@@ -1,8 +1,10 @@
-from flask import Blueprint, request, jsonify
-from flask_login import login_required, current_user
+from flask import Blueprint, jsonify, request
+from flask.typing import ResponseReturnValue
+from flask_login import current_user, login_required
 from sqlalchemy import or_
+
 from . import limiter
-from .api_utils import sanitize_input, escape_like
+from .api_utils import escape_like, sanitize_input
 from .models import Company
 from .security import get_scope_domains
 from .services.breached_creds_service import breached_creds_service as es_service
@@ -13,7 +15,7 @@ search_bp = Blueprint('search', __name__)
 @search_bp.route('/api/search')
 @login_required
 @limiter.limit("30/minute")
-def search():
+def search() -> ResponseReturnValue:
     """Global search
     ---
     tags:

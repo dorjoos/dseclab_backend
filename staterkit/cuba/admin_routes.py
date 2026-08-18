@@ -1,15 +1,16 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required, current_user
-from sqlalchemy import or_, func
-from datetime import datetime
-import re
 import logging
+import re
+from datetime import datetime
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from . import db
 from .api_utils import escape_like
-from .models import User, Company, WatchlistEntry, AuditLog, UserActivity
-from .auth import validate_password, validate_email
 from .audit_helpers import log_audit
+from .auth import validate_email, validate_password
+from .models import AuditLog, Company, User, UserActivity, WatchlistEntry
 from .security import admin_required
 from .services.breached_creds_service import breached_creds_service as es_service
 
@@ -26,9 +27,9 @@ def user_management():
     page = request.args.get('page', 1, type=int)
     per_page = 20
     search = request.args.get('search', '').strip()
-    
+
     query = User.query
-    
+
     if search:
         query = query.filter(
             or_(
@@ -36,13 +37,13 @@ def user_management():
                 User.email.ilike(f'%{escape_like(search)}%')
             )
         )
-    
+
     query = query.order_by(User.created_at.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     users = pagination.items
-    
+
     companies = Company.query.order_by(Company.name).all()
-    
+
     breadcrumb = {"parent": "Admin", "child": "User Management"}
     return render_template('admin/user_management.html',
                          users=users,
@@ -58,7 +59,7 @@ def user_management():
 def add_user():
     """Add new user or member"""
     companies = Company.query.order_by(Company.name).all()
-    
+
     if request.method == 'POST':
         username = (request.form.get('username') or '').strip()
         email = (request.form.get('email') or '').strip().lower()
@@ -67,57 +68,57 @@ def add_user():
         role = request.form.get('role', 'member').strip()
         company_id = request.form.get('company_id', '').strip() or None
         is_active = bool(request.form.get('is_active'))
-        
+
         # Security: Input validation
         if not username or not email or not password:
             flash('All required fields must be filled.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Validate password match
         if password != confirm_password:
             flash('Passwords do not match.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Validate username
         if len(username) < 3 or len(username) > 50:
             flash('Username must be between 3 and 50 characters.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Security: Validate username contains only safe characters
         if not re.match(r'^[a-zA-Z0-9_-]+$', username):
             flash('Username can only contain letters, numbers, underscores, and hyphens.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Validate email
         if not validate_email(email):
             flash('Please enter a valid email address.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Validate password
         is_valid, error_msg = validate_password(password)
         if not is_valid:
             flash(error_msg, 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Validate role
         if role not in ['admin', 'member']:
             flash('Invalid role selected.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Check for existing user
         existing = User.query.filter(or_(User.email == email, User.username == username)).first()
         if existing:
             flash('User with that email or username already exists.', 'warning')
             return render_template('admin/user_form.html', companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Add User"})
-        
+
         # Create user
         user = User(
             username=username,
@@ -128,7 +129,7 @@ def add_user():
             is_active=is_active
         )
         user.set_password(password)
-        
+
         # If member and no company selected, link to existing company from email domain
         # NO auto-creation - companies must be created through Company Management page
         if role == 'member' and not company_id:
@@ -137,7 +138,7 @@ def add_user():
                 # Only link to existing company, never create
                 company = Company.get_or_create_by_domain(domain, company_type='other', allow_create=False)
                 user.company_id = company.id if company else None
-        
+
         db.session.add(user)
         db.session.commit()
         log_audit("create_user", "user", user.id, f"Created user '{username}'")
@@ -155,11 +156,11 @@ def add_user():
 def edit_user(user_id):
     """Edit user"""
     user = User.query.get_or_404(user_id)
-    
+
     # Security: Fix IDOR - Additional validation (get_or_404 already handles non-existent)
     # In multi-tenant scenarios, add company access checks here
     companies = Company.query.order_by(Company.name).all()
-    
+
     if request.method == 'POST':
         username = (request.form.get('username') or '').strip()
         email = (request.form.get('email') or '').strip().lower()
@@ -167,37 +168,37 @@ def edit_user(user_id):
         company_id = request.form.get('company_id', '').strip() or None
         is_active = bool(request.form.get('is_active'))
         new_password = request.form.get('password', '').strip()  # Use 'password' field name
-        
+
         # Security: Input validation
         if not username or not email:
             flash('Username and email are required.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Edit User"})
-        
+
         # Validate username
         if len(username) < 3 or len(username) > 50:
             flash('Username must be between 3 and 50 characters.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Edit User"})
-        
+
         # Security: Validate username
         if not re.match(r'^[a-zA-Z0-9_-]+$', username):
             flash('Username can only contain letters, numbers, underscores, and hyphens.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Edit User"})
-        
+
         # Validate email
         if not validate_email(email):
             flash('Please enter a valid email address.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Edit User"})
-        
+
         # Validate role
         if role not in ['admin', 'member']:
             flash('Invalid role selected.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Edit User"})
-        
+
         # Check for duplicate username/email
         existing = User.query.filter(
             or_(User.email == email, User.username == username),
@@ -207,7 +208,7 @@ def edit_user(user_id):
             flash('User with that email or username already exists.', 'warning')
             return render_template('admin/user_form.html', user=user, companies=companies,
                                  breadcrumb={"parent": "Admin", "child": "Edit User"})
-        
+
         # Update user
         user.username = username
         user.email = email
@@ -229,7 +230,7 @@ def edit_user(user_id):
                 return render_template('admin/user_form.html', user=user, companies=companies,
                                      breadcrumb={"parent": "Admin", "child": "Edit User"})
             user.set_password(new_password)
-        
+
         db.session.commit()
         log_audit("update_user", "user", user_id, f"Updated user '{username}'")
         flash(f'User "{username}" updated successfully.', 'success')
@@ -248,13 +249,13 @@ def delete_user(user_id):
     if user_id == current_user.id:
         flash('You cannot delete your own account.', 'danger')
         return redirect(url_for('admin.user_management'))
-    
+
     user = User.query.get_or_404(user_id)
-    
+
     # Security: Fix IDOR - Verify user exists and is accessible
     # Additional checks can be added for multi-tenant scenarios
     username = user.username
-    
+
     db.session.delete(user)
     db.session.commit()
     log_audit("delete_user", "user", user_id, f"Deleted user '{username}'")
@@ -270,11 +271,11 @@ def company_management():
     """Company management page"""
     page = request.args.get('page', 1, type=int)
     per_page = 10
-    
+
     query = Company.query.order_by(Company.name)
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     companies = pagination.items
-    
+
     # Get breached credentials count for each company via Elasticsearch
     company_stats = {}
     for company in companies:
@@ -284,10 +285,10 @@ def company_management():
             company_stats[company.id] = stats['total']
         else:
             company_stats[company.id] = 0
-    
+
     breadcrumb = {"parent": "Admin", "child": "Company Management"}
-    return render_template('admin/company_management.html', 
-                         companies=companies, 
+    return render_template('admin/company_management.html',
+                         companies=companies,
                          pagination=pagination,
                          company_stats=company_stats,
                          breadcrumb=breadcrumb)
@@ -335,8 +336,8 @@ def company_breached_creds(company_id):
 def notify_company_breaches(company_id):
     """Email a company's active users a summary of their matched breaches."""
     from .models import Notification
-    from .threat_intel import _send_breach_emails
     from .services.email_service import is_email_configured
+    from .threat_intel import _send_breach_emails
 
     company = Company.query.get_or_404(company_id)
     domains = company.get_match_domains()
@@ -391,26 +392,26 @@ def add_company():
         domain = (request.form.get('domain') or '').strip().lower()
         company_type = request.form.get('company_type', 'other').strip()
         description = (request.form.get('description') or '').strip()
-        
+
         # Security: Input validation
         if not name or not domain:
             flash('Company name and domain are required.', 'warning')
             return render_template('admin/company_form.html',
                                  breadcrumb={"parent": "Admin", "child": "Add Company"})
-        
+
         # Validate domain format
         if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$', domain):
             flash('Invalid domain format.', 'warning')
             return render_template('admin/company_form.html',
                                  breadcrumb={"parent": "Admin", "child": "Add Company"})
-        
+
         # Check for existing company
         existing = Company.query.filter_by(domain=domain).first()
         if existing:
             flash('Company with that domain already exists.', 'warning')
             return render_template('admin/company_form.html',
                                  breadcrumb={"parent": "Admin", "child": "Add Company"})
-        
+
         company = Company(
             name=name,
             domain=domain,
@@ -419,14 +420,14 @@ def add_company():
         )
         db.session.add(company)
         db.session.flush()  # Get company.id
-        
+
         # Process watchlist entries (multiple entries per type)
         watchlist_entries = []
         for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
-            
+
             for idx, value in enumerate(entry_values):
                 value = value.strip()
                 if value:  # Only add non-empty entries
@@ -437,11 +438,11 @@ def add_company():
                         entry_value=value,
                         description=desc if desc else None
                     ))
-        
+
         # Add all watchlist entries
         for entry in watchlist_entries:
             db.session.add(entry)
-        
+
         try:
             db.session.commit()
             log_audit("create_company", "company", company.id, f"Created company '{name}'")
@@ -489,49 +490,49 @@ def delete_company(company_id):
 def edit_company(company_id):
     """Edit company"""
     company = Company.query.get_or_404(company_id)
-    
+
     if request.method == 'POST':
         name = (request.form.get('name') or '').strip()
         domain = (request.form.get('domain') or '').strip().lower()
         company_type = request.form.get('company_type', 'other').strip()
         description = (request.form.get('description') or '').strip()
-        
+
         # Security: Input validation
         if not name or not domain:
             flash('Company name and domain are required.', 'warning')
             return render_template('admin/company_form.html', company=company,
                                  breadcrumb={"parent": "Admin", "child": "Edit Company"})
-        
+
         # Validate domain format
         if not re.match(r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$', domain):
             flash('Invalid domain format.', 'warning')
             return render_template('admin/company_form.html', company=company,
                                  breadcrumb={"parent": "Admin", "child": "Edit Company"})
-        
+
         # Check for duplicate domain (excluding current company)
         existing = Company.query.filter(Company.domain == domain, Company.id != company_id).first()
         if existing:
             flash('Company with that domain already exists.', 'warning')
             return render_template('admin/company_form.html', company=company,
                                  breadcrumb={"parent": "Admin", "child": "Edit Company"})
-        
+
         # Update company
         company.name = name
         company.domain = domain
         company.company_type = company_type
         company.description = description if description else None
         company.updated_at = datetime.utcnow()
-        
+
         # Delete existing watchlist entries
         WatchlistEntry.query.filter_by(company_id=company.id).delete()
-        
+
         # Process new watchlist entries (multiple entries per type)
         watchlist_entries = []
         for entry_type in ['domain', 'url', 'email', 'slug', 'ip_address', 'third_party']:
             # Get all entries of this type from form (e.g., watchlist_domain[], watchlist_url[], etc.)
             entry_values = request.form.getlist(f'watchlist_{entry_type}[]')
             entry_descriptions = request.form.getlist(f'watchlist_{entry_type}_desc[]')
-            
+
             for idx, value in enumerate(entry_values):
                 value = value.strip()
                 if value:  # Only add non-empty entries
@@ -542,11 +543,11 @@ def edit_company(company_id):
                         entry_value=value,
                         description=desc if desc else None
                     ))
-        
+
         # Add all watchlist entries
         for entry in watchlist_entries:
             db.session.add(entry)
-        
+
         try:
             db.session.commit()
             log_audit("update_company", "company", company_id, f"Updated company '{name}'")
@@ -581,7 +582,9 @@ def _watchlist_reply(payload, status=200, message=None, category='success'):
 @admin_required
 def add_watchlist_entry(company_id):
     """Add a single watchlist entry (auto-save)"""
-    company = Company.query.get_or_404(company_id)
+    # Called for the 404, not the value: an unknown company must not fall
+    # through and create an orphaned entry.
+    Company.query.get_or_404(company_id)
 
     entry_type = request.form.get('entry_type', '').strip()
     entry_value = request.form.get('entry_value', '').strip()
@@ -607,7 +610,7 @@ def add_watchlist_entry(company_id):
     if existing:
         return _watchlist_reply({'success': False, 'error': 'This entry already exists'},
                                 400, f'{entry_value} is already on the watchlist.', 'info')
-    
+
     # Create new entry
     entry = WatchlistEntry(
         company_id=company_id,
@@ -615,7 +618,7 @@ def add_watchlist_entry(company_id):
         entry_value=entry_value,
         description=description
     )
-    
+
     try:
         db.session.add(entry)
         db.session.commit()
@@ -638,9 +641,10 @@ def add_watchlist_entry(company_id):
 @admin_required
 def delete_watchlist_entry(company_id, entry_id):
     """Delete a single watchlist entry"""
-    company = Company.query.get_or_404(company_id)
+    # Called for the 404, not the value.
+    Company.query.get_or_404(company_id)
     entry = WatchlistEntry.query.filter_by(id=entry_id, company_id=company_id).first_or_404()
-    
+
     try:
         value = entry.entry_value
         db.session.delete(entry)
@@ -711,7 +715,7 @@ def audit_logs():
     """View audit logs - Admin only"""
     page = request.args.get('page', 1, type=int)
     per_page = 50
-    
+
     # Filters
     action_filter = request.args.get('action_type', '')
     resource_filter = request.args.get('resource_type', '')
@@ -721,7 +725,7 @@ def audit_logs():
     date_to = request.args.get('date_to', '')
 
     query = AuditLog.query
-    
+
     # Apply filters
     if action_filter:
         query = query.filter(AuditLog.action_type == action_filter)
@@ -743,17 +747,17 @@ def audit_logs():
             query = query.filter(AuditLog.created_at <= date_to_obj)
         except ValueError:
             pass
-    
+
     # Order by most recent first
     query = query.order_by(AuditLog.created_at.desc())
-    
+
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     audit_logs = pagination.items
-    
+
     # Get unique action types and resource types for filters
     action_types = db.session.query(AuditLog.action_type).distinct().all()
     resource_types = db.session.query(AuditLog.resource_type).distinct().all()
-    
+
     breadcrumb = {"parent": "Admin", "child": "Audit Logs"}
     return render_template('admin/audit_logs.html',
                          audit_logs=audit_logs,
@@ -770,7 +774,7 @@ def user_activities():
     """View user activities - Admin only"""
     page = request.args.get('page', 1, type=int)
     per_page = 50
-    
+
     # Filters
     activity_filter = request.args.get('activity_type', '')
     user_filter = request.args.get('user_id', '')
@@ -779,7 +783,7 @@ def user_activities():
     date_to = request.args.get('date_to', '')
 
     query = UserActivity.query
-    
+
     # Apply filters
     if activity_filter:
         query = query.filter(UserActivity.activity_type == activity_filter)
@@ -799,16 +803,16 @@ def user_activities():
             query = query.filter(UserActivity.created_at <= date_to_obj)
         except ValueError:
             pass
-    
+
     # Order by most recent first
     query = query.order_by(UserActivity.created_at.desc())
-    
+
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     activities = pagination.items
-    
+
     # Get unique activity types for filters
     activity_types = db.session.query(UserActivity.activity_type).distinct().all()
-    
+
     breadcrumb = {"parent": "Admin", "child": "User Activities"}
     return render_template('admin/user_activities.html',
                          activities=activities,
@@ -822,8 +826,9 @@ def user_activities():
 @admin_required
 def compliance_dashboard():
     """Compliance status dashboard."""
-    from .models import User, Company, AuditLog, UserActivity, ScheduledReport, AlertRule
     from datetime import datetime, timedelta, timezone
+
+    from .models import AlertRule, AuditLog, Company, ScheduledReport, User, UserActivity
 
     now = datetime.now(timezone.utc)
     thirty_days_ago = now - timedelta(days=30)

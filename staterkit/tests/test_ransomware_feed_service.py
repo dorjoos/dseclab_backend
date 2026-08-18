@@ -91,8 +91,8 @@ def test_page_links_do_not_smuggle_a_group_filter(client, admin_user, monkeypatc
 def test_dashboard_survives_all_zero_sector_counts(client, admin_user, monkeypatch):
     """The degraded-ES fallback is {'Unknown': 0}, which used to divide the
     bar-width expression by zero and 500 the whole page."""
-    from tests.conftest import login
     from cuba.services.ransomware_feed_service import ransomware_feed_service
+    from tests.conftest import login
     _stub_hits(monkeypatch, ['lockbit'], total=45)
     monkeypatch.setattr(ransomware_feed_service, 'get_dashboard_stats',
                         lambda: {'total_attacks': 0, 'active_groups': 0,

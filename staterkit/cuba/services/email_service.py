@@ -15,11 +15,12 @@ import logging
 import re
 import smtplib
 from datetime import date
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
 from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from urllib.parse import quote
+
 from flask import current_app
 
 logger = logging.getLogger(__name__)

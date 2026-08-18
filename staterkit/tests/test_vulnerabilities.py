@@ -3,9 +3,8 @@
 Plan: docs/superpowers/plans/2026-06-10-cisa-kev-vulnerabilities-page.md
 """
 import re
-import pytest
-from tests.conftest import login
 
+from tests.conftest import login
 
 LIST_PATH = '/threat-intelligence/vulnerabilities'
 SEARCH_PATH = '/api/vulnerabilities/search'

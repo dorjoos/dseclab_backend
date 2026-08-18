@@ -1,9 +1,10 @@
 import uuid
+from datetime import datetime, timezone
+
+from flask_login import UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from . import db
-from datetime import datetime, timezone
-from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
 
 
 def utcnow():
@@ -30,7 +31,7 @@ class Company(db.Model):
     # than as the company's staff or customers.
     THIRD_PARTY_ENTRY_TYPE = 'third_party'
 
-    def get_match_domains(self):
+    def get_match_domains(self) -> list[str]:
         """Return deduped, lowercased list of domains from company domain + watchlist entries."""
         domains = set()
         if self.domain:
@@ -42,7 +43,7 @@ class Company(db.Model):
                     domains.add(val)
         return list(domains)
 
-    def get_third_party_domains(self):
+    def get_third_party_domains(self) -> list[str]:
         """Watched domains belonging to vendors/contractors rather than to us."""
         return [
             entry.entry_value.strip().lower()
@@ -50,7 +51,7 @@ class Company(db.Model):
             if entry.entry_type == self.THIRD_PARTY_ENTRY_TYPE and entry.entry_value
         ]
 
-    def get_employee_emails(self):
+    def get_employee_emails(self) -> list[str]:
         """Staff addresses to watch, from the 'email' watchlist entries.
 
         Distinct from get_report_recipient_allowlist: an employee is someone
@@ -65,12 +66,12 @@ class Company(db.Model):
             and entry.entry_value.strip()
         })
 
-    def get_report_recipient_allowlist(self):
+    def get_report_recipient_allowlist(self) -> list[str]:
         """Exact addresses an admin approved for this company's reports."""
         return [r.email.strip().lower() for r in self.report_recipients if r.email]
 
     @staticmethod
-    def all_match_domains():
+    def all_match_domains() -> list[str]:
         """Every watched domain across every company, deduped and lowercased.
 
         For anything that spans all tenants — an admin's credential list, or a
@@ -93,7 +94,7 @@ class Company(db.Model):
         return sorted(domains)
 
     @staticmethod
-    def all_third_party_domains():
+    def all_third_party_domains() -> list[str]:
         """Every supplier domain across every company.
 
         Kept apart from all_match_domains for the same reason
@@ -108,7 +109,7 @@ class Company(db.Model):
         return sorted({r.entry_value.strip().lower() for r in rows
                        if r.entry_value and r.entry_value.strip()})
 
-    def get_own_domains(self):
+    def get_own_domains(self) -> list[str]:
         """Domains this company itself owns — never a supplier's.
 
         Report recipients are bound to these: a company's breach data may only

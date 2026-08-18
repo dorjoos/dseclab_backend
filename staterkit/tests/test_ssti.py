@@ -29,9 +29,8 @@ def _python_sources():
 def test_sandbox_breaks_the_escape_chain(app, payload):
     """Every published SSTI chain walks dunder attributes to reach os/subprocess.
     The sandbox raises as soon as one is traversed."""
-    with app.app_context():
-        with pytest.raises(SecurityError):
-            app.jinja_env.from_string(payload).render(config=app.config)
+    with app.app_context(), pytest.raises(SecurityError):
+        app.jinja_env.from_string(payload).render(config=app.config)
 
 
 @pytest.mark.parametrize('payload', [

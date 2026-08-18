@@ -1,5 +1,6 @@
 """Data masking service — controls which fields are masked per role."""
 import logging
+
 from flask import current_app
 from flask_login import current_user
 

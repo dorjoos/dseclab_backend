@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from cuba.models import ScheduledReport, ReportHistory, WatchlistEntry
+from cuba.models import ReportHistory, ScheduledReport, WatchlistEntry
 from cuba.services import report_scheduler as rs
 
 
@@ -313,8 +313,8 @@ def test_send_writes_an_audit_row(app, db, schedule, company_acme, member_acme,
                                   monkeypatch):
     with app.app_context():
         from cuba.models import AuditLog
-        row = schedule(company_id=company_acme.id, email_to=member_acme.email,
-                       created_by=member_acme.id)
+        schedule(company_id=company_acme.id, email_to=member_acme.email,
+                 created_by=member_acme.id)
         app.config.update(MAIL_USERNAME="resend", MAIL_PASSWORD="key")
 
         class _Page:
@@ -369,8 +369,7 @@ def test_pdf_never_contains_a_password(app):
 def test_admin_allowlisted_address_bypasses_the_domain_rule(app, db, company_acme,
                                                             admin_user):
     """An admin can approve one exact off-domain address per company."""
-    from cuba.models import Company
-    from cuba.models import ReportRecipient
+    from cuba.models import Company, ReportRecipient
     db.session.add(ReportRecipient(company_id=company_acme.id,
                                    email="ciso@consultancy.example"))
     db.session.commit()
@@ -385,8 +384,7 @@ def test_admin_allowlisted_address_bypasses_the_domain_rule(app, db, company_acm
 
 def test_allowlist_is_per_company(app, db, company_acme, company_other, admin_user):
     """Approving an address for one client must not approve it for another."""
-    from cuba.models import Company
-    from cuba.models import ReportRecipient
+    from cuba.models import Company, ReportRecipient
     db.session.add(ReportRecipient(company_id=company_acme.id,
                                    email="ciso@consultancy.example"))
     db.session.commit()

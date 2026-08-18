@@ -13,10 +13,9 @@ were its customers.
 """
 import pytest
 
-from cuba.models import Company, WatchlistEntry, ScheduledReport
+from cuba.models import Company, ScheduledReport, WatchlistEntry
 from cuba.services import report_scheduler as rs
 from cuba.services.breached_creds_service import BreachedCredDoc, ESPagination
-
 
 STAFF = {'username': 'b.otgon@acme.com', 'domain': '', 'password': 'x',
          'source': 'Telegram', 'type': 'combolist'}

@@ -1,6 +1,7 @@
 """WebSocket events for real-time breach notifications."""
-from flask_socketio import emit
 from flask_login import current_user
+from flask_socketio import emit
+
 from . import socketio
 
 
@@ -9,6 +10,7 @@ def handle_connect():
     if not current_user.is_authenticated:
         return False  # Reject unauthenticated connections
     emit('connected', {'status': 'ok', 'user': current_user.username})
+    return True  # only False rejects; explicit accept beats falling off the end
 
 
 @socketio.on('disconnect')

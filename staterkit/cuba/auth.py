@@ -1,18 +1,28 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, g, current_app
-from flask_login import login_user, logout_user, login_required, current_user
-from flask_wtf.csrf import generate_csrf
-from sqlalchemy import or_
-from sqlalchemy.exc import OperationalError
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from urllib.parse import urlparse
+import os
 import re
 from datetime import datetime, timedelta
-import os
+from urllib.parse import urlparse
+
+from flask import (
+    Blueprint,
+    current_app,
+    flash,
+    g,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+from flask_jwt_extended import create_access_token
+from flask_login import current_user, login_required, login_user, logout_user
+from sqlalchemy import or_
+from sqlalchemy.exc import OperationalError
 
 from . import db, limiter
-from .models import User, Company, UserActivity
-from .audit_helpers import log_user_activity, log_audit
-
+from .audit_helpers import log_audit, log_user_activity
+from .models import Company, User, UserActivity
 
 auth = Blueprint("auth", __name__)
 
@@ -87,7 +97,7 @@ def login():
 
         # Update last login timestamp
         # On Vercel (read-only SQLite), this write will fail, so make it optional via env flag.
-        if not os.getenv("READ_ONLY_DB", "").lower() in {"1", "true", "yes"}:
+        if os.getenv("READ_ONLY_DB", "").lower() not in {"1", "true", "yes"}:
             try:
                 user.last_login = datetime.utcnow()
                 db.session.commit()
@@ -114,8 +124,8 @@ def login():
 
         # Geo lookup for login location
         try:
-            from .services.geo_service import get_location, format_location
             from .audit_helpers import get_client_ip
+            from .services.geo_service import format_location, get_location
             ip = get_client_ip()
             geo = get_location(ip)
             location_str = format_location(geo) if geo else None
@@ -264,7 +274,7 @@ def register():
         if domain:
             # Only get existing company, don't create new one (only admins can create companies)
             company = Company.get_or_create_by_domain(domain, 'other', allow_create=False)
-        
+
         user = User(username=username, email=email, role='member', company_id=company.id if company else None)
         user.set_password(password)
         db.session.add(user)
@@ -290,7 +300,7 @@ def logout():
     user_id = current_user.id
     log_user_activity("logout", user_id, status="success")
     log_audit("logout", "user", user_id, f"User {current_user.username} logged out")
-    
+
     # Clear session data
     clear_session()
     logout_user()
@@ -371,10 +381,11 @@ def profile():
 @auth.route("/2fa/setup", methods=["GET", "POST"])
 @login_required
 def setup_2fa():
+    import base64
+    import io
+
     import pyotp
     import qrcode
-    import io
-    import base64
 
     if request.method == "POST":
         # Verify the TOTP code to confirm setup
@@ -392,9 +403,8 @@ def setup_2fa():
             session.pop("2fa_setup_secret", None)
             flash("Two-factor authentication enabled successfully.", "success")
             return redirect(url_for("auth.profile"))
-        else:
-            flash("Invalid verification code. Please try again.", "danger")
-            return redirect(url_for("auth.setup_2fa"))
+        flash("Invalid verification code. Please try again.", "danger")
+        return redirect(url_for("auth.setup_2fa"))
 
     # Generate new secret and store in session (not in form)
     secret = pyotp.random_base32()
@@ -455,8 +465,8 @@ def verify_2fa():
 
             # Geo lookup for login location
             try:
-                from .services.geo_service import get_location, format_location
                 from .audit_helpers import get_client_ip
+                from .services.geo_service import format_location, get_location
                 ip = get_client_ip()
                 geo = get_location(ip)
                 _2fa_location = format_location(geo) if geo else None
@@ -469,8 +479,7 @@ def verify_2fa():
             if next_url and is_safe_url(next_url):
                 return redirect(next_url)
             return redirect(url_for("main.indexPage"))
-        else:
-            flash("Invalid verification code.", "danger")
+        flash("Invalid verification code.", "danger")
 
     return render_template("auth/verify_2fa.html")
 

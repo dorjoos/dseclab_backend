@@ -1,7 +1,8 @@
 """Reports hub: scheduled reports, alert rules and on-demand generation."""
-from flask import render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
 from datetime import datetime, timezone
+
+from flask import flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 from .. import db, limiter
 from ..api_utils import sanitize_input
@@ -10,10 +11,11 @@ from ..services.breached_creds_service import breached_creds_service as es_servi
 from ._blueprint import threat_intel
 from ._shared import _get_domain_filters
 
+
 @threat_intel.route('/threat-intelligence/reports')
 @login_required
 def reports():
-    from ..models import ScheduledReport, AlertRule, ReportHistory
+    from ..models import AlertRule, ReportHistory, ScheduledReport
 
     schedules = ScheduledReport.query.filter_by(created_by=current_user.id).order_by(ScheduledReport.created_at.desc()).all()
     if current_user.is_admin_user:
@@ -52,9 +54,10 @@ def _parse_schedule_form(form):
     the recipient binding below is the only thing that guards a client's breach
     data, and it must hold on edit exactly as it does on create.
     """
+    from datetime import datetime as _dt
+
     from ..models import Company
     from ..services.report_scheduler import compute_next_run
-    from datetime import datetime as _dt
 
     name = sanitize_input(form.get('name', ''))
     if not name:
@@ -132,7 +135,7 @@ def _schedule_saved_message(verb, run_label, values):
 @threat_intel.route('/threat-intelligence/reports/schedule/add', methods=['POST'])
 @login_required
 def add_schedule():
-    from ..models import ScheduledReport, Company
+    from ..models import Company, ScheduledReport
 
     values, error = _parse_schedule_form(request.form)
     if error:
@@ -169,7 +172,7 @@ def add_schedule():
 @threat_intel.route('/threat-intelligence/reports/schedule/<sid>/edit', methods=['POST'])
 @login_required
 def edit_schedule(sid):
-    from ..models import ScheduledReport, Company
+    from ..models import Company, ScheduledReport
     schedule = ScheduledReport.query.get_or_404(sid)
     if schedule.created_by != current_user.id and not current_user.is_admin_user:
         flash('Access denied.', 'danger')

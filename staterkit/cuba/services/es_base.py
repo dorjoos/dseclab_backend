@@ -5,7 +5,6 @@ query builders, doc wrappers, stats. This class only knows about clients
 and indices.
 """
 import logging
-from typing import Optional, Tuple
 
 from elasticsearch import Elasticsearch
 from flask import current_app
@@ -39,7 +38,7 @@ class ESIndexService:
             )
         return self._es
 
-    def _count(self, query: Optional[dict] = None) -> int:
+    def _count(self, query: dict | None = None) -> int:
         try:
             body = {'query': query} if query else None
             resp = self.es.count(index=self._index, body=body)
@@ -55,7 +54,7 @@ class ESIndexService:
             logger.exception('ES _search failed on %s', self._index)
             return {'hits': {'hits': [], 'total': {'value': 0}}}
 
-    def get_raw(self, doc_id: str) -> Optional[Tuple[str, dict]]:
+    def get_raw(self, doc_id: str) -> tuple[str, dict] | None:
         try:
             resp = self.es.get(index=self._index, id=doc_id)
             return resp['_id'], resp['_source']
@@ -63,7 +62,7 @@ class ESIndexService:
             logger.exception('ES get_raw failed on %s/%s', self._index, doc_id)
             return None
 
-    def index_document(self, doc: dict) -> Optional[str]:
+    def index_document(self, doc: dict) -> str | None:
         try:
             resp = self.es.index(index=self._index, document=doc, refresh=True)
             return resp.get('_id')
