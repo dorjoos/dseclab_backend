@@ -38,23 +38,14 @@ def _get_match_domains():
     domains. Everyone else gets their own, which is also exactly what they are
     filtered to.
     """
-    from ..models import Company, WatchlistEntry
+    from ..models import Company
     if not current_user.is_authenticated:
         return []
     if not current_user.is_admin_user:
         return get_user_watchlist_domains()
-
-    # One query per table rather than walking Company.watchlist_entries per
-    # company, which is an N+1 over the client roster.
-    domains = {c.domain.strip().lower()
-               for c in Company.query.with_entities(Company.domain).all()
-               if c.domain and c.domain.strip()}
-    rows = WatchlistEntry.query.filter(
-        WatchlistEntry.entry_type.in_(('domain', Company.THIRD_PARTY_ENTRY_TYPE))
-    ).with_entities(WatchlistEntry.entry_value).all()
-    domains.update(r.entry_value.strip().lower() for r in rows
-                   if r.entry_value and r.entry_value.strip())
-    return sorted(domains)
+    # Shared with collect_creds, which faces the same question for a schedule
+    # that targets no single company.
+    return Company.all_match_domains()
 
 
 def _get_employee_emails():

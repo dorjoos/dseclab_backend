@@ -339,12 +339,15 @@ def build_pdf(name, creds, generated_for):
 
     # Passwords are deliberately absent — this file leaves our control the
     # moment it is attached to an email.
-    rows = [["Username", "Domain", "Matched", "Source", "Date"]]
+    # One Domain column, as on the list page: domain and matched_domain name
+    # the same thing, and a row carries whichever the feed supplied.
+    rows = [["Username", "Domain", "Source", "Date"]]
     for cred in creds[:200]:
+        domain = (getattr(cred, "domain", "")
+                  or getattr(cred, "matched_domain", "") or "")
         rows.append([
             (getattr(cred, "username", "") or "")[:34],
-            (getattr(cred, "domain", "") or "")[:26],
-            (getattr(cred, "matched_domain", "") or "")[:26],
+            domain[:34],
             (getattr(cred, "source", "") or "")[:24],
             cred.created_at.strftime("%Y-%m-%d") if getattr(cred, "created_at", None) else "",
         ])
@@ -398,7 +401,19 @@ def collect_creds(schedule):
                      page=1, per_page=200)
     if page.error:
         raise RuntimeError("Elasticsearch unavailable")
-    creds = es.attach_matched_domain(page.items, domains or [])
+
+    # Scoping and labelling are different questions. `domains` is None for an
+    # unrestricted admin schedule, and labelling against nothing leaves every
+    # credential with no matched_domain and no match_path — which _bucket_creds
+    # reads as "customer", so the report would file a client's own staff as
+    # their customers. Label such a schedule against every watched domain.
+    from ..models import Company
+    if domains is None:
+        label_domains = Company.all_match_domains()
+        third_party = Company.all_third_party_domains()
+    else:
+        label_domains = domains
+    creds = es.attach_matched_domain(page.items, label_domains)
     return creds, (domains or []), third_party
 
 

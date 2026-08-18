@@ -69,6 +69,45 @@ class Company(db.Model):
         """Exact addresses an admin approved for this company's reports."""
         return [r.email.strip().lower() for r in self.report_recipients if r.email]
 
+    @staticmethod
+    def all_match_domains():
+        """Every watched domain across every company, deduped and lowercased.
+
+        For anything that spans all tenants — an admin's credential list, or a
+        schedule with no company selected. There is no single company whose
+        domains can label those rows, and labelling against none of them is
+        not a neutral choice: matched_domain and match_path stay unset, which
+        downstream code reads as "not staff, not a supplier".
+
+        Two queries, not one per company: walking Company.watchlist_entries
+        per row is an N+1 over the client roster.
+        """
+        domains = {c.domain.strip().lower()
+                   for c in Company.query.with_entities(Company.domain).all()
+                   if c.domain and c.domain.strip()}
+        rows = WatchlistEntry.query.filter(
+            WatchlistEntry.entry_type.in_(('domain', Company.THIRD_PARTY_ENTRY_TYPE))
+        ).with_entities(WatchlistEntry.entry_value).all()
+        domains.update(r.entry_value.strip().lower() for r in rows
+                       if r.entry_value and r.entry_value.strip())
+        return sorted(domains)
+
+    @staticmethod
+    def all_third_party_domains():
+        """Every supplier domain across every company.
+
+        Kept apart from all_match_domains for the same reason
+        get_third_party_domains is kept apart from get_match_domains: a
+        credential matched against a supplier is classified third-party rather
+        than as the client's own, and that distinction drives what a breach
+        email says about it.
+        """
+        rows = WatchlistEntry.query.filter_by(
+            entry_type=Company.THIRD_PARTY_ENTRY_TYPE
+        ).with_entities(WatchlistEntry.entry_value).all()
+        return sorted({r.entry_value.strip().lower() for r in rows
+                       if r.entry_value and r.entry_value.strip()})
+
     def get_own_domains(self):
         """Domains this company itself owns — never a supplier's.
 
