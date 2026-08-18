@@ -1,14 +1,16 @@
 """Breached credentials analysis helpers — aggregations for the analysis view."""
 from .breached_creds_service import breached_creds_service as es_service
-from ..security import get_user_company_domain, get_user_watchlist_domains
+from ..security import get_scope_domains, get_user_company_domain
 
 
 def get_domain_filters():
-    """Get current user's domain filters for ES queries."""
-    user_domain = get_user_company_domain()
-    if not user_domain:
-        return None
-    return get_user_watchlist_domains()
+    """Get current user's domain filters for ES queries.
+
+    Delegates rather than deciding: branching on get_user_company_domain()
+    here returned None — unrestricted — for a member with no company, which
+    is the same value an admin gets.
+    """
+    return get_scope_domains()
 
 
 def build_analysis_stats():

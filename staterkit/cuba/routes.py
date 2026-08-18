@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint
 from flask_login import login_required
 
-from .security import get_user_company_domain, get_user_watchlist_domains
+from .security import get_scope_domains, get_user_company_domain
 from .services.breached_creds_service import breached_creds_service as es_service
 
 main = Blueprint('main', __name__)
@@ -13,8 +13,12 @@ main = Blueprint('main', __name__)
 @login_required
 def indexPage():
     """Dashboard with leak statistics from Elasticsearch."""
+    # Shown in the page header only. Never branch on it to pick a scope: it is
+    # None both for an admin and for a member with no company, and treating the
+    # second as the first served that member every tenant's stats and recent
+    # credentials.
     user_domain = get_user_company_domain()
-    domain_filters = get_user_watchlist_domains() if user_domain else None
+    domain_filters = get_scope_domains()
 
     stats = es_service.get_stats(domain_filters=domain_filters)
     chart_labels, chart_data = es_service.get_weekly_trends(weeks=12, domain_filters=domain_filters)

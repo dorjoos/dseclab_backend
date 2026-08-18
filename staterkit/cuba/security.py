@@ -64,3 +64,22 @@ def get_user_watchlist_domains():
     if current_user.company:
         return current_user.company.get_match_domains()
     return []
+
+
+def get_scope_domains():
+    """The ES domain scope for the current user. None is unrestricted.
+
+    The one place that decides this, because the distinction is easy to lose:
+    `None` means "see everything" and only an admin may have it, while `[]`
+    means "see nothing" and _build_query turns it into a match-nothing clause.
+
+    get_user_company_domain() must not be used to make this decision. It
+    returns None both for an admin and for a non-admin with no company, and
+    callers that branched on it handed the second group the first group's
+    scope — a company-less member saw every tenant's credentials.
+    """
+    if not current_user.is_authenticated:
+        return []
+    if current_user.is_admin_user:
+        return None
+    return get_user_watchlist_domains()

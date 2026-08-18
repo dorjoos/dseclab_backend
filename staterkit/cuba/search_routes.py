@@ -4,7 +4,7 @@ from sqlalchemy import or_
 from . import limiter
 from .api_utils import sanitize_input, escape_like
 from .models import Company
-from .security import get_user_watchlist_domains
+from .security import get_scope_domains
 from .services.breached_creds_service import breached_creds_service as es_service
 
 search_bp = Blueprint('search', __name__)
@@ -34,9 +34,7 @@ def search():
 
     results = []
 
-    domain_filters = None
-    if not current_user.is_admin_user:
-        domain_filters = get_user_watchlist_domains()
+    domain_filters = get_scope_domains()
 
     pagination = es_service.search(query_text=query, domain_filters=domain_filters, per_page=5)
     for cred in pagination.items:
