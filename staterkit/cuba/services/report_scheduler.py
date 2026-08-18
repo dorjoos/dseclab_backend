@@ -6,6 +6,7 @@ which means every gunicorn worker starts one — gunicorn.conf.py runs
 a due schedule is claimed with a conditional UPDATE that exactly one worker can
 win, and the loser simply moves on. See claim_schedule().
 """
+import contextlib
 import io
 import logging
 import re
@@ -53,10 +54,9 @@ def app_timezone():
     """The wall-clock zone schedules are expressed in."""
     from zoneinfo import ZoneInfo
     name = DEFAULT_TIMEZONE
-    try:
+    # Outside an app context (tests, CLI helpers) the default stands.
+    with contextlib.suppress(RuntimeError):
         name = current_app.config.get("APP_TIMEZONE", DEFAULT_TIMEZONE)
-    except RuntimeError:
-        pass  # outside an app context (tests, CLI helpers)
     try:
         return ZoneInfo(name)
     except Exception:
@@ -314,10 +314,10 @@ def domains_for_user(user):
 def build_pdf(name, creds, generated_for):
     """Render creds to a PDF, or None when reportlab isn't available."""
     try:
-        from reportlab.lib.pagesizes import letter
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet
         from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     except ImportError:
         logger.warning("reportlab unavailable; sending report without attachment")
         return None
@@ -419,9 +419,10 @@ def collect_creds(schedule):
 
 def run_schedule(schedule):
     """Generate and deliver one claimed schedule. Returns records sent."""
-    from ..models import ReportHistory
-    from .email_service import build_breach_email, send_email, is_email_configured
     from flask import current_app
+
+    from ..models import ReportHistory
+    from .email_service import build_breach_email, is_email_configured, send_email
 
     creds, domains, third_party = collect_creds(schedule)
 

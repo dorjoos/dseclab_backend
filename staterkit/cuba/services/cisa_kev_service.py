@@ -1,12 +1,12 @@
 """CISA KEV (Known Exploited Vulnerabilities) service backed by ES."""
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any
 
 from flask import current_app
 
-from .es_base import ESIndexService
 from .breached_creds_service import ESPagination
+from .es_base import ESIndexService
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,9 @@ class CisaKevDoc:
     def __init__(self, es_id: str, source: dict):
         self.es_id = es_id
         s = source or {}
-        get = lambda camel, snake: s.get(camel) if camel in s else s.get(snake)
+        def get(camel, snake):
+            """Feeds disagree on casing; accept either spelling."""
+            return s.get(camel) if camel in s else s.get(snake)
 
         self.cve_id = _clean(get('cveID', 'cve_id')) or es_id
         self.vendor = _clean(get('vendorProject', 'vendor_project'))
@@ -73,7 +75,7 @@ class CisaKevService(ESIndexService):
         except Exception:
             return self._index
 
-    def get_by_id(self, doc_id: str) -> Optional[CisaKevDoc]:
+    def get_by_id(self, doc_id: str) -> CisaKevDoc | None:
         raw = self.get_raw(doc_id)
         if raw is None:
             return None
@@ -134,7 +136,7 @@ class CisaKevService(ESIndexService):
                     }
                 })
 
-        query = {'bool': {}}
+        query: dict[str, Any] = {'bool': {}}
         if must:
             query['bool']['must'] = must
         if filter_clauses:
@@ -145,8 +147,8 @@ class CisaKevService(ESIndexService):
 
     def search(
         self,
-        query_text: Optional[str] = None,
-        filters: Optional[dict] = None,
+        query_text: str | None = None,
+        filters: dict | None = None,
         page: int = 1,
         per_page: int = 20,
     ) -> ESPagination:

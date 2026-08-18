@@ -1,6 +1,6 @@
 """Breached credentials analysis helpers — aggregations for the analysis view."""
-from .breached_creds_service import breached_creds_service as es_service
 from ..security import get_scope_domains, get_user_company_domain
+from .breached_creds_service import breached_creds_service as es_service
 
 
 def get_domain_filters():

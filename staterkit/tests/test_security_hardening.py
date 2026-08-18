@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 from cuba.models import UserActivity
 from tests.conftest import login
 
-
 # --- response headers ---
 
 def test_login_page_carries_hardening_headers(client):

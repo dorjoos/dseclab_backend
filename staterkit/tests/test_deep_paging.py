@@ -6,7 +6,11 @@ the list page renders as "Search backend (Elasticsearch) is unavailable" — a
 lie when ES is perfectly healthy and the user simply paged too deep.
 """
 from cuba.services.breached_creds_service import (
-    BreachedCredsService, ESPagination, breached_creds_service as svc,
+    BreachedCredsService,
+    ESPagination,
+)
+from cuba.services.breached_creds_service import (
+    breached_creds_service as svc,
 )
 
 WINDOW = BreachedCredsService.MAX_RESULT_WINDOW

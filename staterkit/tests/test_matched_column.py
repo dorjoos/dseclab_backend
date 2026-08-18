@@ -14,12 +14,10 @@ Two defects visible on one screenshot of the Breached Credentials list:
    pushing the actions column off the right edge.
 """
 import re
+from pathlib import Path
 
-import pytest
-
-from tests.conftest import login
 from cuba.models import WatchlistEntry
-
+from tests.conftest import login
 
 ACME_CRED = {
     'username': 'victim@acme.com', 'domain': 'acme.com',
@@ -108,7 +106,7 @@ WIDTH_RE = re.compile(r'\.av-table \.av-th-([a-z]+)\s*\{[^}]*?width:\s*([0-9.]+)
 
 
 def _column_widths():
-    css = open('cuba/static/assets/css/pages/breached-creds.css').read()
+    css = Path('cuba/static/assets/css/pages/breached-creds.css').read_text()
     return {name: (float(n), unit) for name, n, unit in WIDTH_RE.findall(css)}
 
 
@@ -126,7 +124,7 @@ def test_declared_column_widths_fit_the_table():
 def test_every_column_has_its_own_width_class():
     """Matched borrowed av-th-domain's width, which is how the overrun crept
     in unnoticed — the total changed without any width value changing."""
-    panel = open('cuba/templates/threat_intel/_breached_creds_panel.html').read()
+    panel = Path('cuba/templates/threat_intel/_breached_creds_panel.html').read_text()
     classes = re.findall(r'<th class="(av-th-[a-z]+)', panel)
     assert len(classes) == len(set(classes)), f'duplicate width class: {classes}'
 
@@ -134,8 +132,8 @@ def test_every_column_has_its_own_width_class():
 def test_domain_and_matched_are_one_column():
     """They name the same thing, so the table shows one Domain column and the
     row falls back to matched_domain when the feed carried no domain field."""
-    panel = open('cuba/templates/threat_intel/_breached_creds_panel.html').read()
-    script = open('cuba/templates/threat_intel/_breached_creds_script.html').read()
+    panel = Path('cuba/templates/threat_intel/_breached_creds_panel.html').read_text()
+    script = Path('cuba/templates/threat_intel/_breached_creds_script.html').read_text()
     assert '>Matched<' not in panel, 'the Matched column is back'
     assert panel.count('>Domain<') == 1
     assert 'row.domain || row.matched_domain' in script, 'the fallback is gone'
@@ -144,12 +142,12 @@ def test_domain_and_matched_are_one_column():
 def test_column_count_matches_the_header():
     """colSpan and the skeleton loader are counted by hand; dropping a column
     without updating them leaves the empty and error rows mis-spanned."""
-    panel = open('cuba/templates/threat_intel/_breached_creds_panel.html').read()
-    script = open('cuba/templates/threat_intel/_breached_creds_script.html').read()
+    panel = Path('cuba/templates/threat_intel/_breached_creds_panel.html').read_text()
+    script = Path('cuba/templates/threat_intel/_breached_creds_script.html').read_text()
     headers = len(re.findall(r'<th class="av-th-', panel))
     assert f'colspan="{headers}"' in panel, f'loading row is not colspan={headers}'
     assert f'td.colSpan = {headers};' in script, f'error row is not colSpan={headers}'
-    assert f'c < {headers};' in script, f'skeleton draws the wrong cell count'
+    assert f'c < {headers};' in script, 'skeleton draws the wrong cell count'
 
 
 def test_actions_column_can_hold_the_view_button():
@@ -163,7 +161,7 @@ def test_checkbox_cell_does_not_ellipsise():
     """tbody td sets text-overflow:ellipsis. At 32px wide with 14px of padding
     each side the checkbox had ~4px of content box, overflowed, and the browser
     drew a "…" next to every row's checkbox."""
-    css = open('cuba/static/assets/css/pages/breached-creds.css').read()
+    css = Path('cuba/static/assets/css/pages/breached-creds.css').read_text()
     block = re.search(r'\.av-table \.av-th-checkbox\s*\{([^}]*)\}', css)
     assert block, 'the checkbox column lost its rule'
     rule = block.group(1)

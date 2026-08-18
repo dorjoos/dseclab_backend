@@ -1,4 +1,5 @@
 """Breached credentials service backed by the 'main' ES index."""
+import contextlib
 import logging
 import math
 from datetime import datetime, timedelta
@@ -667,10 +668,10 @@ class BreachedCredsService(ESIndexService):
 
             # Clean up scroll
             if scroll_id:
-                try:
+                # Best effort: the scroll expires on its own, and failing to
+                # release it must not fail the export the caller asked for.
+                with contextlib.suppress(Exception):
                     self.es.clear_scroll(scroll_id=scroll_id)
-                except Exception:
-                    pass
 
             return results
         except Exception:

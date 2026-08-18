@@ -1,20 +1,21 @@
-from flask import Flask
-from flask.templating import Environment as FlaskJinjaEnvironment
-from jinja2.sandbox import SandboxedEnvironment
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_assets import Environment
-from flask_wtf.csrf import CSRFProtect
-from flask_caching import Cache
-from flask_migrate import Migrate
-from flask_jwt_extended import JWTManager
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_socketio import SocketIO
-from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
 from dotenv import load_dotenv
+from flask import Flask
+from flask.templating import Environment as FlaskJinjaEnvironment
+from flask_assets import Environment
+from flask_caching import Cache
+from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_login import LoginManager
+from flask_migrate import Migrate
+from flask_socketio import SocketIO
+from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from jinja2.sandbox import SandboxedEnvironment
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 load_dotenv()
 
 db = SQLAlchemy()
@@ -112,11 +113,11 @@ def create_app(config_name=None):
     @app.context_processor
     def inject_csrf_token():
         from flask_wtf.csrf import generate_csrf
-        return dict(csrf_token=generate_csrf)
+        return {'csrf_token': generate_csrf}
 
     @app.context_processor
     def inject_default_breadcrumb():
-        return dict(breadcrumb=None)
+        return {'breadcrumb': None}
 
     _static_versions = {}
 

@@ -2,9 +2,8 @@
 
 Plan: docs/superpowers/plans/2026-06-09-member-breached-cred-password-reveal.md
 """
-from tests.conftest import login
 from cuba.models import AuditLog, UserActivity
-
+from tests.conftest import login
 
 REAL_PASSWORD = "P@ssw0rd!Real"
 CRED_ID = "acme-1"
@@ -271,16 +270,17 @@ def test_raw_cell_shows_a_dash_when_there_is_no_raw_line(client, member_acme, fa
 
 def test_reveal_rate_limit_blocks_31st_call(client, member_acme, fake_cred):
     """The endpoint is decorated @limiter.limit('30/minute'); the 31st call returns 429."""
+    import contextlib
+
     from cuba import limiter
-    try:
+    # Not every storage backend implements reset(); the test still holds.
+    with contextlib.suppress(Exception):
         limiter.reset()
-    except Exception:
-        pass
     fake_cred({CRED_ID: CRED_SRC})
     login(client, member_acme.email)
     token = _csrf_token(client)
     last_status = None
-    for i in range(31):
+    for _ in range(31):
         resp = client.post(REVEAL_PATH, headers={"X-CSRFToken": token})
         last_status = resp.status_code
         if last_status == 429:

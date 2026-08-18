@@ -16,9 +16,9 @@ entirely, just extend the `get(...)` calls.
 import hashlib
 import logging
 import math
-from collections import Counter, OrderedDict
+from collections import OrderedDict
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any
 
 from flask import current_app
 
@@ -39,7 +39,10 @@ _PALETTE = [
 def _color_for(name: str) -> str:
     if not name:
         return '#6b7280'
-    h = int(hashlib.md5(name.encode('utf-8')).hexdigest()[:8], 16)
+    # Not a security primitive: this only picks a stable palette colour for
+    # a group name, so the weakness of md5 is irrelevant here.
+    h = int(hashlib.md5(name.encode('utf-8'),
+                        usedforsecurity=False).hexdigest()[:8], 16)
     return _PALETTE[h % len(_PALETTE)]
 
 
@@ -197,9 +200,9 @@ class RansomwareFeedService(ESIndexService):
     # ------------------------------------------------------------------
 
     def get_recent(self, page: int = 1, per_page: int = 10,
-                   group: Optional[str] = None,
-                   country: Optional[str] = None,
-                   query_text: Optional[str] = None) -> dict:
+                   group: str | None = None,
+                   country: str | None = None,
+                   query_text: str | None = None) -> dict:
         """Paginated recent attacks with optional filters. Returns
         {items, page, per_page, total, pages, has_prev, has_next,
          filters: {group, country, q}}."""
@@ -225,7 +228,7 @@ class RansomwareFeedService(ESIndexService):
                 }
             })
 
-        query = {'bool': {}}
+        query: dict[str, Any] = {'bool': {}}
         if must:
             query['bool']['must'] = must
         if filter_clauses:

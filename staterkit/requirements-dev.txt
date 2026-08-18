@@ -1,0 +1,6 @@
+# Development and CI tooling. Deliberately separate from requirements.txt so
+# the production venv that deploy/setup.sh builds stays as small as it is now.
+-r requirements.txt
+
+ruff>=0.16
+mypy>=1.11

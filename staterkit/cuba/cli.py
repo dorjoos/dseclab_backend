@@ -10,7 +10,6 @@ import logging
 from datetime import datetime, timedelta
 
 import click
-from flask import current_app
 from flask.cli import AppGroup
 
 from . import db
@@ -85,9 +84,7 @@ def _victim_matches_watchlist(victim_website: str, victim_name: str,
         if _host_belongs_to(victim_website or '', value):
             return True
         # Some feeds put the website in the victim_name field as the title.
-        if victim_name and value.lower() in victim_name.lower():
-            return True
-        return False
+        return bool(victim_name and value.lower() in victim_name.lower())
     # Non-domain entries (keyword watch, etc.) — substring on victim name.
     return value.lower() in (victim_name or '').lower()
 

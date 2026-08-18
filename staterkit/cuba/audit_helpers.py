@@ -1,9 +1,10 @@
 """Audit logging helper functions."""
 import json
 import logging
+
 from flask import request
 from flask_login import current_user
-from datetime import datetime, timezone
+
 from . import db
 from .models import AuditLog, UserActivity
 

@@ -1,17 +1,26 @@
 """Scoping, access checks and notification helpers shared across the threat-intelligence views."""
+from __future__ import annotations
+
 import logging
-from flask import request, current_app
+from typing import TYPE_CHECKING
+
+from flask import current_app, request
 from flask_login import current_user
 from sqlalchemy import or_
 
 from .. import db
 from ..models import BreachedCredMeta, Company, Notification, User
-from ..security import get_scope_domains, get_user_watchlist_domains
+from ..security import DomainScope, get_scope_domains, get_user_watchlist_domains
 from ..services.breached_creds_service import breached_creds_service as es_service
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
+
+    from ..services.breached_creds_service import BreachedCredDoc
 
 logger = logging.getLogger(__name__)
 
-def _get_domain_filters():
+def _get_domain_filters() -> DomainScope:
     """Scope for the current user: None is unrestricted, a list restricts.
 
     Thin alias for security.get_scope_domains, kept because this name is used
@@ -20,7 +29,7 @@ def _get_domain_filters():
     return get_scope_domains()
 
 
-def _get_match_domains():
+def _get_match_domains() -> list[str]:
     """Domains to label rows against in the Matched column.
 
     Distinct from _get_domain_filters, which answers "what may this user see"
@@ -43,7 +52,7 @@ def _get_match_domains():
     return Company.all_match_domains()
 
 
-def _get_employee_emails():
+def _get_employee_emails() -> list[str]:
     """Staff addresses in the current user's scope, for the Employees tab.
 
     Always a list, never None: unlike _get_domain_filters there is no
@@ -79,7 +88,7 @@ def _host_belongs_to(host: str, domain: str) -> bool:
     return host == domain or host.endswith("." + domain)
 
 
-def _cred_matches_domain(cred, domain: str) -> bool:
+def _cred_matches_domain(cred: BreachedCredDoc, domain: str) -> bool:
     """True when any of cred.domain, the @-suffix of cred.username, or the
     host of cred.url belongs to `domain` (equal or subdomain)."""
     if not domain:
@@ -87,9 +96,8 @@ def _cred_matches_domain(cred, domain: str) -> bool:
     if _host_belongs_to(cred.domain or "", domain):
         return True
     username = (cred.username or "").lower()
-    if "@" in username:
-        if _host_belongs_to(username.split("@", 1)[1], domain):
-            return True
+    if "@" in username and _host_belongs_to(username.split("@", 1)[1], domain):
+        return True
     url = (cred.url or "").strip()
     if url:
         from urllib.parse import urlparse
@@ -100,7 +108,7 @@ def _cred_matches_domain(cred, domain: str) -> bool:
     return False
 
 
-def _check_cred_access(cred):
+def _check_cred_access(cred: BreachedCredDoc) -> bool:
     """Check if current user can access this credential. Returns True if allowed."""
     if current_user.is_admin_user:
         return True
@@ -110,7 +118,7 @@ def _check_cred_access(cred):
     return any(_cred_matches_domain(cred, d) for d in domain_filters)
 
 
-def _attach_metadata(items):
+def _attach_metadata(items: Sequence[BreachedCredDoc]) -> None:
     """Attach local metadata (marks) to a list of BreachedCredDoc items."""
     if not items:
         return
@@ -127,11 +135,13 @@ def _attach_metadata(items):
             item.notes = meta.notes
 
 
-def _send_breach_emails(users, company_name, creds, company_domain=None,
-                        third_party_domains=None):
+def _send_breach_emails(users: Iterable[User], company_name: str,
+                        creds: Sequence[BreachedCredDoc],
+                        company_domain: str | None = None,
+                        third_party_domains: Sequence[str] | None = None) -> int:
     """Best-effort email of matched breaches to users. Never raises."""
     try:
-        from ..services.email_service import build_breach_email, send_email, is_email_configured
+        from ..services.email_service import build_breach_email, is_email_configured, send_email
         if not is_email_configured():
             logger.info("Email not configured; skipping breach email for %s", company_name)
             return 0
@@ -158,7 +168,9 @@ def _send_breach_emails(users, company_name, creds, company_domain=None,
         return 0
 
 
-def _notify_new_breach(credential_id, company_domain, company_name, email, file_name=None):
+def _notify_new_breach(credential_id: str, company_domain: str | None,
+                       company_name: str, email: str | None,
+                       file_name: str | None = None) -> None:
     """Notify all users in a company about a new breach (in-app + email)."""
     try:
         if not company_domain:

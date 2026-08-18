@@ -1,5 +1,6 @@
 """Tests for BreachedCredsService.compute_matched_domain (suffix-aware)."""
-from cuba.services.breached_creds_service import BreachedCredDoc, breached_creds_service as svc
+from cuba.services.breached_creds_service import BreachedCredDoc
+from cuba.services.breached_creds_service import breached_creds_service as svc
 
 
 def _doc(**source):

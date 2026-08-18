@@ -1,6 +1,7 @@
 """IP geolocation service using free ip-api.com."""
 import ipaddress
 import logging
+
 import requests
 
 logger = logging.getLogger(__name__)

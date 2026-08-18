@@ -4,10 +4,17 @@ import io
 import logging
 
 from flask import (
-    Blueprint, render_template, request, redirect, url_for, flash, Response,
-    jsonify, abort,
+    Blueprint,
+    Response,
+    abort,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
 )
-from flask_login import login_required, current_user
+from flask_login import current_user, login_required
 
 from . import db, limiter
 from .api_utils import sanitize_input

@@ -4,8 +4,8 @@ Employees are the WatchlistEntry rows with entry_type='email'. The rule that
 matters most here is the empty case — a company with nobody on file must see
 nothing, not everything.
 """
-from tests.conftest import login
 from cuba.models import WatchlistEntry
+from tests.conftest import login
 
 
 def _add_employees(db, company, *emails):
@@ -96,6 +96,7 @@ def test_malformed_entries_get_no_split_clause(app):
 def test_employee_clause_is_capped_and_says_so(app, caplog):
     """A silent cap would read as 'searched everyone' when it didn't."""
     import logging
+
     from cuba.services.breached_creds_service import es_service
     with app.app_context():
         many = [f'user{i}@acme.com' for i in range(es_service.MAX_EMPLOYEES + 5)]

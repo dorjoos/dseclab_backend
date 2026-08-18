@@ -6,8 +6,8 @@ don't break across the rename. Remove after dependent code is updated.
 import warnings
 
 from .breached_creds_service import (
-    BreachedCredsService,
     BreachedCredDoc,
+    BreachedCredsService,
     ESPagination,
     breached_creds_service,
 )

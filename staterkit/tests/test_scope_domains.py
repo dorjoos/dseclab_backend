@@ -17,7 +17,7 @@ import pytest
 from flask_login import login_user
 
 from cuba.security import get_scope_domains
-from tests.conftest import login, _make_user
+from tests.conftest import _make_user, login
 
 
 @pytest.fixture()

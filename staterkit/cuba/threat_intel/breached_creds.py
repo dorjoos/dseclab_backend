@@ -1,31 +1,32 @@
 """Breached-credential list, detail, editing and export, plus the Employees tab."""
-from flask import render_template, request, redirect, url_for, flash, Response, jsonify, abort
-from flask_login import login_required, current_user
-from datetime import datetime, timezone
 import csv
 import io
 import json
+from datetime import datetime, timezone
+
+from flask import Response, abort, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 
 try:
     from openpyxl import Workbook
-    from openpyxl.styles import Font, Alignment
+    from openpyxl.styles import Alignment, Font
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
 
 try:
-    from reportlab.lib.pagesizes import letter
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-    from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
 
-from .. import db, cache, limiter
-from ..models import BreachedCredMeta
+from .. import cache, db, limiter
 from ..api_utils import sanitize_input
 from ..audit_helpers import log_audit, log_user_activity
+from ..models import BreachedCredMeta
 from ..services.breached_creds_service import breached_creds_service as es_service
 from ._blueprint import threat_intel
 from ._shared import (
@@ -36,6 +37,7 @@ from ._shared import (
     _get_match_domains,
     _notify_new_breach,
 )
+
 
 @threat_intel.route('/threat-intelligence/breached-creds')
 @login_required
@@ -232,7 +234,7 @@ def breached_creds_view(doc_id):
     # Plaintext is delivered only via the reveal-password endpoint, which
     # re-runs _check_cred_access and writes an audit row per reveal.
     if cred.password:
-        cred.password = '********'
+        cred.password = '********'  # noqa: S105 — this is the mask, not a secret
     # The raw dump line is the same secret in a different shape — it usually
     # carries the plaintext inline — so it goes behind the same gate rather
     # than being rendered into the page.
@@ -497,7 +499,7 @@ def breached_creds_export():
         return Response(json.dumps(data, indent=2), mimetype='application/json',
                        headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.json'})
 
-    elif export_format == 'xlsx' and OPENPYXL_AVAILABLE:
+    if export_format == 'xlsx' and OPENPYXL_AVAILABLE:
         wb = Workbook()
         ws = wb.active
         ws.title = "Breached Credentials"
@@ -517,13 +519,12 @@ def breached_creds_export():
                        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                        headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.xlsx'})
 
-    elif export_format == 'pdf' and REPORTLAB_AVAILABLE:
+    if export_format == 'pdf' and REPORTLAB_AVAILABLE:
         output = io.BytesIO()
         doc_pdf = SimpleDocTemplate(output, pagesize=letter)
         elements = []
         styles = getSampleStyleSheet()
         # Branded header
-        from reportlab.lib.units import inch
         title_style = styles['Title']
         title_style.textColor = colors.HexColor('#1a56db')
         elements.append(Paragraph("D-SECLAB", title_style))
@@ -557,14 +558,13 @@ def breached_creds_export():
         return Response(output.getvalue(), mimetype='application/pdf',
                        headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.pdf'})
 
-    else:
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(['ID', 'Username', 'Domain', 'Password', 'Source', 'Type', 'URL', 'Timestamp'])
-        for c in creds:
-            writer.writerow([c.es_id, c.username or '', c.domain or '', '********',
-                            c.source or '', c.type or '', c.url or '',
-                            c.timestamp.strftime('%Y-%m-%d %H:%M:%S') if c.timestamp else ''])
-        output.seek(0)
-        return Response(output.getvalue(), mimetype='text/csv',
-                       headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.csv'})
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Username', 'Domain', 'Password', 'Source', 'Type', 'URL', 'Timestamp'])
+    for c in creds:
+        writer.writerow([c.es_id, c.username or '', c.domain or '', '********',
+                        c.source or '', c.type or '', c.url or '',
+                        c.timestamp.strftime('%Y-%m-%d %H:%M:%S') if c.timestamp else ''])
+    output.seek(0)
+    return Response(output.getvalue(), mimetype='text/csv',
+                   headers={'Content-Disposition': f'attachment; filename=breached_credentials_{timestamp}.csv'})

@@ -14,17 +14,20 @@ import os
 # decisively NOT bound to instance/cuba.db. A shared in-memory URI ("?cache=shared")
 # is fragile across Flask-SQLAlchemy sessions, so use a tempfile-backed DB.
 import tempfile as _tempfile
+
 _TEST_DB_FD, _TEST_DB_PATH = _tempfile.mkstemp(prefix="dseclab_test_", suffix=".db")
 os.close(_TEST_DB_FD)
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB_PATH}"
 os.environ.setdefault("FLASK_CONFIG", "development")
 
 import atexit
+
 atexit.register(lambda p=_TEST_DB_PATH: os.path.exists(p) and os.unlink(p))
 
 import pytest
 
-from cuba import create_app, db as _db
+from cuba import create_app
+from cuba import db as _db
 from cuba.models import Company, User
 from cuba.services.breached_creds_service import BreachedCredDoc
 
@@ -148,8 +151,8 @@ def fake_cred(monkeypatch):
         fake_cred({"acme-1": {"username": "user@acme.com", "domain": "acme.com",
                               "password": "P@ssw0rd!"}})
     """
-    from cuba.services import breached_creds_service as es_mod
     from cuba import threat_intel as ti_mod
+    from cuba.services import breached_creds_service as es_mod
 
     store = {}
 
@@ -177,8 +180,8 @@ def fake_kev(monkeypatch):
                                   "shortDescription": "blah", "knownRansomwareCampaignUse": "Known"}})
     """
     from cuba.services import cisa_kev_service as svc_mod
-    from cuba.services.cisa_kev_service import CisaKevDoc, cisa_kev_service
     from cuba.services.breached_creds_service import ESPagination
+    from cuba.services.cisa_kev_service import CisaKevDoc, cisa_kev_service
 
     store = {}
 

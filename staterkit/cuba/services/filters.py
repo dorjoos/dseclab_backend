@@ -1,8 +1,7 @@
 from datetime import date, datetime, timedelta
-from typing import Tuple
 
 
-def build_date_filter(query, column, date_filter: str) -> Tuple[object, str]:
+def build_date_filter(query, column, date_filter: str) -> tuple[object, str]:
     """
     Apply a reusable date filter on a SQLAlchemy query.
 

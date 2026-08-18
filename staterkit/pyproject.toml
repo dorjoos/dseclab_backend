@@ -1,0 +1,106 @@
+# Tooling config only. There is deliberately no [project] or [build-system]
+# table: this app is deployed from a checkout and installed via
+# requirements.txt, not built as a package, and adding those tables would
+# invite `pip install .` to start behaving differently from the real deploy.
+
+[tool.ruff]
+# The code already sits under this: p99 of line lengths is 96 characters, so
+# 100 codifies the existing style rather than imposing a new one.
+line-length = 100
+target-version = "py310"          # oldest supported; CI also runs 3.12
+extend-exclude = ["cuba/static", "deploy"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes — unused names, undefined names
+    "I",        # import ordering
+    "B",        # bugbear — mutable defaults, loop-variable capture, ...
+    "UP",       # pyupgrade — this targets 3.10+, so old typing spellings go
+    "SIM",      # obvious simplifications
+    "C4",       # comprehension misuse
+    "RET",      # return-path clarity
+    "DTZ",      # naive datetimes; this app mixes UTC and local on purpose
+    "S",        # bandit — it is a security product, so the security linter runs
+]
+ignore = [
+    # Long messages and URLs inside strings are not worth wrapping; the limit
+    # exists for code, and E501 cannot tell the difference.
+    "E501",
+    # Assert is how the tests express intent; S101 is aimed at production code
+    # and is silenced for tests specifically below.
+    "S101",
+    # `try/except/pass` is flagged wholesale, but several are deliberate
+    # best-effort paths with a comment saying so. Handled case by case.
+    "S110",
+    # Naive datetimes. Real debt, not bundled here: utcnow() is deprecated on
+    # the 3.12 we run in production, but the 34 call sites store naive values
+    # that are compared against naive columns, so making them aware is a
+    # migration with behavioural risk — not a lint fix. Ignored by code rather
+    # than dropping DTZ entirely, so a *new* category of timezone bug still
+    # fires.
+    "DTZ001", "DTZ003", "DTZ004", "DTZ007", "DTZ011",
+    # gunicorn binds 0.0.0.0 on purpose; nginx is the only thing in front.
+    "S104",
+    # `Column == True` inside .filter() is a SQL expression, not a Python
+    # truthiness test. Ruff's rewrite happens to be equivalent for a Boolean
+    # column, but the explicit form says "this becomes SQL" at a glance, and
+    # every occurrence here is a query filter.
+    "E712",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Fixtures deliberately reach into internals, bind unused names, and set the
+# environment before importing the app.
+"tests/*" = ["S", "E402", "ARG", "B011"]
+# The app factory imports blueprints late to break circular imports.
+"cuba/__init__.py" = ["E402"]
+# Route registration is the whole point of these imports.
+"cuba/threat_intel/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cuba", "tests"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["cuba"]
+# Deliberately lenient by default and strict per-module below. 258 functions
+# were 15% annotated when this was introduced; switching everything on at once
+# produces hundreds of errors nobody reads. The override list is a ratchet —
+# type a module, add it here, and it can never regress.
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# Modules that are fully typed. Adding to this list is the ratchet; removing
+# from it needs a reason.
+module = [
+    "cuba.security",
+    "cuba.api_utils",
+    "cuba.routes",
+    "cuba.search_routes",
+    "cuba.threat_intel._shared",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+warn_return_any = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+# Flask-SQLAlchemy builds db.Model dynamically, so mypy cannot resolve it as a
+# base class without the (unmaintained) plugin. The models are still checked
+# for everything else; only the base-class lookup is silenced.
+module = ["cuba.models"]
+# name-defined: Flask-SQLAlchemy builds db.Model dynamically, so mypy cannot
+#   resolve it as a base class without the (unmaintained) plugin.
+# attr-defined: db.relationship() is typed as returning RelationshipProperty
+#   rather than Mapped[list[...]], so iterating a collection looks like an
+#   error. The real fix is migrating this layer to Mapped[] / mapped_column(),
+#   which is a rewrite of every model rather than an annotation — deferred
+#   deliberately, not overlooked. Everything else in models is still checked.
+disable_error_code = ["name-defined", "attr-defined"]

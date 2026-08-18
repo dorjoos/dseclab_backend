@@ -1,9 +1,10 @@
-from typing import Any, Dict
+import html
+from typing import Any
 
-from flask import jsonify
+from flask import Response, jsonify
 
 
-def json_error(message: str, status_code: int = 400, **extra: Any):
+def json_error(message: str, status_code: int = 400, **extra: Any) -> Response:
     """
     Return a standardized JSON error response.
 
@@ -14,7 +15,7 @@ def json_error(message: str, status_code: int = 400, **extra: Any):
           ...extra
         }
     """
-    payload: Dict[str, Any] = {"success": False, "error": message}
+    payload: dict[str, Any] = {"success": False, "error": message}
     if extra:
         payload.update(extra)
     response = jsonify(payload)
@@ -22,7 +23,8 @@ def json_error(message: str, status_code: int = 400, **extra: Any):
     return response
 
 
-def json_success(data: Dict[str, Any] | None = None, status_code: int = 200):
+def json_success(data: dict[str, Any] | None = None,
+                 status_code: int = 200) -> Response:
     """
     Return a standardized JSON success response.
 
@@ -32,15 +34,12 @@ def json_success(data: Dict[str, Any] | None = None, status_code: int = 200):
           ...data
         }
     """
-    payload: Dict[str, Any] = {"success": True}
+    payload: dict[str, Any] = {"success": True}
     if data:
         payload.update(data)
     response = jsonify(payload)
     response.status_code = status_code
     return response
-
-
-import html
 
 
 def sanitize_input(text: str) -> str:

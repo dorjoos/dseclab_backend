@@ -1,4 +1,5 @@
-from flask import render_template, Blueprint
+from flask import Blueprint, render_template
+from flask.typing import ResponseReturnValue
 from flask_login import login_required
 
 from .security import get_scope_domains, get_user_company_domain
@@ -11,7 +12,7 @@ main = Blueprint('main', __name__)
 @main.route('/index')
 @main.route('/dashboard')
 @login_required
-def indexPage():
+def indexPage() -> ResponseReturnValue:
     """Dashboard with leak statistics from Elasticsearch."""
     # Shown in the page header only. Never branch on it to pick a scope: it is
     # None both for an admin and for a member with no company, and treating the
